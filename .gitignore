@@ -1,0 +1,25 @@
+# Dependencies
+node_modules
+agent/node_modules
+
+# Build output
+dist
+agent/dist
+
+# Environment variables (NEVER commit)
+.env
+.env.local
+agent/.env
+agent/.env.local
+*.local
+
+# TypeScript build info
+*.tsbuildinfo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/settings.json
+.idea
