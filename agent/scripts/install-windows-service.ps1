@@ -85,15 +85,20 @@ $action = New-ScheduledTaskAction `
 
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User $user
 
+# S4U = Service-for-User: runs the task without interactive desktop, no
+# popup CMD window. RunLevel Highest still gives elevated rights so nmap
+# can do ARP scans. Combined with -Hidden in settings the task is
+# completely invisible -- behaves like a real Windows service.
 $principal = New-ScheduledTaskPrincipal `
   -UserId $user `
-  -LogonType Interactive `
+  -LogonType S4U `
   -RunLevel Highest
 
 $settings = New-ScheduledTaskSettingsSet `
   -AllowStartIfOnBatteries `
   -DontStopIfGoingOnBatteries `
   -StartWhenAvailable `
+  -Hidden `
   -RestartCount 5 `
   -RestartInterval (New-TimeSpan -Minutes 1) `
   -ExecutionTimeLimit (New-TimeSpan -Days 0) `
