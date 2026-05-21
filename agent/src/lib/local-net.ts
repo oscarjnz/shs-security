@@ -6,6 +6,12 @@ export interface LocalSubnet {
   netmask: string;
   cidr: string;
   prefix: number;
+  /**
+   * A scan-friendly /24 around the user's IP. Always 256 hosts max,
+   * so it fits within our CIDR cap and finishes in reasonable time.
+   * Equal to `cidr` if the network is already /24 or smaller.
+   */
+  suggestedCidr: string;
 }
 
 const PRIVATE_PREFIXES = [
@@ -28,12 +34,17 @@ export function listLocalPrivateSubnets(): LocalSubnet[] {
       if (prefix === null) continue;
 
       const network = applyMask(a.address, prefix);
+      // Always offer at most a /24 around the user's IP for scans, otherwise
+      // 4k+ host networks (typical /20 / /16) blow up scan time and our cap.
+      const scanPrefix = Math.max(prefix, 24);
+      const scanNetwork = applyMask(a.address, scanPrefix);
       out.push({
         interfaceName: name,
         ip: a.address,
         netmask: a.netmask,
         cidr: `${network}/${prefix}`,
         prefix,
+        suggestedCidr: `${scanNetwork}/${scanPrefix}`,
       });
     }
   }

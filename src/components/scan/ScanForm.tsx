@@ -60,7 +60,8 @@ export function ScanForm({ isRunning, onSubmit, onAbort }: ScanFormProps) {
           // prefer the subnet whose interface name contains Wi-Fi / Wireless / wlan / en
           const preferred =
             nets.find((n) => /wi-?fi|wireless|wlan|en0/i.test(n.interfaceName)) ?? nets[0]!;
-          setTarget(preferred.cidr);
+          // Use the scan-friendly /24 (or smaller) — full /20 nets would be rejected
+          setTarget(preferred.suggestedCidr ?? preferred.cidr);
         }
       })
       .catch(() => {
@@ -156,14 +157,29 @@ export function ScanForm({ isRunning, onSubmit, onAbort }: ScanFormProps) {
                 <SelectValue placeholder="Elige una red" />
               </SelectTrigger>
               <SelectContent>
-                {subnets.map((s) => (
-                  <SelectItem key={`${s.interfaceName}-${s.cidr}`} value={s.cidr}>
-                    <span className="font-mono">{s.cidr}</span>
-                    <span className="ml-2 text-muted-foreground text-[10px]">
-                      {s.interfaceName} · tu IP {s.ip}
-                    </span>
-                  </SelectItem>
-                ))}
+                {subnets.flatMap((s) => {
+                  const items = [
+                    <SelectItem key={`${s.interfaceName}-suggested`} value={s.suggestedCidr ?? s.cidr}>
+                      <span className="font-mono">{s.suggestedCidr ?? s.cidr}</span>
+                      <span className="ml-2 text-muted-foreground text-[10px]">
+                        {s.interfaceName} · recomendada · tu IP {s.ip}
+                      </span>
+                    </SelectItem>,
+                  ];
+                  // If the real subnet differs from the suggested /24, show it too as
+                  // "red completa" but with a warning — most users will be rejected.
+                  if (s.cidr !== (s.suggestedCidr ?? s.cidr)) {
+                    items.push(
+                      <SelectItem key={`${s.interfaceName}-full`} value={s.cidr}>
+                        <span className="font-mono">{s.cidr}</span>
+                        <span className="ml-2 text-muted-foreground text-[10px]">
+                          {s.interfaceName} · red completa ({Math.pow(2, 32 - s.prefix)} hosts)
+                        </span>
+                      </SelectItem>,
+                    );
+                  }
+                  return items;
+                })}
               </SelectContent>
             </Select>
           </div>
