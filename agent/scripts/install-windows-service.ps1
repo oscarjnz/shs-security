@@ -17,19 +17,30 @@ $repoRoot = Split-Path -Parent $agentDir
 Write-Host "==> Agent directory: $agentDir"
 Write-Host "==> Repo root: $repoRoot"
 
-# 1. Build the agent (compiles TS -> dist/)
+# 1. Kill any process currently using port 3001 (typically a `npm run dev` tsx watch)
+$busy = Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue
+if ($busy) {
+  Write-Host "==> Port 3001 in use by PID(s) $($busy.OwningProcess -join ', ') — stopping..."
+  foreach ($pid in ($busy.OwningProcess | Sort-Object -Unique)) {
+    try { Stop-Process -Id $pid -Force -ErrorAction Stop } catch { Write-Host "    (could not stop PID $pid: $_)" }
+  }
+  Start-Sleep -Milliseconds 800
+}
+
+# 2. Build the agent (compiles TS -> dist/)
 Write-Host ""
-Write-Host "==> Building the agent (npm run build)..."
+Write-Host "==> Installing dependencies and building agent..."
 Push-Location $agentDir
 try {
-  npm install --omit=dev *> $null
+  npm install
+  if ($LASTEXITCODE -ne 0) { throw "npm install failed" }
   npm run build
   if ($LASTEXITCODE -ne 0) { throw "npm run build failed" }
 } finally {
   Pop-Location
 }
 
-# 2. Compose the command the scheduled task will run
+# 3. Compose the command the scheduled task will run
 $node = (Get-Command node).Source
 $entry = Join-Path $agentDir "dist\index.js"
 
@@ -37,7 +48,7 @@ if (-not (Test-Path $entry)) {
   throw "Build did not produce $entry. Aborting."
 }
 
-# 3. Build a wrapper .cmd that ensures the working dir is set so .env loads
+# 4. Build a wrapper .cmd that ensures the working dir is set so .env loads
 $wrapper = Join-Path $agentDir "run-agent.cmd"
 @"
 @echo off
@@ -47,7 +58,7 @@ cd /d "$agentDir"
 
 Write-Host "==> Created launcher: $wrapper"
 
-# 4. Register the scheduled task (runs at user logon, restarts if it dies)
+# 5. Register the scheduled task (runs at user logon, restarts if it dies)
 $taskName = "SSS Agent"
 
 # Remove old task if present
@@ -80,12 +91,12 @@ Write-Host ""
 Write-Host "  Agent log:    $agentDir\agent.log"
 Write-Host ""
 
-# 5. Start it right now
+# 6. Start it right now
 Write-Host "==> Starting agent now..."
 schtasks /Run /TN $taskName | Out-Null
 Start-Sleep -Seconds 3
 
-# 6. Verify
+# 7. Verify
 $health = $null
 try { $health = Invoke-RestMethod -Uri "http://localhost:3001/api/health" -TimeoutSec 5 } catch {}
 if ($health -and $health.success) {
