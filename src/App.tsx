@@ -4,11 +4,13 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ScanProvider } from "@/contexts/ScanContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/MainLayout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import { LoginPage } from "@/pages/LoginPage";
+import { SignUpPage } from "@/pages/SignUpPage";
 import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { NetworkOverviewPage } from "@/pages/NetworkOverviewPage";
@@ -22,6 +24,7 @@ import { SettingsPage } from "@/pages/SettingsPage";
 import { UsersPage } from "@/pages/settings/UsersPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
 import { ScanPage } from "@/pages/ScanPage";
+import { ScanHistoryPage } from "@/pages/ScanHistoryPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -38,12 +41,14 @@ const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <ScanProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignUpPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
@@ -58,6 +63,7 @@ const App = () => (
                   <Route path="/ai-analysis" element={<AIAnalysisPage />} />
                   <Route path="/reports" element={<ReportsPage />} />
                   <Route path="/scan" element={<ScanPage />} />
+                  <Route path="/scan/history" element={<ScanHistoryPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/settings/users" element={<UsersPage />} />
                   <Route path="/notifications" element={<NotificationsPage />} />
@@ -68,6 +74,7 @@ const App = () => (
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
+        </ScanProvider>
       </AuthProvider>
     </QueryClientProvider>
   </ErrorBoundary>

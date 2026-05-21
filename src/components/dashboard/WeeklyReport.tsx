@@ -9,6 +9,7 @@ export interface WeeklyReportProps {
   previousScore: number | null;
   threatCount: number;
   deviceCount: number;
+  hasScore?: boolean;
 }
 
 function scoreColor(score: number): string {
@@ -75,6 +76,7 @@ export function WeeklyReport({
   previousScore,
   threatCount,
   deviceCount,
+  hasScore = true,
 }: WeeklyReportProps) {
   const clamped = Math.max(0, Math.min(100, score));
 
@@ -94,20 +96,27 @@ export function WeeklyReport({
             <p className="text-xs uppercase tracking-wider text-muted-foreground">
               Puntuacion de Seguridad
             </p>
-            <span className={cn("text-3xl font-bold", scoreColor(score))}>
-              {clamped}
-            </span>
+            {hasScore ? (
+              <span className={cn("text-3xl font-bold", scoreColor(score))}>
+                {clamped}
+              </span>
+            ) : (
+              <span className="text-sm text-muted-foreground">Sin reportes aún</span>
+            )}
           </div>
 
-          <Progress
-            value={clamped}
-            className={cn(
-              "h-2.5 bg-muted/30",
-              progressBarColor(clamped),
-            )}
-          />
-
-          <ScoreDelta current={score} previous={previousScore} />
+          {hasScore && (
+            <>
+              <Progress
+                value={clamped}
+                className={cn(
+                  "h-2.5 bg-muted/30",
+                  progressBarColor(clamped),
+                )}
+              />
+              <ScoreDelta current={score} previous={previousScore} />
+            </>
+          )}
         </div>
 
         {/* Summary stats */}

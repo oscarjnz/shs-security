@@ -6,7 +6,7 @@ import { startOfMonth, formatISO } from "date-fns";
 interface KPIs {
   activeThreatCount: number;
   deviceCount: number;
-  securityScore: number;
+  securityScore: number | null;
   reportsThisMonth: number;
 }
 
@@ -43,7 +43,7 @@ export function useDashboardKPIs() {
       return {
         activeThreatCount: threats.count ?? 0,
         deviceCount: devices.count ?? 0,
-        securityScore: latestReport.data?.security_score ?? 100,
+        securityScore: (latestReport.data?.security_score as number | null | undefined) ?? null,
         reportsThisMonth: monthReports.count ?? 0,
       };
     },

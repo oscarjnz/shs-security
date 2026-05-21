@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,6 +8,7 @@ export function useNotifications() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const key = ["notifications", user?.id];
+  const channelIdRef = useRef<string>(`notifications-rt-${crypto.randomUUID()}`);
 
   const query = useQuery({
     queryKey: key,
@@ -27,7 +28,7 @@ export function useNotifications() {
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel("notifications-rt")
+      .channel(channelIdRef.current)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "notifications" },

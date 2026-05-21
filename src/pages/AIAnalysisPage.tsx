@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Brain, Send, Loader2, Bot, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -68,6 +69,8 @@ function LoadingDots() {
 }
 
 export function AIAnalysisPage() {
+  const [searchParams] = useSearchParams();
+  const scanContextId = searchParams.get("scan");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -86,7 +89,7 @@ export function AIAnalysisPage() {
   }, [messages, scrollToBottom]);
 
   const streamMessage = useCallback(
-    async (userContent: string) => {
+    async (userContent: string, history: ChatMessage[]) => {
       setIsStreaming(true);
       abortRef.current = new AbortController();
 
@@ -107,13 +110,23 @@ export function AIAnalysisPage() {
         } = await supabase.auth.getSession();
         if (!session?.access_token) throw new Error("Sin sesion activa");
 
-        const res = await fetch(`${AGENT_URL}/api/ai/analyze`, {
+        const chatMessages = [
+          ...history.map((m) => ({ role: m.role, content: m.content })),
+          { role: "user" as const, content: userContent },
+        ];
+
+        const endpoint = scanContextId ? "/api/assistant/explain-scan" : "/api/assistant/chat";
+        const body = scanContextId
+          ? { scanResultId: scanContextId, question: userContent }
+          : { messages: chatMessages, includeNetworkContext: true };
+
+        const res = await fetch(`${AGENT_URL}${endpoint}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({ message: userContent }),
+          body: JSON.stringify(body),
           signal: abortRef.current.signal,
         });
 
@@ -189,24 +202,27 @@ export function AIAnalysisPage() {
         abortRef.current = null;
       }
     },
-    [], // eslint-disable-line react-hooks/exhaustive-deps
+    [scanContextId], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
-  // Auto-send initial analysis
+  // Auto-send initial analysis (different depending on whether we have a scan in context)
   useEffect(() => {
     if (hasInitialized || messages.length > 0) return;
     setHasInitialized(true);
 
+    const initContent = scanContextId
+      ? "Resume este escaneo en 4 o 5 líneas: qué se buscaba, qué se encontró, y si hay riesgos prioritarios. Si todo está limpio, dilo. Texto plano, sin Markdown."
+      : "Hola ACi, preséntate en 3 o 4 líneas: tu nombre, qué temas de ciberseguridad cubres y qué puedes hacer con mi red. Texto plano, sin Markdown ni símbolos de formato.";
+
     const initMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
-      content:
-        "Realiza un analisis general de seguridad de mi red. Resume amenazas activas, vulnerabilidades y recomendaciones.",
+      content: initContent,
       timestamp: new Date(),
     };
     setMessages([initMsg]);
-    streamMessage(initMsg.content);
-  }, [hasInitialized, messages.length, streamMessage]);
+    streamMessage(initContent, []);
+  }, [hasInitialized, messages.length, streamMessage, scanContextId]);
 
   const handleSend = () => {
     const trimmed = input.trim();
@@ -219,9 +235,10 @@ export function AIAnalysisPage() {
       timestamp: new Date(),
     };
 
+    const history = [...messages];
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
-    streamMessage(trimmed);
+    streamMessage(trimmed, history);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -238,13 +255,18 @@ export function AIAnalysisPage() {
         <div className="flex items-center gap-2">
           <Brain className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Analisis de Seguridad AI
+            ACi — Asistente de Ciberseguridad
           </h1>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
-          Asistente de inteligencia artificial para analisis de seguridad en
-          tiempo real.
+          Aprende sobre amenazas y defensas, o pídeme que analice tu red. Hablo en texto plano, sin tecnicismos innecesarios.
         </p>
+        {scanContextId && (
+          <div className="mt-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs">
+            Modo escaneo activo: ACi está enfocado en un escaneo específico (id <code className="font-mono">{scanContextId.slice(0, 8)}…</code>).
+            Quita el parámetro <code>?scan=</code> de la URL para volver al chat general.
+          </div>
+        )}
       </div>
 
       {/* Chat area */}
