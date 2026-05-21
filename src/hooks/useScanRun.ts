@@ -256,6 +256,8 @@ export interface LocalSubnet {
   netmask: string;
   cidr: string;
   prefix: number;
+  /** Scan-friendly /24 around your IP. Use this for the scan target by default. */
+  suggestedCidr: string;
   // Enriched fields from /api/network/local-subnets:
   knownId?: string | null;
   label?: string | null;
