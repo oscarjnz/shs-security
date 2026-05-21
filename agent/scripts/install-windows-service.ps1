@@ -68,22 +68,45 @@ Write-Host "==> Created launcher: $wrapper"
 # 5. Register the scheduled task (runs at user logon, restarts if it dies)
 $taskName = "SSS Agent"
 
-# Remove old task if present (Get-ScheduledTask respects -ErrorAction unlike schtasks)
+# Remove old task if present
 $existing = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
 if ($existing) {
   Write-Host "==> Removing existing task..."
   Unregister-ScheduledTask -TaskName $taskName -Confirm:$false | Out-Null
 }
 
-# Create the task: run at logon of current user, hidden, restart on failure
+# Use Register-ScheduledTask (handles paths with spaces correctly, unlike schtasks /TR)
 $user = "$env:USERDOMAIN\$env:USERNAME"
-schtasks /Create `
-  /TN $taskName `
-  /TR "`"$wrapper`"" `
-  /SC ONLOGON `
-  /RU $user `
-  /RL HIGHEST `
-  /F | Out-Null
+
+$action = New-ScheduledTaskAction `
+  -Execute "cmd.exe" `
+  -Argument ('/c "' + $wrapper + '"') `
+  -WorkingDirectory $agentDir
+
+$trigger = New-ScheduledTaskTrigger -AtLogOn -User $user
+
+$principal = New-ScheduledTaskPrincipal `
+  -UserId $user `
+  -LogonType Interactive `
+  -RunLevel Highest
+
+$settings = New-ScheduledTaskSettingsSet `
+  -AllowStartIfOnBatteries `
+  -DontStopIfGoingOnBatteries `
+  -StartWhenAvailable `
+  -RestartCount 5 `
+  -RestartInterval (New-TimeSpan -Minutes 1) `
+  -ExecutionTimeLimit (New-TimeSpan -Days 0) `
+  -MultipleInstances IgnoreNew
+
+Register-ScheduledTask `
+  -TaskName $taskName `
+  -Action $action `
+  -Trigger $trigger `
+  -Principal $principal `
+  -Settings $settings `
+  -Description "S.S.S agent — runs the local network scanner backend on port 3001." `
+  -Force | Out-Null
 
 Write-Host ""
 Write-Host "==> Scheduled task '$taskName' created."
