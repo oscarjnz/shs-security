@@ -19,11 +19,15 @@ interface AuthState {
   isAdmin: boolean;
 }
 
+export type OAuthProvider = "google" | "github" | "azure";
+
 interface AuthContextValue extends AuthState {
   signIn: (email: string, password: string) => Promise<string | null>;
   signUp: (email: string, password: string, fullName: string) => Promise<string | null>;
+  signInWithOAuth: (provider: OAuthProvider) => Promise<string | null>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<string | null>;
+  updatePassword: (newPassword: string) => Promise<string | null>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -162,10 +166,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const signInWithOAuth = useCallback(async (provider: OAuthProvider) => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/dashboard`,
+        // GitHub needs explicit email scope to expose the email reliably
+        scopes: provider === "github" ? "user:email" : undefined,
+      },
+    });
+    return error ? error.message : null;
+  }, []);
+
   const resetPassword = useCallback(async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
+    return error ? error.message : null;
+  }, []);
+
+  const updatePassword = useCallback(async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
     return error ? error.message : null;
   }, []);
 
@@ -182,7 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ ...state, signIn, signUp, signOut, resetPassword, refreshProfile }}
+      value={{ ...state, signIn, signUp, signInWithOAuth, signOut, resetPassword, updatePassword, refreshProfile }}
     >
       {children}
     </AuthContext.Provider>

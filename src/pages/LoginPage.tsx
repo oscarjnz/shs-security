@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { OAuthButtons } from "@/components/auth/OAuthButtons";
 import { cn } from "@/lib/utils";
 
 export function LoginPage() {
@@ -137,14 +139,34 @@ export function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-5 text-center">
+          <div className="mt-4 text-center">
             <Link
               to="/reset-password"
               className="text-sm text-cyber-green/80 underline-offset-4 hover:text-cyber-green hover:underline"
             >
-              ¿Olvidaste tu contrasena?
+              ¿Olvidaste tu contraseña?
             </Link>
           </div>
+
+          <div className="my-5 flex items-center gap-3">
+            <Separator className="flex-1 bg-cyber-border" />
+            <span className="text-xs uppercase tracking-wider text-muted-foreground">
+              o continúa con
+            </span>
+            <Separator className="flex-1 bg-cyber-border" />
+          </div>
+
+          <OAuthButtons disabled={isSubmitting} />
+
+          <p className="mt-5 text-center text-sm text-muted-foreground">
+            ¿No tienes cuenta?{" "}
+            <Link
+              to="/signup"
+              className="text-cyber-green/80 underline-offset-4 hover:text-cyber-green hover:underline"
+            >
+              Crear una
+            </Link>
+          </p>
         </CardContent>
       </Card>
     </div>
