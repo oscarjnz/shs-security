@@ -17,9 +17,14 @@ const PermissionsMap = z
   .record(z.enum(PERM_SECTIONS), z.enum(PERM_LEVELS))
   .optional();
 
+export const REPORT_SECTION_KEYS = [
+  "threats", "devices", "vulnerabilities", "network", "scans", "ai_summary",
+] as const;
+
 export const GenerateReportSchema = z.object({
   type: z.string().trim().min(1).max(64).default("custom"),
   jobId: uuid,
+  sections: z.array(z.enum(REPORT_SECTION_KEYS)).optional(),
 }).strict();
 export type GenerateReportInput = z.infer<typeof GenerateReportSchema>;
 
@@ -39,10 +44,64 @@ export const AnalyzeSchema = z.object({
 }).strict();
 export type AnalyzeInput = z.infer<typeof AnalyzeSchema>;
 
-export const ScanChatSchema = z.object({
-  message: z.string().trim().min(1).max(2000),
+export const SCAN_PROFILE_IDS = [
+  "discovery", "quick_top100", "quick_top1000", "full_tcp",
+  "udp_common", "os_detect", "vuln_safe", "aggressive",
+] as const;
+
+const TargetField = z
+  .string()
+  .trim()
+  .min(1, "El target es obligatorio")
+  .max(64, "El target es demasiado largo");
+
+const CustomArgsField = z
+  .array(z.string().trim().min(1).max(128))
+  .min(1, "Debes pasar al menos un argumento")
+  .max(32, "Demasiados argumentos");
+
+const PublicConsentField = z.object({
+  confirmed: z.literal(true),
+  acknowledgmentText: z.string().trim().min(10).max(500),
 }).strict();
-export type ScanChatInput = z.infer<typeof ScanChatSchema>;
+
+export const ScanRunSchema = z
+  .object({
+    target: TargetField,
+    profileId: z.enum(SCAN_PROFILE_IDS).optional(),
+    customArgs: CustomArgsField.optional(),
+    publicConsent: PublicConsentField.optional(),
+  })
+  .strict()
+  .refine(
+    (v) => (v.profileId && !v.customArgs) || (!v.profileId && v.customArgs),
+    { message: "Debes especificar profileId O customArgs, no ambos" },
+  );
+export type ScanRunInput = z.infer<typeof ScanRunSchema>;
+
+export const ScanValidateSchema = z.object({
+  target: TargetField,
+  customArgs: CustomArgsField,
+}).strict();
+export type ScanValidateInput = z.infer<typeof ScanValidateSchema>;
+
+export const AssistantChatSchema = z.object({
+  messages: z.array(ChatMessage).min(1).max(40),
+  includeNetworkContext: z.boolean().optional().default(false),
+}).strict();
+export type AssistantChatInput = z.infer<typeof AssistantChatSchema>;
+
+export const ExplainScanSchema = z.object({
+  scanResultId: uuid.optional(),
+  context: z.object({
+    target: z.string().trim().max(64),
+    command: z.string().trim().max(256),
+    summary: z.string().trim().max(2000),
+    devices: z.array(z.unknown()).max(256),
+  }).optional(),
+  question: z.string().trim().min(1).max(2000),
+}).strict();
+export type ExplainScanInput = z.infer<typeof ExplainScanSchema>;
 
 export const CreateUserSchema = z.object({
   email,

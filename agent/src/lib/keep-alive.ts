@@ -33,23 +33,25 @@ export function startKeepAliveCron(supabase: SupabaseClient, cronLib: typeof imp
     lastPingResult = { ...result, timestamp: new Date().toISOString() };
   });
 
-  // Every 3 hours: ping Supabase to prevent free-tier pausing (pauses after ~7 days idle)
-  cronLib.schedule("0 */3 * * *", async () => {
-    console.log("[Cron/Keep-Alive] Executing scheduled DB ping…");
+  // Default: every 4 minutes — keeps the DB warm even on very strict free tiers.
+  // Override via env KEEP_ALIVE_CRON (any valid cron expression).
+  const schedule = process.env["KEEP_ALIVE_CRON"]?.trim() || "*/4 * * * *";
+
+  cronLib.schedule(schedule, async () => {
     const result = await pingSupabase(supabase);
     lastPingResult = { ...result, timestamp: new Date().toISOString() };
 
     if (!result.ok) {
-      console.error("[Cron/Keep-Alive] DB might be paused! Retrying in 30s…");
+      console.error("[Cron/Keep-Alive] DB might be paused! Retrying in 15s…");
       setTimeout(async () => {
         const retry = await pingSupabase(supabase);
         lastPingResult = { ...retry, timestamp: new Date().toISOString() };
         if (!retry.ok) {
           console.error("[Cron/Keep-Alive] RETRY FAILED — DB may need manual restart from Supabase dashboard.");
         }
-      }, 30_000);
+      }, 15_000);
     }
   });
 
-  console.log("[Keep-Alive] Cron scheduled: every 3 hours");
+  console.log(`[Keep-Alive] Cron scheduled: ${schedule}`);
 }
