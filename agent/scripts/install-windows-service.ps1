@@ -68,11 +68,11 @@ Write-Host "==> Created launcher: $wrapper"
 # 5. Register the scheduled task (runs at user logon, restarts if it dies)
 $taskName = "SSS Agent"
 
-# Remove old task if present
-schtasks /Query /TN $taskName *> $null
-if ($LASTEXITCODE -eq 0) {
+# Remove old task if present (Get-ScheduledTask respects -ErrorAction unlike schtasks)
+$existing = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+if ($existing) {
   Write-Host "==> Removing existing task..."
-  schtasks /Delete /TN $taskName /F | Out-Null
+  Unregister-ScheduledTask -TaskName $taskName -Confirm:$false | Out-Null
 }
 
 # Create the task: run at logon of current user, hidden, restart on failure
