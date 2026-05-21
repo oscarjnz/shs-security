@@ -60,7 +60,12 @@ export function ScanProvider({ children }: { children: ReactNode }) {
   const abort = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
-    setState((s) => ({ ...s, isRunning: false, progress: null }));
+    setState((s) => ({
+      ...s,
+      isRunning: false,
+      progress: null,
+      lines: [...s.lines, "[escaneo cancelado por el usuario]"],
+    }));
   }, []);
 
   const runScan = useCallback(async (args: RunScanArgs) => {
@@ -71,8 +76,21 @@ export function ScanProvider({ children }: { children: ReactNode }) {
     setState({ ...INITIAL_STATE, isRunning: true, progress: "Conectando con el agente…" });
     setKnown({ ips: new Set(), macs: new Set() });
     setLastTarget(args.target);
-    if (args.profileId) setLastCommand(`nmap perfil:${args.profileId}`);
-    else if (args.customArgs) setLastCommand(`nmap ${args.customArgs.join(" ")}`);
+    if (args.profileId) {
+      const friendly: Record<string, string> = {
+        discovery: "Descubrimiento de hosts",
+        quick_top100: "Escaneo rápido Top 100 puertos",
+        quick_top1000: "Escaneo medio Top 1000 puertos",
+        full_tcp: "TCP completo (65535 puertos)",
+        udp_common: "UDP comunes (Top 50)",
+        os_detect: "Detección de SO + servicios",
+        vuln_safe: "Análisis de vulnerabilidades (no intrusivo)",
+        aggressive: "Escaneo agresivo (-A)",
+      };
+      setLastCommand(friendly[args.profileId] ?? args.profileId);
+    } else if (args.customArgs) {
+      setLastCommand(`Personalizado: nmap ${args.customArgs.join(" ")}`);
+    }
 
     try {
       const { data: { session } } = await supabase.auth.getSession();

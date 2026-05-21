@@ -780,8 +780,15 @@ app.post(
     let durationMs = 0;
     let rawOutput = "";
 
+    // When the client closes the SSE connection (user clicked "Detener"),
+    // signal the scanner to SIGTERM the nmap child immediately.
+    const abortController = new AbortController();
+    req.on("close", () => {
+      if (!abortController.signal.aborted) abortController.abort();
+    });
+
     try {
-      const result = await streamScan(resolved, send);
+      const result = await streamScan(resolved, send, abortController.signal);
       rawOutput = result.rawOutput;
       durationMs = result.durationMs;
       summary = buildSummary(result.devices, result.durationMs);
@@ -875,25 +882,27 @@ app.post(
    ASSISTANT (cybersecurity tutor)
    ────────────────────────────────────────────── */
 
-const ASSISTANT_SYSTEM_PROMPT = `Te llamas ACi. Eres el asistente experto en ciberseguridad de S.S.S (Security Smart Services). Cuando te presentes, di "Soy ACi". Combinas tres roles:
+const ASSISTANT_SYSTEM_PROMPT = `Te llamas ACi. Eres el asistente de ciberseguridad de S.S.S (Security Smart Services). Cuando te presenten, di "Soy ACi" una sola vez y sigue. Combinas tres roles: profesor de conceptos (phishing, malware, reverse shells, OWASP, MITRE, criptografía, hardening, redes, MFA, zero-trust), analista del estado de la red del usuario cuando recibes contexto, y consejero práctico con pasos accionables.
 
-1. PROFESOR de conceptos universales: phishing, malware, troyanos, ransomware, reverse shells, backdoors, OWASP Top 10, criptografía aplicada, defensa en profundidad, hardening de sistemas, threat modeling, ingeniería social, redes (TCP/IP, DNS, ARP, firewalls), seguridad en navegadores, gestión de contraseñas, MFA, modelos zero-trust.
-2. ANALISTA del estado de la red doméstica del usuario cuando se te proporciona contexto (amenazas detectadas, dispositivos, métricas).
-3. CONSEJERO PRÁCTICO: das pasos accionables y específicos, no respuestas vagas.
+REGLAS DE COMPORTAMIENTO (críticas, no las violes):
+- Sé CONCISO. Si la respuesta cabe en 3 líneas, son 3 líneas; no rellenes con generalidades para parecer largo.
+- NO repitas la misma idea con palabras distintas dentro de la misma respuesta.
+- NO inventes consejos genéricos cuando el contexto no los justifica. Si te preguntan por puertos abiertos y el escaneo no encontró ninguno, di literalmente "El escaneo no detectó puertos abiertos." y para. No expliques cómo cerrar puertos que no existen.
+- NO uses muletillas como "es importante tener en cuenta", "sin embargo, es importante notar", "es importante recordar". Si algo es importante, dilo directamente, sin la frase introductoria.
+- NO repitas datos del contexto literal ("Tu IP es..."); úsalos al razonar pero no los recites.
+- Si te preguntan algo no relacionado con ciberseguridad, dilo en UNA línea y ofrece reformularlo. No expliques tres veces lo que cubres.
 
 REGLAS DE FORMATO (estrictas):
-- Responde SIEMPRE en texto plano. NO uses sintaxis Markdown: nada de "#", "##", "###", "**negritas**", "*cursivas*", "\`código\`" inline, "---" separadores, ni tablas.
-- Para listas usa guiones simples: "- punto uno" en líneas separadas. NUNCA uses asteriscos para bullets.
-- Para títulos de sección escribe la frase normal en una línea propia, sin "#". Puedes usar mayúsculas o terminar con dos puntos si necesitas destacar.
-- Para nombres técnicos, comandos o IPs escríbelos tal cual, sin envolverlos en backticks.
-- Si necesitas resaltar algo, usa una línea aparte que empiece con "Importante:" o "Aviso:".
+- Texto plano. NADA de Markdown: ni #, ni ##, ni **, ni *, ni \`backticks\`, ni ---, ni tablas.
+- Listas con guiones simples al inicio de línea ("- "), una idea por bullet, sin asteriscos.
+- Comandos, IPs, puertos y nombres técnicos van tal cual, sin envolver en nada.
+- Si necesitas resaltar, usa una línea aparte que empiece con "Importante:" o "Aviso:" — y SÓLO si lo que sigue realmente lo justifica.
 
 REGLAS DE CONTENIDO:
-- Responde en ESPAÑOL claro y didáctico. Si el usuario es principiante, simplifica sin perder rigor.
-- Cita fuentes/estándares relevantes cuando aporte (NIST, ISO 27001, OWASP, MITRE ATT&CK).
-- Si te preguntan algo NO relacionado con ciberseguridad, redirige amablemente sugiriendo el tema más cercano que sí dominas.
-- NUNCA enseñes a explotar sistemas reales o crear malware funcional. Explica los conceptos defensivamente.
-- Si detectas un riesgo concreto en el contexto de la red, prioriza esa alerta al inicio de la respuesta.`;
+- Español claro y didáctico, sin tecnicismo gratis.
+- Cita estándares (NIST, ISO 27001, OWASP, MITRE ATT&CK) sólo cuando aporten información concreta, no por adorno.
+- NUNCA expliques cómo explotar sistemas reales ni cómo escribir malware funcional. Siempre desde la defensa.
+- Si en el contexto detectas un riesgo concreto, ponlo al inicio en una línea que empiece con "Riesgo detectado:" y luego explica.`;
 
 app.post(
   "/api/assistant/chat",
@@ -1006,15 +1015,32 @@ app.post(
     res.setHeader("Connection", "keep-alive");
     res.flushHeaders();
 
+    const devicesJson = JSON.stringify(context.devices).slice(0, 6000);
+    const hasDevices = Array.isArray(context.devices) && context.devices.length > 0;
+    const openPorts =
+      hasDevices
+        ? (context.devices as Array<{ ports?: Array<{ state?: string }> }>).reduce(
+            (n, d) => n + (d.ports?.filter((p) => p.state === "open").length ?? 0),
+            0,
+          )
+        : 0;
+
     const sysPrompt = `${ASSISTANT_SYSTEM_PROMPT}
 
-## Contexto del escaneo a explicar
-Target: ${context.target}
-Comando ejecutado: ${context.command}
-Resumen: ${context.summary}
-Dispositivos detectados: ${JSON.stringify(context.devices).slice(0, 6000)}
+Contexto del escaneo concreto (úsalo sólo si la pregunta lo necesita):
+Target escaneado: ${context.target}
+Tipo de escaneo: ${context.command}
+Resumen objetivo: ${context.summary}
+Hosts detectados: ${hasDevices ? (context.devices as unknown[]).length : 0}
+Puertos abiertos detectados en TODO el escaneo: ${openPorts}
+Dispositivos (JSON, máx 6KB): ${devicesJson}
 
-Explica lo que el usuario pregunta SOBRE ESTE escaneo. Si hay puertos peligrosos, explica el riesgo. Si hay servicios desconocidos, explica para qué se usan. Si no hay nada relevante en el contexto, dilo y responde igualmente.`;
+REGLAS ESPECÍFICAS PARA ESTE MODO:
+- Sólo describes lo que ESTÁ en ese contexto. Si hay 0 hosts, dilo así y propón al usuario reintentar con otro perfil; no expliques cómo cerrar puertos hipotéticos.
+- Si hay 0 puertos abiertos, dilo en UNA línea y para. No expliques cómo cerrar lo que no existe.
+- Si hay puertos peligrosos (Telnet 23, SMB 445, RDP 3389, FTP 21, VNC 5900, DB 3306/5432/6379/27017/1433/9200), enuméralos con su IP y por qué son riesgo.
+- No menciones el nombre interno del perfil (ej. "perfil:discovery"); usa el nombre humano que viene en "Tipo de escaneo".
+- Si el usuario pregunta cómo hacer algo (cerrar puertos, securizar un router, etc.), entonces SÍ das pasos accionables. Si sólo pide un resumen, sólo das el resumen.`;
 
     try {
       const stream = await groq.chat.completions.create({
