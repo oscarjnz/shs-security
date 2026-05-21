@@ -1,0 +1,9 @@
+agent
+supabase
+node_modules
+dist
+.git
+.env
+.env.local
+*.tsbuildinfo
+README.md

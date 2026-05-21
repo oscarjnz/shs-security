@@ -100,6 +100,10 @@ export type Database = {
           bandwidth: number | null;
           os: string | null;
           created_at: string;
+          // Added in migration 008
+          latency_ms: number | null;
+          vendor: string | null;
+          last_scan_id: string | null;
         };
         Insert: {
           id?: string;
@@ -113,6 +117,9 @@ export type Database = {
           bandwidth?: number | null;
           os?: string | null;
           created_at?: string;
+          latency_ms?: number | null;
+          vendor?: string | null;
+          last_scan_id?: string | null;
         };
         Update: {
           id?: string;
@@ -444,6 +451,11 @@ export type Database = {
           duration_ms: number;
           status: string;
           created_at: string;
+          // Added in migration 007
+          profile_id: string | null;
+          public_consent: boolean;
+          auto_devices_count: number;
+          auto_threats_count: number;
         };
         Insert: {
           id?: string;
@@ -456,6 +468,10 @@ export type Database = {
           device_count?: number;
           duration_ms?: number;
           status?: string;
+          profile_id?: string | null;
+          public_consent?: boolean;
+          auto_devices_count?: number;
+          auto_threats_count?: number;
         };
         Update: {
           id?: string;
@@ -468,6 +484,10 @@ export type Database = {
           device_count?: number;
           duration_ms?: number;
           status?: string;
+          profile_id?: string | null;
+          public_consent?: boolean;
+          auto_devices_count?: number;
+          auto_threats_count?: number;
         };
         Relationships: [
           { foreignKeyName: "scan_results_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },

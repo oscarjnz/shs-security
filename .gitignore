@@ -25,3 +25,6 @@ Thumbs.db
 .idea
 
 .vercel
+
+# Claude Code session metadata (local only)
+.claude/
