@@ -28,3 +28,7 @@ Thumbs.db
 
 # Claude Code session metadata (local only)
 .claude/
+
+# Agent runtime artifacts (created by install-windows-service.ps1)
+agent/run-agent.cmd
+agent/agent.log
