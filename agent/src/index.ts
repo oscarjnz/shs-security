@@ -72,7 +72,7 @@ const ALLOWED_ORIGINS = (process.env["AGENT_ALLOWED_ORIGIN"] ?? "http://localhos
 const INTERNAL_SECRET = process.env["AGENT_INTERNAL_SECRET"] ?? "";
 const GROQ_API_KEY = process.env["GROQ_API_KEY"] ?? "";
 const RESEND_API_KEY = process.env["RESEND_API_KEY"] ?? "";
-const RESEND_FROM = process.env["RESEND_FROM_EMAIL"] ?? "S.H.S <noreply@shs.dev>";
+const RESEND_FROM = process.env["RESEND_FROM_EMAIL"] ?? "S.S.S <noreply@securitysmartservices.site>";
 
 /* ─── clients ─── */
 
@@ -87,14 +87,29 @@ const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
 const app = express();
 
+function isOriginAllowed(origin: string): boolean {
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
+  // Vercel preview/prod deployments
+  if (/^https?:\/\/[^/]+\.vercel\.app(?::\d+)?$/.test(origin)) return true;
+  // Any localhost / 127.0.0.1 / *.localhost (any port, any protocol)
+  if (/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/i.test(origin)) return true;
+  // Any RFC1918 private LAN IP (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+  if (
+    /^https?:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(?::\d+)?$/.test(
+      origin,
+    )
+  ) {
+    return true;
+  }
+  return false;
+}
+
 app.use(
   cors({
     origin: (origin, cb) => {
-      // Same-origin / curl requests have no Origin header — allow them
-      if (!origin) return cb(null, true);
-      if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
-      // Allow Vercel preview deployments dynamically (origin ends with .vercel.app)
-      if (/^https:\/\/[^/]+\.vercel\.app$/.test(origin)) return cb(null, true);
+      if (!origin) return cb(null, true); // curl, same-origin
+      if (isOriginAllowed(origin)) return cb(null, true);
+      console.warn(`[CORS] Rechazado: ${origin} (no está en whitelist ni es loopback/LAN/Vercel)`);
       cb(new Error(`CORS bloqueado: ${origin}`));
     },
     credentials: true,
@@ -421,7 +436,7 @@ app.post(
       await resend.emails.send({
         from: RESEND_FROM,
         to: recipients,
-        subject: `S.H.S — ${report.title}`,
+        subject: `S.S.S — ${report.title}`,
         html,
       });
 
@@ -860,7 +875,7 @@ app.post(
    ASSISTANT (cybersecurity tutor)
    ────────────────────────────────────────────── */
 
-const ASSISTANT_SYSTEM_PROMPT = `Te llamas ACi. Eres el asistente experto en ciberseguridad de S.H.S (Security Home Services). Cuando te presentes, di "Soy ACi". Combinas tres roles:
+const ASSISTANT_SYSTEM_PROMPT = `Te llamas ACi. Eres el asistente experto en ciberseguridad de S.S.S (Security Smart Services). Cuando te presentes, di "Soy ACi". Combinas tres roles:
 
 1. PROFESOR de conceptos universales: phishing, malware, troyanos, ransomware, reverse shells, backdoors, OWASP Top 10, criptografía aplicada, defensa en profundidad, hardening de sistemas, threat modeling, ingeniería social, redes (TCP/IP, DNS, ARP, firewalls), seguridad en navegadores, gestión de contraseñas, MFA, modelos zero-trust.
 2. ANALISTA del estado de la red doméstica del usuario cuando se te proporciona contexto (amenazas detectadas, dispositivos, métricas).
@@ -1075,7 +1090,7 @@ app.post(
           await resend.emails.send({
             from: RESEND_FROM,
             to: [input.email],
-            subject: "Bienvenido/a a S.H.S",
+            subject: "Bienvenido/a a S.S.S",
             html: TEMPLATES.welcome({ full_name: input.full_name, email: input.email, role: input.role }),
           });
         } catch {
@@ -1281,7 +1296,7 @@ app.post(
           await resend.emails.send({
             from: RESEND_FROM,
             to: [emailConfig.email_address],
-            subject: `⚠ S.H.S — Amenaza ${input.severity}`,
+            subject: `⚠ S.S.S — Amenaza ${input.severity}`,
             html: TEMPLATES.threat_alert({
               type: input.type ?? input.severity,
               description: input.description,
@@ -1331,7 +1346,7 @@ app.post(
           await resend.emails.send({
             from: RESEND_FROM,
             to: [emailConfig.email_address],
-            subject: `S.H.S — Vulnerabilidad ${input.cve ?? ""} (CVSS ${cvss})`,
+            subject: `S.S.S — Vulnerabilidad ${input.cve ?? ""} (CVSS ${cvss})`,
             html: TEMPLATES.vuln_alert({
               name: input.name,
               cve: input.cve,
@@ -1376,7 +1391,7 @@ app.post("/api/notifications/test-email", requireAuth, async (req: Authenticated
     await resend.emails.send({
       from: RESEND_FROM,
       to: [profile.email],
-      subject: "S.H.S — Email de Prueba",
+      subject: "S.S.S — Email de Prueba",
       html: TEMPLATES.test({}),
     });
     ok(res, { sent: true, to: profile.email });
@@ -1492,7 +1507,7 @@ cron.schedule("0 8 * * 1", async () => {
         await resend.emails.send({
           from: RESEND_FROM,
           to: [email],
-          subject: "S.H.S — Resumen Semanal",
+          subject: "S.S.S — Resumen Semanal",
           html: TEMPLATES.weekly_digest({
             score: latestReport.data?.security_score ?? "—",
             threats_count: threats.count ?? 0,
@@ -1545,8 +1560,8 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 /* ─── start ─── */
 
 app.listen(PORT, () => {
-  console.log(`[S.H.S Agent] Running on port ${PORT}`);
-  console.log(`[S.H.S Agent] CORS origins: ${ALLOWED_ORIGINS.join(", ")} (+ *.vercel.app)`);
-  console.log(`[S.H.S Agent] Groq: ${groq ? "enabled" : "disabled"}`);
-  console.log(`[S.H.S Agent] Resend: ${resend ? "enabled" : "disabled"}`);
+  console.log(`[S.S.S Agent] Running on port ${PORT}`);
+  console.log(`[S.S.S Agent] CORS origins: ${ALLOWED_ORIGINS.join(", ")} (+ *.vercel.app)`);
+  console.log(`[S.S.S Agent] Groq: ${groq ? "enabled" : "disabled"}`);
+  console.log(`[S.S.S Agent] Resend: ${resend ? "enabled" : "disabled"}`);
 });

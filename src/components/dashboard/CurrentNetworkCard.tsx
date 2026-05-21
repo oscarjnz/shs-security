@@ -40,10 +40,10 @@ export function CurrentNetworkCard() {
 
   useEffect(() => {
     if (!primary) return;
-    const stored = localStorage.getItem("shs:last-primary-cidr");
+    const stored = localStorage.getItem("sss:last-primary-cidr");
     setPreviousCidr(stored);
     if (stored && stored !== primary.cidr) setShowChangedBanner(true);
-    localStorage.setItem("shs:last-primary-cidr", primary.cidr);
+    localStorage.setItem("sss:last-primary-cidr", primary.cidr);
   }, [primary?.cidr]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveLabel = async (networkId: string) => {
@@ -78,7 +78,7 @@ export function CurrentNetworkCard() {
     return (
       <Card>
         <CardContent className="py-6 text-center text-sm text-muted-foreground">
-          No se detectó ninguna red local. ¿El agent S.H.S está corriendo en tu equipo?
+          No se detectó ninguna red local. ¿El agent S.S.S está corriendo en tu equipo y has ejecutado la migration 010 en Supabase?
         </CardContent>
       </Card>
     );

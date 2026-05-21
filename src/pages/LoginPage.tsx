@@ -1,6 +1,6 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Shield, Loader2, Mail, Lock } from "lucide-react";
+import { Loader2, Mail, Lock } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { OAuthButtons } from "@/components/auth/OAuthButtons";
-import { cn } from "@/lib/utils";
+import { Logo } from "@/components/Logo";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -62,20 +62,13 @@ export function LoginPage() {
 
       <Card className="relative z-10 w-full max-w-md border-cyber-border bg-cyber-card/90 backdrop-blur-sm">
         <CardHeader className="flex flex-col items-center gap-3 pb-2 pt-8">
-          <div
-            className={cn(
-              "flex h-16 w-16 items-center justify-center rounded-2xl",
-              "bg-cyber-green/10 ring-1 ring-cyber-green/30",
-            )}
-          >
-            <Shield className="h-9 w-9 text-cyber-green" />
-          </div>
+          <Logo className="h-16 w-16" />
           <div className="text-center">
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              S.H.S
+              S.S.S
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Security Home Services
+              Security Smart Services
             </p>
           </div>
         </CardHeader>
