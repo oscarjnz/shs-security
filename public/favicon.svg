@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <path d="M32 4 L56 12 V30 C56 44 46 54 32 60 C18 54 8 44 8 30 V12 Z"
+        fill="#0a1a14" stroke="#00ff88" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M38 22 Q38 17 32 17 Q26 17 26 22 Q26 27 32 28 Q38 29 38 34 Q38 39 32 39 Q26 39 26 34"
+        stroke="#00ff88" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <text x="42" y="22" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" font-weight="700" fill="#00ff88">3</text>
+</svg>

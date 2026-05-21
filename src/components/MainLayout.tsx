@@ -11,6 +11,7 @@ import {
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Logo } from "@/components/Logo";
 
 interface NavItem {
   label: string;
@@ -66,12 +67,10 @@ export function MainLayout() {
         )}
       >
         <div className="flex h-16 items-center gap-3 border-b border-border px-6">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
-            S
-          </div>
+          <Logo className="h-9 w-9 shrink-0" />
           <div>
-            <h1 className="text-sm font-bold text-foreground">S.H.S</h1>
-            <p className="text-[10px] text-muted-foreground">Security Home Services</p>
+            <h1 className="text-sm font-bold text-foreground">S.S.S</h1>
+            <p className="text-[10px] text-muted-foreground">Security Smart Services</p>
           </div>
           <button
             className="ml-auto lg:hidden"
