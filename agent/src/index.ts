@@ -15,7 +15,10 @@ import {
   GenerateReportSchema,
   SendReportSchema,
   AnalyzeSchema,
-  ScanChatSchema,
+  ScanRunSchema,
+  ScanValidateSchema,
+  AssistantChatSchema,
+  ExplainScanSchema,
   CreateUserSchema,
   UpdateUserSchema,
   UserStatusSchema,
@@ -25,7 +28,10 @@ import {
   type GenerateReportInput,
   type SendReportInput,
   type AnalyzeInput,
-  type ScanChatInput,
+  type ScanRunInput,
+  type ScanValidateInput,
+  type AssistantChatInput,
+  type ExplainScanInput,
   type CreateUserInput,
   type UpdateUserInput,
   type UserStatusInput,
@@ -34,12 +40,17 @@ import {
   type VulnNotificationInput,
 } from "./lib/schemas.js";
 import {
+  NMAP_PROFILES,
   checkRateLimit,
-  validateScanIntent,
-  executeScan,
-  SCAN_SYSTEM_PROMPT,
-  type ScanIntent,
+  isPrivateTarget,
+  resolveScan,
+  streamScan,
+  validateFlags,
+  buildSummary,
+  type SSEEvent,
 } from "./lib/scanner.js";
+import { upsertDevicesFromScan, createThreatsFromScan, loadKnownDevices } from "./lib/auto-actions.js";
+import { listLocalPrivateSubnets } from "./lib/local-net.js";
 import { TEMPLATES, type EmailTemplate } from "./lib/email-templates.js";
 import { startKeepAliveCron, pingSupabase, getLastPingResult } from "./lib/keep-alive.js";
 
@@ -53,7 +64,11 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
 }
 
 const PORT = Number(process.env["PORT"] ?? 3001);
-const ALLOWED_ORIGIN = process.env["AGENT_ALLOWED_ORIGIN"] ?? "http://localhost:8080";
+// Comma-separated list of allowed origins. Default lets you use dev + Vercel preview.
+const ALLOWED_ORIGINS = (process.env["AGENT_ALLOWED_ORIGIN"] ?? "http://localhost:8080")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
 const INTERNAL_SECRET = process.env["AGENT_INTERNAL_SECRET"] ?? "";
 const GROQ_API_KEY = process.env["GROQ_API_KEY"] ?? "";
 const RESEND_API_KEY = process.env["RESEND_API_KEY"] ?? "";
@@ -72,7 +87,19 @@ const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
 const app = express();
 
-app.use(cors({ origin: ALLOWED_ORIGIN, credentials: true }));
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      // Same-origin / curl requests have no Origin header — allow them
+      if (!origin) return cb(null, true);
+      if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+      // Allow Vercel preview deployments dynamically (origin ends with .vercel.app)
+      if (/^https:\/\/[^/]+\.vercel\.app$/.test(origin)) return cb(null, true);
+      cb(new Error(`CORS bloqueado: ${origin}`));
+    },
+    credentials: true,
+  }),
+);
 app.use(express.json({ limit: "2mb" }));
 
 /* ─── middleware ─── */
@@ -190,8 +217,13 @@ app.post(
   requirePerm("reports", "full"),
   validateBody(GenerateReportSchema),
   async (req: AuthenticatedRequest, res) => {
-    const { type, jobId } = getValidated<GenerateReportInput>(req);
+    const { type, jobId, sections: requestedSections } = getValidated<GenerateReportInput>(req);
     const userId = req.callerUserId!;
+
+    // Default: all sections enabled when none specified (= "full" mode)
+    type SectionKey = "threats" | "devices" | "vulnerabilities" | "network" | "scans" | "ai_summary";
+    const wantSection = (key: SectionKey): boolean =>
+      !requestedSections || requestedSections.length === 0 || (requestedSections as SectionKey[]).includes(key);
 
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
@@ -203,30 +235,42 @@ app.post(
     };
 
     try {
-      send("progress", { step: 1, total: 5, message: "Recopilando amenazas..." });
+      send("progress", { step: 1, total: 5, message: "Recopilando datos…" });
 
-      const [threats, devices, metrics, vulns] = await Promise.all([
-        supabaseAdmin.from("threats").select("*").eq("user_id", userId).order("detected_at", { ascending: false }).limit(50),
-        supabaseAdmin.from("devices").select("*").eq("user_id", userId),
-        supabaseAdmin.from("network_metrics").select("*").eq("user_id", userId).order("timestamp", { ascending: false }).limit(100),
-        supabaseAdmin.from("vulnerability_scans").select("*").eq("user_id", userId).order("detected_at", { ascending: false }).limit(50),
+      const [threats, devices, metrics, vulns, scans] = await Promise.all([
+        wantSection("threats") || wantSection("ai_summary")
+          ? supabaseAdmin.from("threats").select("*").eq("user_id", userId).order("detected_at", { ascending: false }).limit(50)
+          : Promise.resolve({ data: [] as unknown[] }),
+        wantSection("devices") || wantSection("ai_summary")
+          ? supabaseAdmin.from("devices").select("*").eq("user_id", userId)
+          : Promise.resolve({ data: [] as unknown[] }),
+        wantSection("network") || wantSection("ai_summary")
+          ? supabaseAdmin.from("network_metrics").select("*").eq("user_id", userId).order("recorded_at", { ascending: false }).limit(100)
+          : Promise.resolve({ data: [] as unknown[] }),
+        wantSection("vulnerabilities") || wantSection("ai_summary")
+          ? supabaseAdmin.from("vulnerability_scans").select("*").eq("user_id", userId).order("discovered_at", { ascending: false }).limit(50)
+          : Promise.resolve({ data: [] as unknown[] }),
+        wantSection("scans")
+          ? supabaseAdmin.from("scan_results").select("id,query,profile_id,intent,device_count,auto_threats_count,duration_ms,status,created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(20)
+          : Promise.resolve({ data: [] as unknown[] }),
       ]);
 
-      send("progress", { step: 2, total: 5, message: "Analizando datos..." });
+      send("progress", { step: 2, total: 5, message: "Analizando datos…" });
 
-      const threatData = threats.data ?? [];
-      const deviceData = devices.data ?? [];
-      const metricData = metrics.data ?? [];
-      const vulnData = vulns.data ?? [];
+      const threatData = (threats.data ?? []) as Array<{ status: string }>;
+      const deviceData = (devices.data ?? []) as Array<{ status: string }>;
+      const metricData = (metrics.data ?? []) as unknown[];
+      const vulnData = (vulns.data ?? []) as Array<{ cvss?: number; cvss_score?: number }>;
+      const scanData = (scans.data ?? []) as unknown[];
 
       const activeThreats = threatData.filter((t) => t.status === "active" || t.status === "investigating");
-      const criticalVulns = vulnData.filter((v) => (v.cvss_score ?? 0) >= 9);
+      const criticalVulns = vulnData.filter((v) => (v.cvss ?? v.cvss_score ?? 0) >= 9);
       const highVulns = vulnData.filter((v) => {
-        const s = v.cvss_score ?? 0;
+        const s = v.cvss ?? v.cvss_score ?? 0;
         return s >= 7 && s < 9;
       });
 
-      send("progress", { step: 3, total: 5, message: "Calculando score de seguridad..." });
+      send("progress", { step: 3, total: 5, message: "Calculando puntuación…" });
 
       let score = 100;
       score -= activeThreats.length * 10;
@@ -236,17 +280,17 @@ app.post(
       score -= offlineDevices * 3;
       score = Math.max(0, Math.min(100, score));
 
-      send("progress", { step: 4, total: 5, message: "Generando reporte con IA..." });
+      send("progress", { step: 4, total: 5, message: "Generando resumen con IA…" });
 
       let aiSummary = "";
-      if (groq) {
+      if (groq && wantSection("ai_summary")) {
         try {
           const completion = await groq.chat.completions.create({
             model: "llama-3.3-70b-versatile",
             messages: [
               {
                 role: "system",
-                content: "Eres un analista de ciberseguridad. Genera un resumen ejecutivo breve (max 300 palabras) en español del estado de seguridad de la red doméstica basándote en los datos proporcionados.",
+                content: "Eres un analista de ciberseguridad. Genera un resumen ejecutivo (máximo 300 palabras) en español del estado de seguridad de la red doméstica, en texto plano, sin Markdown, sin símbolos como ## ni **. Usa párrafos cortos y, si es necesario, listas con guiones.",
               },
               {
                 role: "user",
@@ -258,6 +302,7 @@ app.post(
                   criticalVulns: criticalVulns.length,
                   highVulns: highVulns.length,
                   totalVulns: vulnData.length,
+                  totalScans: scanData.length,
                   score,
                 }),
               },
@@ -271,15 +316,31 @@ app.post(
         }
       }
 
-      send("progress", { step: 5, total: 5, message: "Guardando reporte..." });
+      send("progress", { step: 5, total: 5, message: "Guardando reporte…" });
 
-      const sections = {
-        threats: { total: threatData.length, active: activeThreats.length, items: threatData.slice(0, 10) },
-        devices: { total: deviceData.length, offline: offlineDevices, items: deviceData.slice(0, 20) },
-        vulnerabilities: { total: vulnData.length, critical: criticalVulns.length, high: highVulns.length },
-        network: { metricsCount: metricData.length, latestMetric: metricData[0] ?? null },
-        aiSummary,
+      const sections: Record<string, unknown> = {
+        meta: {
+          includedSections: requestedSections ?? "all",
+        },
       };
+      if (wantSection("threats")) {
+        sections.threats = { total: threatData.length, active: activeThreats.length, items: threatData.slice(0, 10) };
+      }
+      if (wantSection("devices")) {
+        sections.devices = { total: deviceData.length, offline: offlineDevices, items: deviceData.slice(0, 20) };
+      }
+      if (wantSection("vulnerabilities")) {
+        sections.vulnerabilities = { total: vulnData.length, critical: criticalVulns.length, high: highVulns.length, items: vulnData.slice(0, 10) };
+      }
+      if (wantSection("network")) {
+        sections.network = { metricsCount: metricData.length, latestMetric: metricData[0] ?? null, recent: metricData.slice(0, 5) };
+      }
+      if (wantSection("scans")) {
+        sections.scans = { total: scanData.length, items: scanData };
+      }
+      if (wantSection("ai_summary")) {
+        sections.aiSummary = aiSummary;
+      }
 
       const validType = (["weekly", "threat", "vulnerability", "network", "custom"] as const).includes(
         type as "weekly" | "threat" | "vulnerability" | "network" | "custom",
@@ -339,7 +400,7 @@ app.post(
       .from("reports")
       .select("*")
       .eq("id", report_id)
-      .eq("user_id", userId)
+      .eq("generated_by", userId)
       .single();
 
     if (error || !report) {
@@ -452,16 +513,380 @@ Responde de forma clara, concisa y en español. Si el usuario pregunta algo no r
 );
 
 /* ──────────────────────────────────────────────
-   NETWORK SCANNER (NEW)
+   NETWORK SCANNER v2 — direct execution, no NLP gating
    ────────────────────────────────────────────── */
 
-app.post(
-  "/api/scan/chat",
+const INTERNAL_NOTIFY_URL = `http://localhost:${PORT}/api/notifications/threat`;
+
+app.get("/api/scan/profiles", requireAuth, requirePerm("network", "view"), (_req, res) => {
+  ok(res, Object.values(NMAP_PROFILES));
+});
+
+app.get(
+  "/api/network/local-subnets",
+  requireAuth,
+  requirePerm("network", "view"),
+  async (req: AuthenticatedRequest, res) => {
+    const userId = req.callerUserId!;
+    const detected = listLocalPrivateSubnets();
+
+    if (detected.length === 0) {
+      ok(res, []);
+      return;
+    }
+
+    // Load already-known networks for this user
+    const { data: known } = await supabaseAdmin
+      .from("user_networks")
+      .select("id,subnet,label,first_seen,last_seen,seen_count")
+      .eq("user_id", userId)
+      .in("subnet", detected.map((d) => d.cidr));
+
+    const byCidr = new Map<string, NonNullable<typeof known>[number]>();
+    for (const k of known ?? []) byCidr.set(k.subnet as string, k);
+
+    const nowIso = new Date().toISOString();
+
+    // Upsert one row per detected subnet (increments seen_count, refreshes last_seen)
+    for (const d of detected) {
+      const prior = byCidr.get(d.cidr);
+      if (prior) {
+        await supabaseAdmin
+          .from("user_networks")
+          .update({
+            last_seen: nowIso,
+            seen_count: ((prior.seen_count as number) ?? 0) + 1,
+            interface_name: d.interfaceName,
+            last_local_ip: d.ip,
+          })
+          .eq("id", prior.id);
+      } else {
+        const { data: inserted } = await supabaseAdmin
+          .from("user_networks")
+          .insert({
+            user_id: userId,
+            subnet: d.cidr,
+            interface_name: d.interfaceName,
+            last_local_ip: d.ip,
+          })
+          .select("id,first_seen,last_seen,seen_count")
+          .single();
+        if (inserted) {
+          byCidr.set(d.cidr, {
+            id: inserted.id,
+            subnet: d.cidr,
+            label: null,
+            first_seen: inserted.first_seen,
+            last_seen: inserted.last_seen,
+            seen_count: inserted.seen_count,
+          } as unknown as NonNullable<typeof known>[number]);
+        }
+      }
+    }
+
+    // Enrich response with known/new status
+    const enriched = detected.map((d) => {
+      const k = byCidr.get(d.cidr);
+      return {
+        ...d,
+        knownId: (k?.id as string | undefined) ?? null,
+        label: (k?.label as string | null | undefined) ?? null,
+        firstSeen: (k?.first_seen as string | undefined) ?? null,
+        seenCount: (k?.seen_count as number | undefined) ?? 1,
+        isNew: !k || (k.seen_count as number) <= 1,
+      };
+    });
+
+    ok(res, enriched);
+  },
+);
+
+app.put(
+  "/api/network/networks/:id/label",
   requireAuth,
   requirePerm("network", "full"),
-  validateBody(ScanChatSchema),
   async (req: AuthenticatedRequest, res) => {
-    const { message } = getValidated<ScanChatInput>(req);
+    const userId = req.callerUserId!;
+    const networkId = req.params.id;
+    const label = String((req.body as { label?: unknown }).label ?? "").trim().slice(0, 80);
+
+    const { error } = await supabaseAdmin
+      .from("user_networks")
+      .update({ label: label || null })
+      .eq("id", networkId)
+      .eq("user_id", userId);
+
+    if (error) {
+      fail(res, 500, error.message);
+      return;
+    }
+    ok(res, { updated: true });
+  },
+);
+
+app.post(
+  "/api/scan/validate",
+  requireAuth,
+  requirePerm("network", "full"),
+  validateBody(ScanValidateSchema),
+  async (req: AuthenticatedRequest, res) => {
+    const { target, customArgs } = getValidated<ScanValidateInput>(req);
+
+    const determ = validateFlags(customArgs);
+    if (!determ.ok) {
+      ok(res, {
+        decision: "block",
+        deterministic: { errors: determ.errors, warnings: determ.warnings },
+        ai: null,
+      });
+      return;
+    }
+
+    let aiAdvice: { warnings: string[]; suggestions: string[] } | null = null;
+
+    if (groq) {
+      try {
+        const completion = await groq.chat.completions.create({
+          model: "llama-3.3-70b-versatile",
+          messages: [
+            {
+              role: "system",
+              content: `Eres un experto en ciberseguridad revisando un comando nmap personalizado.
+Responde SIEMPRE en JSON: { "warnings": ["..."], "suggestions": ["..."] }.
+- warnings: efectos potencialmente agresivos, ruidosos, lentos o que activan IDS.
+- suggestions: cómo mejorar (flags más eficientes, alternativas más seguras).
+Sé conciso (máx 3 items por array). En español.`,
+            },
+            {
+              role: "user",
+              content: `Target: ${target}\nArgs: ${customArgs.join(" ")}`,
+            },
+          ],
+          max_tokens: 400,
+          temperature: 0.2,
+          response_format: { type: "json_object" },
+        });
+        const raw = completion.choices[0]?.message?.content ?? "{}";
+        const parsed = JSON.parse(raw);
+        aiAdvice = {
+          warnings: Array.isArray(parsed.warnings) ? parsed.warnings.slice(0, 5) : [],
+          suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions.slice(0, 5) : [],
+        };
+      } catch {
+        aiAdvice = null;
+      }
+    }
+
+    const allWarnings = [...determ.warnings, ...(aiAdvice?.warnings ?? [])];
+    const decision = allWarnings.length > 0 ? "warn" : "ok";
+
+    ok(res, {
+      decision,
+      deterministic: { errors: [], warnings: determ.warnings },
+      ai: aiAdvice,
+    });
+  },
+);
+
+app.post(
+  "/api/scan/run",
+  requireAuth,
+  requirePerm("network", "full"),
+  validateBody(ScanRunSchema),
+  async (req: AuthenticatedRequest, res) => {
+    const input = getValidated<ScanRunInput>(req);
+    const userId = req.callerUserId!;
+
+    const resolved = resolveScan(input.target, {
+      profileId: input.profileId,
+      customArgs: input.customArgs,
+    });
+    if ("error" in resolved) {
+      fail(res, 400, resolved.error);
+      return;
+    }
+
+    if (resolved.isPublic && !input.publicConsent?.confirmed) {
+      fail(res, 400, "El target es público. Debes aceptar el consentimiento legal para continuar.");
+      return;
+    }
+
+    const rl = checkRateLimit(userId, resolved.isPublic);
+    if (!rl.ok) {
+      const limitLabel = resolved.isPublic ? "públicos (1/hora)" : "privados (5/min)";
+      fail(res, 429, `Límite de escaneos ${limitLabel} alcanzado. Reintenta en ${rl.retryAfterSeconds}s.`);
+      return;
+    }
+
+    if (resolved.isPublic) {
+      const requestIp = (req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() ?? req.socket.remoteAddress ?? "unknown");
+      const userAgent = req.headers["user-agent"]?.toString().slice(0, 256) ?? "unknown";
+      await supabaseAdmin.from("public_scan_audit").insert({
+        user_id: userId,
+        target: input.target,
+        args: resolved.args,
+        consent_text: input.publicConsent!.acknowledgmentText.slice(0, 500),
+        request_ip: requestIp,
+        user_agent: userAgent,
+      });
+    }
+
+    req.setTimeout(0);
+    res.setTimeout(0);
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+    res.flushHeaders();
+
+    const send = (e: SSEEvent) => {
+      res.write(`event: ${e.event}\ndata: ${JSON.stringify(e.data)}\n\n`);
+    };
+
+    const keepAlive = setInterval(() => {
+      res.write(": keepalive\n\n");
+    }, 15_000);
+
+    send({ event: "progress", data: { message: `Iniciando ${input.profileId ?? "escaneo personalizado"} en ${input.target}…` } });
+
+    // Send known devices to the UI so it can hide already-registered ones
+    const known = await loadKnownDevices(supabaseAdmin, userId);
+    send({
+      event: "known",
+      data: {
+        ips: [...known.byIp.keys(), ...[...known.byMac.values()].map((v) => v.ip).filter(Boolean)],
+        macs: [...known.byMac.keys()],
+      },
+    });
+
+    let autoThreats = 0;
+    let autoDevices = 0;
+    let summary = "";
+    let durationMs = 0;
+    let rawOutput = "";
+
+    try {
+      const result = await streamScan(resolved, send);
+      rawOutput = result.rawOutput;
+      durationMs = result.durationMs;
+      summary = buildSummary(result.devices, result.durationMs);
+
+      // First persist scan_results to get an id, then upsert devices with that id
+      const { data: scanRow } = await supabaseAdmin
+        .from("scan_results")
+        .insert({
+          user_id: userId,
+          query: input.target,
+          intent: input.profileId ?? "custom",
+          command: `nmap ${resolved.args.join(" ")}`,
+          raw_output: rawOutput.slice(0, 10000),
+          parsed_result: result.devices,
+          device_count: result.devices.length,
+          duration_ms: durationMs,
+          status: result.devices.length > 0 ? "completed" : "no_results",
+          profile_id: input.profileId ?? null,
+          public_consent: resolved.isPublic,
+          auto_devices_count: 0,
+          auto_threats_count: 0,
+        })
+        .select("id")
+        .single();
+      const scanResultId = (scanRow?.id as string | undefined) ?? undefined;
+
+      const upserted = await upsertDevicesFromScan(supabaseAdmin, userId, result.devices, scanResultId);
+      autoDevices = upserted.filter((d) => d.created).length;
+
+      const createdThreats = await createThreatsFromScan(supabaseAdmin, userId, result.devices, {
+        notifyHighSeverity: true,
+        internalNotifyUrl: INTERNAL_NOTIFY_URL,
+        internalSecret: INTERNAL_SECRET,
+      });
+      autoThreats = createdThreats.length;
+
+      for (const t of createdThreats) {
+        send({
+          event: "threat",
+          data: { ip: t.ip, port: t.port, service: t.service, severity: t.severity },
+        });
+      }
+
+      const openPorts = result.devices.reduce(
+        (n, d) => n + (d.ports?.filter((p) => p.state === "open").length ?? 0),
+        0,
+      );
+
+      if (result.devices.length === 0 && input.target.includes("/")) {
+        send({
+          event: "warning",
+          data: {
+            code: "no_hosts_found",
+            message:
+              "0 hosts encontrados en el rango. En Windows esto suele significar que el agent no tiene permisos de Administrador (sin ARP scan) o que tu firewall/router bloquea las sondas. Prueba: (1) ejecutar el agent como Administrador, (2) instalar Npcap con compatibilidad WinPcap, o (3) usar el perfil 'Escaneo rápido' que escanea puertos directamente.",
+          },
+        });
+      }
+
+      send({
+        event: "summary",
+        data: { devices: result.devices.length, ports: openPorts, threats: autoThreats, durationMs },
+      });
+
+      if (scanResultId) {
+        await supabaseAdmin
+          .from("scan_results")
+          .update({ auto_devices_count: autoDevices, auto_threats_count: autoThreats })
+          .eq("id", scanResultId);
+      }
+
+      await supabaseAdmin.from("activity_logs").insert({
+        user_id: userId,
+        event: "network_scan",
+        details: `Scan ${input.profileId ?? "custom"} en ${input.target} — ${summary}`,
+        level: resolved.isPublic ? "warning" : "info",
+      });
+
+      send({ event: "done", data: { rawOutput: rawOutput.slice(0, 10000), devices: result.devices } });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error ejecutando escaneo";
+      send({ event: "error", data: { message: msg } });
+    } finally {
+      clearInterval(keepAlive);
+      res.end();
+    }
+  },
+);
+
+/* ──────────────────────────────────────────────
+   ASSISTANT (cybersecurity tutor)
+   ────────────────────────────────────────────── */
+
+const ASSISTANT_SYSTEM_PROMPT = `Te llamas ACi. Eres el asistente experto en ciberseguridad de S.H.S (Security Home Services). Cuando te presentes, di "Soy ACi". Combinas tres roles:
+
+1. PROFESOR de conceptos universales: phishing, malware, troyanos, ransomware, reverse shells, backdoors, OWASP Top 10, criptografía aplicada, defensa en profundidad, hardening de sistemas, threat modeling, ingeniería social, redes (TCP/IP, DNS, ARP, firewalls), seguridad en navegadores, gestión de contraseñas, MFA, modelos zero-trust.
+2. ANALISTA del estado de la red doméstica del usuario cuando se te proporciona contexto (amenazas detectadas, dispositivos, métricas).
+3. CONSEJERO PRÁCTICO: das pasos accionables y específicos, no respuestas vagas.
+
+REGLAS DE FORMATO (estrictas):
+- Responde SIEMPRE en texto plano. NO uses sintaxis Markdown: nada de "#", "##", "###", "**negritas**", "*cursivas*", "\`código\`" inline, "---" separadores, ni tablas.
+- Para listas usa guiones simples: "- punto uno" en líneas separadas. NUNCA uses asteriscos para bullets.
+- Para títulos de sección escribe la frase normal en una línea propia, sin "#". Puedes usar mayúsculas o terminar con dos puntos si necesitas destacar.
+- Para nombres técnicos, comandos o IPs escríbelos tal cual, sin envolverlos en backticks.
+- Si necesitas resaltar algo, usa una línea aparte que empiece con "Importante:" o "Aviso:".
+
+REGLAS DE CONTENIDO:
+- Responde en ESPAÑOL claro y didáctico. Si el usuario es principiante, simplifica sin perder rigor.
+- Cita fuentes/estándares relevantes cuando aporte (NIST, ISO 27001, OWASP, MITRE ATT&CK).
+- Si te preguntan algo NO relacionado con ciberseguridad, redirige amablemente sugiriendo el tema más cercano que sí dominas.
+- NUNCA enseñes a explotar sistemas reales o crear malware funcional. Explica los conceptos defensivamente.
+- Si detectas un riesgo concreto en el contexto de la red, prioriza esa alerta al inicio de la respuesta.`;
+
+app.post(
+  "/api/assistant/chat",
+  requireAuth,
+  requirePerm("ai_analysis", "view"),
+  validateBody(AssistantChatSchema),
+  async (req: AuthenticatedRequest, res) => {
+    const { messages, includeNetworkContext } = getValidated<AssistantChatInput>(req);
     const userId = req.callerUserId!;
 
     if (!groq) {
@@ -469,78 +894,135 @@ app.post(
       return;
     }
 
-    if (!checkRateLimit(userId)) {
-      fail(res, 429, "Demasiados escaneos. Espera un momento antes de intentar de nuevo.");
+    let networkContext = "";
+    if (includeNetworkContext) {
+      const [threats, devices, metrics, scans] = await Promise.all([
+        supabaseAdmin.from("threats").select("type,severity,target,description,detected_at").eq("user_id", userId).in("status", ["active", "investigating"]).limit(10),
+        supabaseAdmin.from("devices").select("name,ip,mac,vendor,type,status,os,latency_ms,last_seen").eq("user_id", userId).limit(20),
+        supabaseAdmin.from("network_metrics").select("download_speed,upload_speed,latency,packet_loss,recorded_at").eq("user_id", userId).order("recorded_at", { ascending: false }).limit(3),
+        supabaseAdmin
+          .from("scan_results")
+          .select("id,query,profile_id,intent,device_count,auto_devices_count,auto_threats_count,duration_ms,status,created_at")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(5),
+      ]);
+      networkContext = `
+
+Contexto de la red del usuario (sólo úsalo si la pregunta lo amerita; no lo recites a menos que aporte):
+Amenazas activas: ${JSON.stringify(threats.data ?? [])}
+Dispositivos: ${JSON.stringify(devices.data ?? [])}
+Métricas recientes: ${JSON.stringify(metrics.data ?? [])}
+Últimos escaneos (más reciente primero): ${JSON.stringify(scans.data ?? [])}
+
+Si el usuario pregunta por un escaneo específico que ves en la lista de arriba, puedes referirte a él por su target o fecha. Si te pregunta por el detalle exacto (puertos, dispositivos del scan) y no lo ves en este contexto, dile que puede abrirlo desde Historial de escaneos para que te dé más detalle.`;
+    }
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+
+    try {
+      const stream = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          { role: "system", content: ASSISTANT_SYSTEM_PROMPT + networkContext },
+          ...messages.map((m) => ({ role: m.role as "user" | "assistant" | "system", content: m.content })),
+        ],
+        max_tokens: 2048,
+        temperature: 0.4,
+        stream: true,
+      });
+
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content;
+        if (delta) res.write(`data: ${JSON.stringify({ content: delta })}\n\n`);
+      }
+      res.write("data: [DONE]\n\n");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error de IA";
+      res.write(`data: ${JSON.stringify({ error: msg })}\n\n`);
+    } finally {
+      res.end();
+    }
+  },
+);
+
+app.post(
+  "/api/assistant/explain-scan",
+  requireAuth,
+  requirePerm("ai_analysis", "view"),
+  validateBody(ExplainScanSchema),
+  async (req: AuthenticatedRequest, res) => {
+    const input = getValidated<ExplainScanInput>(req);
+    const userId = req.callerUserId!;
+
+    if (!groq) {
+      fail(res, 503, "Servicio de IA no configurado (GROQ_API_KEY)");
       return;
     }
 
+    let context = input.context;
+    if (!context && input.scanResultId) {
+      const { data } = await supabaseAdmin
+        .from("scan_results")
+        .select("query,command,parsed_result")
+        .eq("id", input.scanResultId)
+        .eq("user_id", userId)
+        .single();
+      if (data) {
+        context = {
+          target: data.query as string,
+          command: data.command as string,
+          summary: "",
+          devices: (data.parsed_result as unknown[]) ?? [],
+        };
+      }
+    }
+
+    if (!context) {
+      fail(res, 400, "Falta el contexto del escaneo");
+      return;
+    }
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+
+    const sysPrompt = `${ASSISTANT_SYSTEM_PROMPT}
+
+## Contexto del escaneo a explicar
+Target: ${context.target}
+Comando ejecutado: ${context.command}
+Resumen: ${context.summary}
+Dispositivos detectados: ${JSON.stringify(context.devices).slice(0, 6000)}
+
+Explica lo que el usuario pregunta SOBRE ESTE escaneo. Si hay puertos peligrosos, explica el riesgo. Si hay servicios desconocidos, explica para qué se usan. Si no hay nada relevante en el contexto, dilo y responde igualmente.`;
+
     try {
-      const intentCompletion = await groq.chat.completions.create({
+      const stream = await groq.chat.completions.create({
         model: "llama-3.3-70b-versatile",
         messages: [
-          { role: "system", content: SCAN_SYSTEM_PROMPT },
-          { role: "user", content: message },
+          { role: "system", content: sysPrompt },
+          { role: "user", content: input.question },
         ],
-        max_tokens: 500,
-        temperature: 0.1,
-        response_format: { type: "json_object" },
+        max_tokens: 1500,
+        temperature: 0.3,
+        stream: true,
       });
 
-      const raw = intentCompletion.choices[0]?.message?.content ?? "{}";
-      let parsed: ScanIntent;
-      try {
-        parsed = JSON.parse(raw) as ScanIntent;
-      } catch {
-        fail(res, 400, "No se pudo interpretar la solicitud. Intenta reformular tu pregunta.");
-        return;
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content;
+        if (delta) res.write(`data: ${JSON.stringify({ content: delta })}\n\n`);
       }
-
-      if (parsed.intent === "no_scan" || !parsed.command) {
-        ok(res, {
-          type: "message",
-          content: "Esa pregunta no está relacionada con escaneo de red. Puedo ayudarte con cosas como: descubrir dispositivos, escanear puertos, hacer ping, traceroute, etc.",
-        });
-        return;
-      }
-
-      const validationError = validateScanIntent(parsed);
-      if (validationError) {
-        fail(res, 400, validationError);
-        return;
-      }
-
-      const result = await executeScan(parsed);
-
-      await supabaseAdmin.from("scan_results").insert({
-        user_id: userId,
-        query: message,
-        intent: result.intent,
-        command: result.command,
-        raw_output: result.rawOutput.slice(0, 10000),
-        parsed_result: result.devices,
-        device_count: result.devices.length,
-        duration_ms: result.durationMs,
-        status: result.devices.length > 0 ? "completed" : "no_results",
-      });
-
-      await supabaseAdmin.from("activity_logs").insert({
-        user_id: userId,
-        event:"network_scan",
-        details: `Escaneo: ${result.command} — ${result.summary}`,
-        level: "info",
-      });
-
-      ok(res, {
-        type: "scan_result",
-        intent: result.intent,
-        command: result.command,
-        devices: result.devices,
-        summary: result.summary,
-        durationMs: result.durationMs,
-      });
+      res.write("data: [DONE]\n\n");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Error ejecutando escaneo";
-      fail(res, 500, msg);
+      const msg = err instanceof Error ? err.message : "Error de IA";
+      res.write(`data: ${JSON.stringify({ error: msg })}\n\n`);
+    } finally {
+      res.end();
     }
   },
 );
@@ -1003,7 +1485,7 @@ cron.schedule("0 8 * * 1", async () => {
       const [threats, devices, latestReport] = await Promise.all([
         supabaseAdmin.from("threats").select("id", { count: "exact" }).eq("user_id", userId).in("status", ["active", "investigating"]),
         supabaseAdmin.from("devices").select("id", { count: "exact" }).eq("user_id", userId),
-        supabaseAdmin.from("reports").select("security_score").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).single(),
+        supabaseAdmin.from("reports").select("security_score").eq("generated_by", userId).order("generated_at", { ascending: false }).limit(1).single(),
       ]);
 
       try {
@@ -1064,7 +1546,7 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 
 app.listen(PORT, () => {
   console.log(`[S.H.S Agent] Running on port ${PORT}`);
-  console.log(`[S.H.S Agent] CORS origin: ${ALLOWED_ORIGIN}`);
+  console.log(`[S.H.S Agent] CORS origins: ${ALLOWED_ORIGINS.join(", ")} (+ *.vercel.app)`);
   console.log(`[S.H.S Agent] Groq: ${groq ? "enabled" : "disabled"}`);
   console.log(`[S.H.S Agent] Resend: ${resend ? "enabled" : "disabled"}`);
 });
