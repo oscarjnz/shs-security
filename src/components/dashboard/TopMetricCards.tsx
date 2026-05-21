@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 export interface TopMetricCardsProps {
   activeThreatCount: number;
   deviceCount: number;
-  securityScore: number;
+  securityScore: number | null;
   reportsThisMonth: number;
 }
 
@@ -68,6 +68,8 @@ export function TopMetricCards({
   securityScore,
   reportsThisMonth,
 }: TopMetricCardsProps) {
+  const hasScore = securityScore !== null;
+  const displayScore = securityScore ?? 0;
   const cards = [
     {
       label: "Amenazas Activas",
@@ -89,10 +91,10 @@ export function TopMetricCards({
     },
     {
       label: "Puntuacion de Seguridad",
-      value: securityScore,
+      value: displayScore,
       icon: ShieldCheck,
-      iconColor: scoreColor(securityScore),
-      iconBg: scoreBg(securityScore),
+      iconColor: hasScore ? scoreColor(displayScore) : "text-muted-foreground",
+      iconBg: hasScore ? scoreBg(displayScore) : "bg-muted/20",
       format: null,
       gauge: true,
     },
@@ -116,14 +118,14 @@ export function TopMetricCards({
           <CardContent className="flex items-center gap-4 p-5">
             {"gauge" in card && card.gauge ? (
               <div className="relative flex-shrink-0">
-                <GaugeMini value={securityScore} />
+                <GaugeMini value={hasScore ? displayScore : 0} />
                 <span
                   className={cn(
                     "absolute inset-0 flex items-center justify-center text-sm font-bold",
-                    scoreColor(securityScore),
+                    hasScore ? scoreColor(displayScore) : "text-muted-foreground",
                   )}
                 >
-                  {securityScore}
+                  {hasScore ? displayScore : "—"}
                 </span>
               </div>
             ) : (
@@ -145,14 +147,16 @@ export function TopMetricCards({
                 <p
                   className={cn(
                     "mt-1 text-sm font-medium",
-                    scoreColor(securityScore),
+                    hasScore ? scoreColor(displayScore) : "text-muted-foreground",
                   )}
                 >
-                  {securityScore >= 80
-                    ? "Excelente"
-                    : securityScore >= 50
-                      ? "Moderado"
-                      : "Critico"}
+                  {!hasScore
+                    ? "Sin reportes aún"
+                    : displayScore >= 80
+                      ? "Excelente"
+                      : displayScore >= 50
+                        ? "Moderado"
+                        : "Critico"}
                 </p>
               ) : (
                 <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">

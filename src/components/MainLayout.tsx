@@ -6,7 +6,7 @@ import type { SectionKey } from "@/lib/database.types";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Network, Monitor, ShieldAlert, Bug, ScrollText,
-  Brain, FileBarChart, Settings, Users, Bell, LogOut, ScanSearch, Menu, X,
+  Brain, FileBarChart, Settings, Users, Bell, LogOut, ScanSearch, History, Menu, X,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -26,8 +26,9 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Amenazas", path: "/threats", icon: ShieldAlert, section: "threats" },
   { label: "Vulnerabilidades", path: "/vulnerabilities", icon: Bug, section: "vulnerabilities" },
   { label: "Scanner", path: "/scan", icon: ScanSearch, section: "network" },
+  { label: "Historial Scans", path: "/scan/history", icon: History, section: "network" },
   { label: "Logs", path: "/logs", icon: ScrollText, section: "logs" },
-  { label: "AI Analysis", path: "/ai-analysis", icon: Brain, section: "ai_analysis" },
+  { label: "ACi (asistente)", path: "/ai-analysis", icon: Brain, section: "ai_analysis" },
   { label: "Reportes", path: "/reports", icon: FileBarChart, section: "reports" },
   { label: "Configuración", path: "/settings", icon: Settings, section: "settings" },
 ];

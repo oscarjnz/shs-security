@@ -12,30 +12,30 @@ export function AISecurityAssistant() {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
           <Brain className="h-5 w-5 text-violet-400" />
-          Asistente de Seguridad IA
+          ACi — Asistente de Ciberseguridad
         </CardTitle>
       </CardHeader>
 
       <CardContent className="space-y-4">
         <p className="text-sm leading-relaxed text-muted-foreground">
-          Nuestro asistente impulsado por inteligencia artificial analiza
-          continuamente tu red, identifica patrones sospechosos y genera
-          recomendaciones personalizadas para fortalecer la seguridad de tu
-          hogar.
+          ACi es un asistente conversacional que te explica conceptos de
+          ciberseguridad y revisa el estado actual de tu red cuando se lo
+          pides. Responde sobre amenazas, vulnerabilidades, dispositivos
+          y buenas prácticas, en lenguaje claro.
         </p>
 
         <ul className="space-y-2 text-sm text-muted-foreground">
           <li className="flex items-start gap-2">
             <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-cyber-green" />
-            Deteccion de anomalias en tiempo real
+            Explica resultados de escaneos y puertos abiertos
           </li>
           <li className="flex items-start gap-2">
             <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-cyber-green" />
-            Analisis predictivo de vulnerabilidades
+            Enseña sobre phishing, malware, reverse shells, OWASP
           </li>
           <li className="flex items-start gap-2">
             <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-cyber-green" />
-            Recomendaciones automaticas de seguridad
+            Analiza tus amenazas activas y dispositivos al pedírselo
           </li>
         </ul>
 
@@ -43,7 +43,7 @@ export function AISecurityAssistant() {
           onClick={() => navigate("/ai-analysis")}
           className="w-full gap-2 bg-violet-600 text-white hover:bg-violet-700"
         >
-          Ir al Analisis IA
+          Hablar con ACi
           <ArrowRight className="h-4 w-4" />
         </Button>
       </CardContent>

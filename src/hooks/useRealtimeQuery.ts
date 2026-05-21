@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,6 +8,7 @@ export function useThreats(limit = 6) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const key = ["threats", user?.id, limit];
+  const channelIdRef = useRef<string>(`threats-rt-${crypto.randomUUID()}`);
 
   const query = useQuery({
     queryKey: key,
@@ -27,7 +28,7 @@ export function useThreats(limit = 6) {
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel("threats-rt")
+      .channel(channelIdRef.current)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "threats", filter: `user_id=eq.${user.id}` },
@@ -44,6 +45,7 @@ export function useActivityLogs(limit = 6) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const key = ["activity-logs", user?.id, limit];
+  const channelIdRef = useRef<string>(`logs-rt-${crypto.randomUUID()}`);
 
   const query = useQuery({
     queryKey: key,
@@ -62,7 +64,7 @@ export function useActivityLogs(limit = 6) {
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel("logs-rt")
+      .channel(channelIdRef.current)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "activity_logs", filter: `user_id=eq.${user.id}` },
@@ -79,6 +81,7 @@ export function useNetworkMetrics(limit = 40) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const key = ["network-metrics", user?.id, limit];
+  const channelIdRef = useRef<string>(`metrics-rt-${crypto.randomUUID()}`);
 
   const query = useQuery({
     queryKey: key,
@@ -97,7 +100,7 @@ export function useNetworkMetrics(limit = 40) {
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel("metrics-rt")
+      .channel(channelIdRef.current)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "network_metrics", filter: `user_id=eq.${user.id}` },

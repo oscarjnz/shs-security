@@ -10,6 +10,7 @@ import { NetworkStatus } from "@/components/dashboard/NetworkStatus";
 import { ActiveNetworkMonitoring } from "@/components/dashboard/ActiveNetworkMonitoring";
 import { WeeklyReport } from "@/components/dashboard/WeeklyReport";
 import { AISecurityAssistant } from "@/components/dashboard/AISecurityAssistant";
+import { CurrentNetworkCard } from "@/components/dashboard/CurrentNetworkCard";
 
 function DashboardSkeleton() {
   return (
@@ -59,7 +60,7 @@ export function DashboardPage() {
   const kpiData = kpis.data ?? {
     activeThreatCount: 0,
     deviceCount: 0,
-    securityScore: 100,
+    securityScore: null as number | null,
     reportsThisMonth: 0,
   };
 
@@ -71,6 +72,9 @@ export function DashboardPage() {
     <div className="space-y-6">
       {/* Header */}
       <DashboardHeader />
+
+      {/* Current network — auto-detect */}
+      <CurrentNetworkCard />
 
       {/* KPI Cards */}
       <TopMetricCards
@@ -90,10 +94,11 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ActiveNetworkMonitoring threats={threatList} />
         <WeeklyReport
-          score={kpiData.securityScore}
+          score={kpiData.securityScore ?? 0}
           previousScore={null}
           threatCount={kpiData.activeThreatCount}
           deviceCount={kpiData.deviceCount}
+          hasScore={kpiData.securityScore !== null}
         />
       </div>
 

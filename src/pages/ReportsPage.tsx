@@ -23,8 +23,20 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ReportRow } from "@/lib/database.types";
+
+type ReportSectionKey = "threats" | "devices" | "vulnerabilities" | "network" | "scans" | "ai_summary";
+
+const SECTION_OPTIONS: Array<{ key: ReportSectionKey; label: string; description: string }> = [
+  { key: "threats", label: "Amenazas", description: "Activas e investigadas, con su tipo y severidad." },
+  { key: "devices", label: "Dispositivos", description: "Inventario de dispositivos detectados en tu red." },
+  { key: "vulnerabilities", label: "Vulnerabilidades", description: "Inventario de CVEs y CVSS detectados." },
+  { key: "network", label: "Métricas de red", description: "Velocidad, latencia y pérdida de paquetes recientes." },
+  { key: "scans", label: "Historial de escaneos", description: "Últimos escaneos ejecutados con sus resultados." },
+  { key: "ai_summary", label: "Resumen ejecutivo con IA", description: "ACi genera un análisis del estado general." },
+];
 
 const TYPE_LABELS: Record<string, string> = {
   weekly: "Semanal",
@@ -70,10 +82,25 @@ export function ReportsPage() {
 
   const [generating, setGenerating] = useState(false);
   const [generatingSteps, setGeneratingSteps] = useState<string[]>([]);
+  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
+  const [selectedSections, setSelectedSections] = useState<Set<ReportSectionKey>>(
+    new Set(SECTION_OPTIONS.map((s) => s.key)),
+  );
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [sendingReportId, setSendingReportId] = useState<string | null>(null);
   const [recipientEmails, setRecipientEmails] = useState("");
   const [sending, setSending] = useState(false);
+
+  const toggleSection = (key: ReportSectionKey) => {
+    setSelectedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+  const allSelected = selectedSections.size === SECTION_OPTIONS.length;
+  const noneSelected = selectedSections.size === 0;
 
   const reportsQuery = useQuery({
     queryKey: ["reports", user?.id],
@@ -92,6 +119,7 @@ export function ReportsPage() {
   const reports = reportsQuery.data ?? [];
 
   const handleGenerate = useCallback(async () => {
+    setGenerateDialogOpen(false);
     setGenerating(true);
     setGeneratingSteps([]);
 
@@ -102,6 +130,8 @@ export function ReportsPage() {
       if (!session?.access_token) throw new Error("Sin sesion activa");
 
       const jobId = crypto.randomUUID();
+      const sectionsArray = Array.from(selectedSections);
+      const reportType = allSelected ? "custom" : sectionsArray.length === 1 ? sectionsArray[0]! : "custom";
 
       const res = await fetch(`${AGENT_URL}/api/reports/generate`, {
         method: "POST",
@@ -109,7 +139,11 @@ export function ReportsPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ type: "custom", jobId }),
+        body: JSON.stringify({
+          type: reportType,
+          jobId,
+          sections: allSelected ? undefined : sectionsArray,
+        }),
       });
 
       if (!res.ok) {
@@ -166,7 +200,7 @@ export function ReportsPage() {
     } finally {
       setGenerating(false);
     }
-  }, [qc]);
+  }, [qc, selectedSections, allSelected]);
 
   const openSendDialog = (reportId: string) => {
     setSendingReportId(reportId);
@@ -235,7 +269,7 @@ export function ReportsPage() {
           </p>
         </div>
 
-        <Button onClick={handleGenerate} disabled={generating}>
+        <Button onClick={() => setGenerateDialogOpen(true)} disabled={generating}>
           {generating ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
@@ -343,6 +377,65 @@ export function ReportsPage() {
           ))}
         </div>
       )}
+
+      {/* Generate dialog — pick sections */}
+      <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>¿Qué incluyo en el reporte?</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            <div className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2">
+              <div>
+                <p className="text-sm font-medium">Reporte completo</p>
+                <p className="text-xs text-muted-foreground">Marca todas las secciones</p>
+              </div>
+              <Button
+                type="button"
+                variant={allSelected ? "default" : "outline"}
+                size="sm"
+                onClick={() =>
+                  setSelectedSections(
+                    allSelected ? new Set() : new Set(SECTION_OPTIONS.map((s) => s.key)),
+                  )
+                }
+              >
+                {allSelected ? "Quitar todo" : "Incluir todo"}
+              </Button>
+            </div>
+
+            {SECTION_OPTIONS.map((opt) => (
+              <label
+                key={opt.key}
+                className="flex cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors hover:bg-accent/50"
+              >
+                <Checkbox
+                  checked={selectedSections.has(opt.key)}
+                  onCheckedChange={() => toggleSection(opt.key)}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">{opt.label}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{opt.description}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setGenerateDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleGenerate}
+              disabled={noneSelected || generating}
+            >
+              {generating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Generar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Send dialog */}
       <Dialog open={sendDialogOpen} onOpenChange={setSendDialogOpen}>
