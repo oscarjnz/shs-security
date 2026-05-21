@@ -393,6 +393,7 @@ export interface StreamedScanResult {
 export async function streamScan(
   resolved: ResolvedScan,
   onEvent: (e: SSEEvent) => void,
+  abortSignal?: AbortSignal,
 ): Promise<StreamedScanResult> {
   if (!ALLOWED_COMMANDS.has(resolved.command)) {
     onEvent({ event: "error", data: { message: `Comando no permitido: ${resolved.command}` } });
@@ -402,6 +403,7 @@ export async function streamScan(
   const start = Date.now();
   let totalBytes = 0;
   let truncated = false;
+  let aborted = false;
   const chunks: string[] = [];
   const seenIps = new Set<string>();
 
@@ -411,9 +413,25 @@ export async function streamScan(
       stdio: ["ignore", "pipe", "pipe"],
     });
 
+    // Kill child if the caller aborts (typically because the SSE client
+    // closed the connection — the user clicked "Detener").
+    const onAbort = () => {
+      if (child.killed) return;
+      aborted = true;
+      // On Windows, child.kill("SIGTERM") works (just sends TerminateProcess).
+      child.kill("SIGTERM");
+      onEvent({ event: "line", data: { line: "[escaneo cancelado por el usuario]" } });
+    };
+    if (abortSignal) {
+      if (abortSignal.aborted) onAbort();
+      else abortSignal.addEventListener("abort", onAbort, { once: true });
+    }
+
     const timeout = setTimeout(() => {
-      child.kill("SIGKILL");
-      onEvent({ event: "error", data: { message: `Timeout: el escaneo excedió ${resolved.timeoutMs / 1000}s` } });
+      if (!child.killed) {
+        child.kill("SIGKILL");
+        onEvent({ event: "error", data: { message: `Timeout: el escaneo excedió ${resolved.timeoutMs / 1000}s` } });
+      }
     }, resolved.timeoutMs);
 
     let buffer = "";

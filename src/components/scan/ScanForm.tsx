@@ -26,7 +26,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { ScanSearch, AlertTriangle, ShieldCheck, Globe, Lock, Loader2, Wand2 } from "lucide-react";
+import { ScanSearch, AlertTriangle, ShieldCheck, Globe, Lock, Loader2, Wand2, StopCircle } from "lucide-react";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 interface ScanFormProps {
   isRunning: boolean;
@@ -319,10 +320,25 @@ export function ScanForm({ isRunning, onSubmit, onAbort }: ScanFormProps) {
       {/* Submit */}
       <div className="flex gap-2">
         {isRunning ? (
-          <Button type="button" variant="destructive" onClick={onAbort} className="flex-1 gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Detener escaneo
-          </Button>
+          <ConfirmDialog
+            title="¿Detener el escaneo en curso?"
+            description={
+              <span>
+                El proceso <span className="font-mono">nmap</span> se interrumpirá ahora mismo.
+                Los resultados parciales que ya hayas visto quedarán visibles pero
+                <strong> NO se guardarán</strong> en el historial.
+              </span>
+            }
+            confirmLabel="Sí, detener"
+            cancelLabel="Seguir escaneando"
+            onConfirm={onAbort}
+            trigger={
+              <Button type="button" variant="destructive" className="flex-1 gap-2">
+                <StopCircle className="h-4 w-4" />
+                Detener escaneo
+              </Button>
+            }
+          />
         ) : (
           <Button type="submit" disabled={!canSubmit} className="flex-1 gap-2">
             <ScanSearch className="h-4 w-4" />

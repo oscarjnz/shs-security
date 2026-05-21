@@ -12,6 +12,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/Logo";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 interface NavItem {
   label: string;
@@ -138,15 +139,28 @@ export function MainLayout() {
               </p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start text-muted-foreground hover:text-destructive"
-            onClick={handleSignOut}
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Cerrar sesión
-          </Button>
+          <ConfirmDialog
+            title="¿Cerrar sesión?"
+            description={
+              <span>
+                Saldrás de S.S.S y deberás volver a iniciar sesión la próxima vez.
+                Tus datos (escaneos, dispositivos, reportes) siguen guardados en tu cuenta.
+              </span>
+            }
+            confirmLabel="Sí, cerrar sesión"
+            cancelLabel="Cancelar"
+            onConfirm={handleSignOut}
+            trigger={
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Cerrar sesión
+              </Button>
+            }
+          />
         </div>
       </aside>
 
