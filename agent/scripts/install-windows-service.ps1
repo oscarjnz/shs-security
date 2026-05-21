@@ -20,9 +20,14 @@ Write-Host "==> Repo root: $repoRoot"
 # 1. Kill any process currently using port 3001 (typically a `npm run dev` tsx watch)
 $busy = Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue
 if ($busy) {
-  Write-Host "==> Port 3001 in use by PID(s) $($busy.OwningProcess -join ', ') — stopping..."
-  foreach ($pid in ($busy.OwningProcess | Sort-Object -Unique)) {
-    try { Stop-Process -Id $pid -Force -ErrorAction Stop } catch { Write-Host "    (could not stop PID $pid: $_)" }
+  $busyPids = $busy.OwningProcess | Sort-Object -Unique
+  Write-Host ("==> Port 3001 in use by PID(s) " + ($busyPids -join ', ') + " - stopping...")
+  foreach ($busyPid in $busyPids) {
+    try {
+      Stop-Process -Id $busyPid -Force -ErrorAction Stop
+    } catch {
+      Write-Host ("    (could not stop PID " + $busyPid + ": " + $_ + ")")
+    }
   }
   Start-Sleep -Milliseconds 800
 }
@@ -50,11 +55,13 @@ if (-not (Test-Path $entry)) {
 
 # 4. Build a wrapper .cmd that ensures the working dir is set so .env loads
 $wrapper = Join-Path $agentDir "run-agent.cmd"
-@"
-@echo off
-cd /d "$agentDir"
-"$node" "$entry" >> "$agentDir\agent.log" 2>&1
-"@ | Set-Content -Path $wrapper -Encoding ASCII
+$logPath = Join-Path $agentDir "agent.log"
+$lines = @(
+  '@echo off',
+  ('cd /d "' + $agentDir + '"'),
+  ('"' + $node + '" "' + $entry + '" >> "' + $logPath + '" 2>&1')
+)
+Set-Content -Path $wrapper -Value $lines -Encoding ASCII
 
 Write-Host "==> Created launcher: $wrapper"
 
@@ -103,5 +110,5 @@ if ($health -and $health.success) {
   Write-Host "==> SUCCESS. Agent is up at http://localhost:3001"
   Write-Host "    Database reachable: $($health.data.database.reachable)"
 } else {
-  Write-Host "==> Task started but agent didn't respond yet. Check $agentDir\agent.log"
+  Write-Host ("==> Task started but agent did not respond yet. Check " + (Join-Path $agentDir 'agent.log'))
 }
