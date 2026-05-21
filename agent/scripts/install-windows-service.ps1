@@ -1,5 +1,5 @@
 # Installs the S.S.S agent as a Windows scheduled task that auto-starts
-# at user logon. Once installed, you never need to `npm run dev` again —
+# at user logon. Once installed, you never need to `npm run dev` again -
 # the agent runs in the background whenever the PC is on.
 #
 # Run from PowerShell (as Administrator):
@@ -105,7 +105,7 @@ Register-ScheduledTask `
   -Trigger $trigger `
   -Principal $principal `
   -Settings $settings `
-  -Description "S.S.S agent — runs the local network scanner backend on port 3001." `
+  -Description "S.S.S agent - runs the local network scanner backend on port 3001." `
   -Force | Out-Null
 
 Write-Host ""
