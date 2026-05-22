@@ -51,6 +51,7 @@ import {
 } from "./lib/scanner.js";
 import { upsertDevicesFromScan, createThreatsFromScan, loadKnownDevices } from "./lib/auto-actions.js";
 import { listLocalPrivateSubnets } from "./lib/local-net.js";
+import { startPulse, getLastPulseStats } from "./lib/pulse.js";
 import { TEMPLATES, type EmailTemplate } from "./lib/email-templates.js";
 import { startKeepAliveCron, pingSupabase, getLastPingResult } from "./lib/keep-alive.js";
 
@@ -236,7 +237,7 @@ app.post(
     const userId = req.callerUserId!;
 
     // Default: all sections enabled when none specified (= "full" mode)
-    type SectionKey = "threats" | "devices" | "vulnerabilities" | "network" | "scans" | "ai_summary";
+    type SectionKey = "threats" | "devices" | "vulnerabilities" | "network" | "scans" | "pulse" | "ai_summary";
     const wantSection = (key: SectionKey): boolean =>
       !requestedSections || requestedSections.length === 0 || (requestedSections as SectionKey[]).includes(key);
 
@@ -252,7 +253,8 @@ app.post(
     try {
       send("progress", { step: 1, total: 5, message: "Recopilando datos…" });
 
-      const [threats, devices, metrics, vulns, scans] = await Promise.all([
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60_000).toISOString();
+      const [threats, devices, metrics, vulns, scans, pulse] = await Promise.all([
         wantSection("threats") || wantSection("ai_summary")
           ? supabaseAdmin.from("threats").select("*").eq("user_id", userId).order("detected_at", { ascending: false }).limit(50)
           : Promise.resolve({ data: [] as unknown[] }),
@@ -267,6 +269,14 @@ app.post(
           : Promise.resolve({ data: [] as unknown[] }),
         wantSection("scans")
           ? supabaseAdmin.from("scan_results").select("id,query,profile_id,intent,device_count,auto_threats_count,duration_ms,status,created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(20)
+          : Promise.resolve({ data: [] as unknown[] }),
+        wantSection("pulse") || wantSection("ai_summary")
+          ? supabaseAdmin
+              .from("device_pings")
+              .select("device_id,rtt_ms,alive,sampled_at")
+              .eq("user_id", userId)
+              .gte("sampled_at", sevenDaysAgo)
+              .limit(50_000)
           : Promise.resolve({ data: [] as unknown[] }),
       ]);
 
@@ -352,6 +362,44 @@ app.post(
       }
       if (wantSection("scans")) {
         sections.scans = { total: scanData.length, items: scanData };
+      }
+      if (wantSection("pulse")) {
+        const pulseData = (pulse.data ?? []) as Array<{ device_id: string; rtt_ms: number | null; alive: boolean }>;
+        const byDevice = new Map<string, { total: number; alive: number; sumRtt: number; rttCount: number }>();
+        for (const p of pulseData) {
+          let agg = byDevice.get(p.device_id);
+          if (!agg) {
+            agg = { total: 0, alive: 0, sumRtt: 0, rttCount: 0 };
+            byDevice.set(p.device_id, agg);
+          }
+          agg.total++;
+          if (p.alive) agg.alive++;
+          if (typeof p.rtt_ms === "number") {
+            agg.sumRtt += p.rtt_ms;
+            agg.rttCount++;
+          }
+        }
+        const perDevice = Array.from(byDevice.entries()).map(([device_id, agg]) => ({
+          device_id,
+          samples: agg.total,
+          uptimePct: agg.total > 0 ? Math.round((agg.alive / agg.total) * 100) : null,
+          avgRttMs: agg.rttCount > 0 ? Math.round((agg.sumRtt / agg.rttCount) * 10) / 10 : null,
+        }));
+        const overallUptime =
+          perDevice.length > 0
+            ? Math.round(
+                perDevice.reduce((s, d) => s + (d.uptimePct ?? 0), 0) / perDevice.length,
+              )
+            : null;
+        sections.pulse = {
+          totalSamples: pulseData.length,
+          devicesMonitored: perDevice.length,
+          overallUptimePct: overallUptime,
+          deviceStats: perDevice.slice(0, 50),
+          flaggedDevices: perDevice
+            .filter((d) => (d.uptimePct ?? 100) < 80 || (d.avgRttMs ?? 0) > 100)
+            .slice(0, 20),
+        };
       }
       if (wantSection("ai_summary")) {
         sections.aiSummary = aiSummary;
@@ -536,6 +584,105 @@ const INTERNAL_NOTIFY_URL = `http://localhost:${PORT}/api/notifications/threat`;
 app.get("/api/scan/profiles", requireAuth, requirePerm("network", "view"), (_req, res) => {
   ok(res, Object.values(NMAP_PROFILES));
 });
+
+/* ──────────────────────────────────────────────
+   PULSE (Fase 1 — per-device latency)
+   ────────────────────────────────────────────── */
+
+// Status of the pulse worker itself
+app.get("/api/pulse/status", requireAuth, requirePerm("network", "view"), (_req, res) => {
+  ok(res, { last: getLastPulseStats() });
+});
+
+// Current snapshot: one row per device with its latest ping + 24h uptime
+app.get(
+  "/api/pulse/devices",
+  requireAuth,
+  requirePerm("network", "view"),
+  async (req: AuthenticatedRequest, res) => {
+    const userId = req.callerUserId!;
+
+    const { data: devices } = await supabaseAdmin
+      .from("devices")
+      .select("id,name,ip,mac,vendor,type,os,status,last_seen,latency_ms")
+      .eq("user_id", userId);
+
+    if (!devices || devices.length === 0) {
+      ok(res, []);
+      return;
+    }
+
+    const since = new Date(Date.now() - 24 * 60 * 60_000).toISOString();
+    const enriched = await Promise.all(
+      (devices as Array<{ id: string }>).map(async (d) => {
+        const [{ data: latest }, { data: agg }] = await Promise.all([
+          supabaseAdmin
+            .from("device_pings")
+            .select("rtt_ms,alive,sampled_at")
+            .eq("device_id", d.id)
+            .order("sampled_at", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+          supabaseAdmin
+            .from("device_pings")
+            .select("alive")
+            .eq("device_id", d.id)
+            .gte("sampled_at", since),
+        ]);
+
+        const sample = (agg as Array<{ alive: boolean }> | null) ?? [];
+        const total = sample.length;
+        const alive = sample.filter((x) => x.alive).length;
+        const uptimePct = total > 0 ? Math.round((alive / total) * 100) : null;
+
+        return {
+          ...d,
+          latest_ping: latest ?? null,
+          uptime_24h_pct: uptimePct,
+          samples_24h: total,
+        };
+      }),
+    );
+
+    ok(res, enriched);
+  },
+);
+
+// Time-series history for the chart. ?since=ISO  &deviceIds=a,b,c (optional)
+app.get(
+  "/api/pulse/history",
+  requireAuth,
+  requirePerm("network", "view"),
+  async (req: AuthenticatedRequest, res) => {
+    const userId = req.callerUserId!;
+    const sinceRaw = String(req.query.since ?? "");
+    const since = sinceRaw && !Number.isNaN(Date.parse(sinceRaw))
+      ? sinceRaw
+      : new Date(Date.now() - 24 * 60 * 60_000).toISOString();
+    const deviceIdsRaw = String(req.query.deviceIds ?? "").trim();
+    const deviceIds = deviceIdsRaw
+      ? deviceIdsRaw.split(",").map((s) => s.trim()).filter(Boolean)
+      : null;
+
+    let query = supabaseAdmin
+      .from("device_pings")
+      .select("device_id,rtt_ms,alive,sampled_at")
+      .eq("user_id", userId)
+      .gte("sampled_at", since)
+      .order("sampled_at", { ascending: true });
+
+    if (deviceIds && deviceIds.length > 0) {
+      query = query.in("device_id", deviceIds);
+    }
+
+    const { data, error } = await query.limit(5000);
+    if (error) {
+      fail(res, 500, error.message);
+      return;
+    }
+    ok(res, data ?? []);
+  },
+);
 
 app.get(
   "/api/network/local-subnets",
@@ -1571,6 +1718,19 @@ cron.schedule("0 3 * * *", async () => {
 /* ─── keep alive (cron cada 3h para evitar pausa del free tier) ─── */
 
 startKeepAliveCron(supabaseAdmin, cron);
+
+/* ─── pulse: ping every known LAN device every minute ─── */
+startPulse(supabaseAdmin);
+
+// Daily 4am UTC: prune device_pings older than 7 days
+cron.schedule("0 4 * * *", async () => {
+  try {
+    const { data } = await supabaseAdmin.rpc("cleanup_old_device_pings");
+    console.log(`[Pulse/Cleanup] Pruned ${data ?? 0} old ping rows`);
+  } catch (err) {
+    console.error("[Pulse/Cleanup] failed:", err);
+  }
+});
 
 /* ─── error handling ─── */
 

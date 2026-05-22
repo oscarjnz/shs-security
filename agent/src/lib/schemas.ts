@@ -18,7 +18,7 @@ const PermissionsMap = z
   .optional();
 
 export const REPORT_SECTION_KEYS = [
-  "threats", "devices", "vulnerabilities", "network", "scans", "ai_summary",
+  "threats", "devices", "vulnerabilities", "network", "scans", "pulse", "ai_summary",
 ] as const;
 
 export const GenerateReportSchema = z.object({
