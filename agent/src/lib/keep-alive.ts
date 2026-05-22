@@ -11,7 +11,7 @@ export async function pingSupabase(supabase: SupabaseClient): Promise<{ ok: bool
       return { ok: false, latencyMs, error: error.message };
     }
 
-    console.log(`[Keep-Alive] Supabase ping OK — ${latencyMs}ms — ${new Date().toISOString()}`);
+    console.log(`[Keep-Alive] Supabase ping OK - ${latencyMs}ms - ${new Date().toISOString()}`);
     return { ok: true, latencyMs };
   } catch (err) {
     const latencyMs = Date.now() - start;
@@ -33,7 +33,7 @@ export function startKeepAliveCron(supabase: SupabaseClient, cronLib: typeof imp
     lastPingResult = { ...result, timestamp: new Date().toISOString() };
   });
 
-  // Default: every 4 minutes — keeps the DB warm even on very strict free tiers.
+  // Default: every 4 minutes - keeps the DB warm even on very strict free tiers.
   // Override via env KEEP_ALIVE_CRON (any valid cron expression).
   const schedule = process.env["KEEP_ALIVE_CRON"]?.trim() || "*/4 * * * *";
 
@@ -47,7 +47,7 @@ export function startKeepAliveCron(supabase: SupabaseClient, cronLib: typeof imp
         const retry = await pingSupabase(supabase);
         lastPingResult = { ...retry, timestamp: new Date().toISOString() };
         if (!retry.ok) {
-          console.error("[Cron/Keep-Alive] RETRY FAILED — DB may need manual restart from Supabase dashboard.");
+          console.error("[Cron/Keep-Alive] RETRY FAILED - DB may need manual restart from Supabase dashboard.");
         }
       }, 15_000);
     }

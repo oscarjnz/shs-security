@@ -81,7 +81,7 @@ export function OAuthButtons({ disabled = false }: OAuthButtonsProps) {
         variant: "destructive",
       });
     }
-    // On success the browser redirects to the OAuth provider — no need to clear pending.
+    // On success the browser redirects to the OAuth provider - no need to clear pending.
   };
 
   return (

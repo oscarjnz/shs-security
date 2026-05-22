@@ -1,72 +1,73 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   ScanSearch,
   Loader2,
-  Wifi,
-  Server,
-  Clock,
+  Globe,
+  ShieldCheck,
   AlertTriangle,
   Lock,
   ArrowRight,
-  Terminal,
+  Clock,
+  Trash2,
+  History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { PublicHeader } from "@/components/PublicHeader";
-import { useDemoScan, fetchDemoProfiles, type DemoProfile } from "@/hooks/useDemoScan";
-import { fetchLocalSubnets, type LocalSubnet } from "@/hooks/useScanRun";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import {
+  useDemoScan,
+  fetchDemoProfiles,
+  type DemoProfile,
+  type DemoScanResult,
+} from "@/hooks/useDemoScan";
+import { format, parseISO, formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale";
 
 export function DemoPage() {
-  const { state, runDemo, abort } = useDemoScan();
+  const { state, runDemo, clearHistory } = useDemoScan();
   const [profiles, setProfiles] = useState<DemoProfile[]>([]);
-  const [profileId, setProfileId] = useState<"discovery" | "quick_top100">("discovery");
-  const [target, setTarget] = useState("");
-  const [agentOk, setAgentOk] = useState<"unknown" | "ok" | "missing">("unknown");
+  const [profileId, setProfileId] = useState<string>("essentials");
+  const [profilesError, setProfilesError] = useState<string | null>(null);
+  const [publicIp, setPublicIp] = useState<string | null>(null);
 
   useEffect(() => {
-    // Try to talk to the local agent (auth endpoints fail without token,
-    // but the demo profile list is public). Falls back to a clear "missing" if not.
     fetchDemoProfiles()
-      .then((p) => {
-        setProfiles(p);
-        setAgentOk("ok");
-        // Try to suggest a default target
-        fetchLocalSubnets()
-          .then((nets: LocalSubnet[]) => {
-            const wifi = nets.find((n) => /wi-?fi|wireless|wlan|en0/i.test(n.interfaceName));
-            if (wifi) setTarget(wifi.suggestedCidr ?? wifi.cidr);
-            else if (nets[0]) setTarget(nets[0].suggestedCidr ?? nets[0].cidr);
-          })
-          .catch(() => {
-            /* anonymous user can't list subnets — fine, we just don't prefill */
-          });
-      })
-      .catch(() => setAgentOk("missing"));
+      .then((p) => setProfiles(p))
+      .catch((err) =>
+        setProfilesError(err instanceof Error ? err.message : "Error cargando perfiles"),
+      );
   }, []);
 
-  const terminalRef = useRef<HTMLDivElement>(null);
+  // Detect public IP optimistically (purely for UX preview before the scan).
   useEffect(() => {
-    terminalRef.current?.scrollTo({ top: terminalRef.current.scrollHeight, behavior: "smooth" });
-  }, [state.lines.length]);
+    fetch("https://api.ipify.org?format=json")
+      .then((r) => r.json())
+      .then((j) => setPublicIp((j as { ip?: string }).ip ?? null))
+      .catch(() => setPublicIp(null));
+  }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!target.trim() || state.isRunning) return;
-    runDemo(target.trim(), profileId);
-  };
-
-  const summary = state.summary;
-  const openPorts = useMemo(
-    () => state.devices.reduce((n, d) => n + (d.ports?.filter((p) => p.state === "open").length ?? 0), 0),
-    [state.devices],
+  const selectedProfile = useMemo(
+    () => profiles.find((p) => p.id === profileId),
+    [profiles, profileId],
   );
+
+  const handleScan = () => {
+    if (state.isRunning) return;
+    runDemo(profileId);
+  };
 
   return (
     <div className="min-h-screen bg-cyber-dark">
@@ -79,111 +80,99 @@ export function DemoPage() {
           <div>
             <h1 className="text-2xl font-bold text-foreground">Demo del scanner</h1>
             <p className="text-sm text-muted-foreground">
-              Prueba S.S.S sin crear cuenta. 5 escaneos por hora, sólo descubrimiento y top-100 puertos.
+              Sondeamos los puertos abiertos de tu router desde internet. Sin instalar nada,
+              sin crear cuenta. Igual que lo vería un atacante curioso.
             </p>
           </div>
         </div>
 
-        {/* Agent status banner */}
-        {agentOk === "missing" && <AgentMissingBanner />}
-        {agentOk === "ok" && profiles.length > 0 && (
-          <Alert className="border-emerald-500/40 bg-emerald-500/5">
-            <Wifi className="h-4 w-4 text-emerald-500" />
-            <AlertTitle className="text-emerald-500">Agente detectado</AlertTitle>
-            <AlertDescription className="text-xs">
-              Encontramos el agente de S.S.S corriendo en este equipo. Puedes lanzar un escaneo en tu LAN.
-            </AlertDescription>
-          </Alert>
-        )}
+        {/* Target info banner */}
+        <Alert className="border-cyber-green/40 bg-cyber-green/5">
+          <Globe className="h-4 w-4 text-cyber-green" />
+          <AlertTitle className="text-cyber-green">
+            Tu IP pública detectada
+          </AlertTitle>
+          <AlertDescription className="space-y-1 text-xs">
+            <p>
+              Vamos a sondear <span className="font-mono font-semibold">{publicIp ?? "..."}</span>{" "}
+              desde nuestro servidor. Es <strong>tu propia IP</strong> tal como la ve internet;
+              técnicamente sólo puedes escanearte a ti mismo desde aquí.
+            </p>
+            <p className="text-muted-foreground">
+              Ojo: lo que se ve en estos puertos es lo que tu router expone hacia afuera. NO ve
+              dispositivos individuales dentro de tu Wi-Fi (eso requiere instalar el agente).
+            </p>
+          </AlertDescription>
+        </Alert>
 
-        {/* Form */}
+        {/* Profile selector */}
         <Card>
-          <CardContent className="pt-5">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="demo-target" className="text-sm">
-                  Tu red (IP, CIDR o hostname)
-                </Label>
-                <Input
-                  id="demo-target"
-                  value={target}
-                  onChange={(e) => setTarget(e.target.value)}
-                  placeholder="192.168.1.0/24"
-                  className="font-mono"
-                  disabled={state.isRunning || agentOk === "missing"}
-                  required
-                />
-                <p className="text-xs text-muted-foreground">
-                  Sólo redes privadas (192.168/16, 10/8, 172.16-31/12). En la demo no se permiten objetivos públicos.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm">Tipo de escaneo</Label>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {profiles.length === 0 ? (
-                    <p className="col-span-2 text-xs text-muted-foreground">
-                      Esperando lista de perfiles del agente…
-                    </p>
-                  ) : (
-                    profiles.map((p) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        disabled={state.isRunning}
-                        onClick={() => setProfileId(p.id)}
-                        className={`text-left rounded-md border p-3 transition-colors ${
-                          profileId === p.id
-                            ? "border-primary bg-primary/5"
-                            : "border-border hover:bg-muted/50"
-                        }`}
-                      >
-                        <p className="text-sm font-medium">{p.name}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">{p.description}</p>
-                        <p className="mt-1 text-[10px] text-muted-foreground">~{p.etaSeconds}s</p>
-                      </button>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                {state.isRunning ? (
-                  <ConfirmDialog
-                    title="¿Detener el escaneo?"
-                    description="El proceso nmap se interrumpirá. No hay nada guardado en el demo, sólo lo que ves aquí."
-                    confirmLabel="Sí, detener"
-                    cancelLabel="Seguir escaneando"
-                    onConfirm={abort}
-                    trigger={
-                      <Button type="button" variant="destructive" className="flex-1 gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Detener escaneo
-                      </Button>
-                    }
-                  />
-                ) : (
-                  <Button
-                    type="submit"
-                    disabled={!target.trim() || agentOk !== "ok" || profiles.length === 0}
-                    className="flex-1 gap-2"
-                  >
-                    <ScanSearch className="h-4 w-4" />
-                    Ejecutar escaneo demo
-                  </Button>
-                )}
-              </div>
-            </form>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Elige qué quieres comprobar</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {profilesError && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>{profilesError}</AlertDescription>
+              </Alert>
+            )}
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {profiles.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setProfileId(p.id)}
+                  disabled={state.isRunning}
+                  className={`text-left rounded-md border p-3 transition-colors ${
+                    profileId === p.id
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:bg-muted/50"
+                  } ${state.isRunning ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  <p className="text-sm font-medium">{p.name}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{p.description}</p>
+                  <p className="mt-1 text-[10px] text-muted-foreground">
+                    {p.portCount} puertos
+                  </p>
+                </button>
+              ))}
+            </div>
+            {selectedProfile?.warn && (
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>{selectedProfile.warn}</AlertDescription>
+              </Alert>
+            )}
+            <Label className="text-xs text-muted-foreground">
+              No vamos a sondear más de {selectedProfile?.portCount ?? "..."} puertos. Tarda menos
+              de 10 segundos. Tu IP queda en el log de Vercel (estándar) pero NO guardamos los
+              resultados en nuestra base; viven sólo en tu navegador.
+            </Label>
           </CardContent>
         </Card>
 
-        {/* Live progress */}
-        {state.isRunning && state.progress && (
-          <Alert>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <AlertDescription>{state.progress}</AlertDescription>
-          </Alert>
-        )}
+        {/* Run / status */}
+        <div className="flex gap-2">
+          <Button
+            onClick={handleScan}
+            disabled={state.isRunning || profiles.length === 0 || !publicIp}
+            className="flex-1 gap-2"
+            size="lg"
+          >
+            {state.isRunning ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Sondeando puertos...
+              </>
+            ) : (
+              <>
+                <ScanSearch className="h-4 w-4" />
+                Ejecutar escaneo
+              </>
+            )}
+          </Button>
+        </div>
 
         {state.error && (
           <Alert variant="destructive">
@@ -193,108 +182,25 @@ export function DemoPage() {
           </Alert>
         )}
 
-        {/* KPIs */}
-        {(summary || state.devices.length > 0) && (
-          <div className="grid grid-cols-3 gap-3">
-            <Kpi
-              icon={<Server className="h-4 w-4" />}
-              label="Hosts"
-              value={state.devices.length}
-            />
-            <Kpi
-              icon={<Wifi className="h-4 w-4" />}
-              label="Puertos abiertos"
-              value={summary?.ports ?? openPorts}
-            />
-            <Kpi
-              icon={<Clock className="h-4 w-4" />}
-              label="Duración"
-              value={summary ? `${(summary.durationMs / 1000).toFixed(1)}s` : "…"}
-            />
-          </div>
-        )}
+        {/* Latest result */}
+        {state.result && <ResultCard result={state.result} />}
 
-        {/* Devices */}
-        {state.devices.length > 0 && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Dispositivos encontrados</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {state.devices.map((d, i) => (
-                <div key={`${d.ip}-${i}`} className="rounded-md border p-2 text-xs">
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <Badge
-                      variant={d.status === "up" ? "default" : "secondary"}
-                      className="text-[10px]"
-                    >
-                      {d.status}
-                    </Badge>
-                    <span className="font-mono font-semibold">{d.ip}</span>
-                    {typeof d.latencyMs === "number" && (
-                      <span className="text-muted-foreground">{d.latencyMs} ms</span>
-                    )}
-                    {d.mac && <span className="font-mono text-muted-foreground">{d.mac}</span>}
-                    {d.vendor && <span className="text-foreground">{d.vendor}</span>}
-                    {d.hostname && <span className="italic text-muted-foreground">{d.hostname}</span>}
-                  </div>
-                  {d.ports && d.ports.length > 0 && (
-                    <div className="mt-1.5 flex flex-wrap gap-1">
-                      {d.ports.map((p) => (
-                        <span
-                          key={`${p.port}-${p.protocol}`}
-                          className={`rounded border px-1.5 py-0.5 font-mono text-[10px] ${
-                            p.state === "open"
-                              ? "border-green-500/40 text-green-500"
-                              : p.state === "closed"
-                                ? "border-red-500/40 text-red-500"
-                                : "border-yellow-500/40 text-yellow-500"
-                          }`}
-                        >
-                          {p.port}/{p.protocol} {p.service}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Live terminal */}
-        {state.lines.length > 0 && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Terminal className="h-4 w-4" />
-                Salida del comando
-                {state.isRunning && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-56 rounded-md border bg-black/95">
-                <div ref={terminalRef} className="p-3 font-mono text-xs text-green-400">
-                  {state.lines.map((line, i) => (
-                    <div key={i}>{line}</div>
-                  ))}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* CTA — only after a scan finished */}
-        {summary && (
+        {/* Post-scan CTA */}
+        {state.result && (
           <Card className="border-cyber-green/40 bg-cyber-green/5">
             <CardContent className="space-y-3 p-5">
               <h3 className="text-base font-bold text-foreground">
-                ¿Te gusta? Esto es lo que te falta sin cuenta:
+                Esto fue sólo lo que se ve desde afuera.
               </h3>
+              <p className="text-sm text-muted-foreground">
+                Con una cuenta gratis e instalando el agente puedes escanear DENTRO de tu Wi-Fi
+                y ver TODOS los dispositivos (cámaras, smart TVs, móviles, IoT) con todos sus
+                puertos abiertos.
+              </p>
               <ul className="space-y-1 text-sm text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyber-green" />
-                  Historial de escaneos guardado y accesible desde cualquier dispositivo
+                  Mapa de tu LAN con cada dispositivo identificado por fabricante
                 </li>
                 <li className="flex items-start gap-2">
                   <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyber-green" />
@@ -302,14 +208,17 @@ export function DemoPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyber-green" />
-                  Reportes en PDF/email + acceso a ACi (asistente IA)
+                  Reportes en PDF / email + acceso a ACi (asistente IA en ciberseguridad)
                 </li>
                 <li className="flex items-start gap-2">
                   <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyber-green" />
-                  Perfiles avanzados (full TCP, vulnerabilidades, agresivo)
+                  Pulso continuo: te avisamos si una cámara o NAS se cae
                 </li>
               </ul>
-              <Button asChild className="w-full gap-2 bg-cyber-green text-cyber-dark hover:bg-cyber-green/90">
+              <Button
+                asChild
+                className="w-full gap-2 bg-cyber-green text-cyber-dark hover:bg-cyber-green/90"
+              >
                 <Link to="/signup">
                   Crear cuenta gratis
                   <ArrowRight className="h-4 w-4" />
@@ -318,12 +227,185 @@ export function DemoPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* History */}
+        {state.history.length > 0 && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <History className="h-4 w-4" />
+                Historial de esta sesión ({state.history.length})
+              </CardTitle>
+              <ConfirmDialog
+                title="¿Borrar el historial del demo?"
+                description="Esto sólo borra lo guardado en tu navegador. No tenemos copia en la nube."
+                confirmLabel="Sí, borrar"
+                onConfirm={clearHistory}
+                trigger={
+                  <Button size="sm" variant="ghost" className="gap-1 text-xs">
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Borrar
+                  </Button>
+                }
+              />
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs">Cuándo</TableHead>
+                    <TableHead className="text-xs">Perfil</TableHead>
+                    <TableHead className="text-xs">IP</TableHead>
+                    <TableHead className="text-right text-xs">Abiertos</TableHead>
+                    <TableHead className="text-right text-xs">Cerrados</TableHead>
+                    <TableHead className="text-right text-xs">Filtrados</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {state.history.map((h) => (
+                    <TableRow key={h.id}>
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                        {formatDistanceToNow(parseISO(h.scannedAt), {
+                          addSuffix: true,
+                          locale: es,
+                        })}
+                      </TableCell>
+                      <TableCell className="text-xs">{h.profile.name}</TableCell>
+                      <TableCell className="font-mono text-xs">{h.target}</TableCell>
+                      <TableCell className="text-right font-mono">
+                        {h.counts.open > 0 ? (
+                          <span className="font-bold text-yellow-500">{h.counts.open}</span>
+                        ) : (
+                          "0"
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-muted-foreground">
+                        {h.counts.closed}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-muted-foreground">
+                        {h.counts.filtered}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
 }
 
-function Kpi({ icon, label, value }: { icon: React.ReactNode; label: string; value: number | string }) {
+function ResultCard({ result }: { result: DemoScanResult }) {
+  const open = result.results.filter((r) => r.state === "open");
+  const interesting = open.length;
+
+  return (
+    <div className="space-y-3">
+      {/* KPIs */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Kpi
+          label="Puertos abiertos"
+          value={result.counts.open}
+          accent={result.counts.open > 0 ? "warn" : "ok"}
+          icon={interesting > 0 ? <AlertTriangle className="h-4 w-4" /> : <ShieldCheck className="h-4 w-4" />}
+        />
+        <Kpi label="Cerrados" value={result.counts.closed} accent="ok" icon={<ShieldCheck className="h-4 w-4" />} />
+        <Kpi
+          label="Filtrados"
+          value={result.counts.filtered}
+          accent="neutral"
+          icon={<ShieldCheck className="h-4 w-4" />}
+        />
+        <Kpi label="Duración" value={`${(result.durationMs / 1000).toFixed(1)}s`} accent="neutral" icon={<Clock className="h-4 w-4" />} />
+      </div>
+
+      {/* Verdict */}
+      <Alert
+        variant={result.counts.open === 0 ? "default" : "destructive"}
+        className={
+          result.counts.open === 0
+            ? "border-emerald-500/40 bg-emerald-500/5"
+            : undefined
+        }
+      >
+        {result.counts.open === 0 ? (
+          <ShieldCheck className="h-4 w-4 text-emerald-500" />
+        ) : (
+          <AlertTriangle className="h-4 w-4" />
+        )}
+        <AlertTitle className={result.counts.open === 0 ? "text-emerald-500" : undefined}>
+          {result.counts.open === 0
+            ? "Tu router parece estar bien cerrado."
+            : `Hay ${result.counts.open} puerto${result.counts.open === 1 ? "" : "s"} abierto${result.counts.open === 1 ? "" : "s"} hacia internet.`}
+        </AlertTitle>
+        <AlertDescription className="text-xs">
+          {result.counts.open === 0
+            ? "Ninguno de los puertos del perfil respondió desde fuera. Esto es lo esperable en una conexión doméstica con NAT."
+            : "Eso no es necesariamente malo (puede ser tu router exponiendo su panel web por diseño), pero merece revisarse. Mira la tabla y dale a 'Crear cuenta' para que ACi te explique qué hacer."}
+        </AlertDescription>
+      </Alert>
+
+      {/* Open port table */}
+      {open.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Puertos abiertos detectados</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Puerto</TableHead>
+                  <TableHead>Servicio probable</TableHead>
+                  <TableHead className="text-right">Latencia</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {open.map((p) => (
+                  <TableRow key={p.port}>
+                    <TableCell className="font-mono font-bold text-yellow-500">{p.port}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px]">
+                        {p.service}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                      {p.latencyMs ? `${p.latencyMs} ms` : "-"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      <p className="text-center text-[11px] text-muted-foreground">
+        Escaneado el {format(parseISO(result.scannedAt), "dd MMM yyyy HH:mm:ss", { locale: es })}
+      </p>
+    </div>
+  );
+}
+
+function Kpi({
+  label,
+  value,
+  icon,
+  accent,
+}: {
+  label: string;
+  value: number | string;
+  icon: React.ReactNode;
+  accent: "ok" | "warn" | "neutral";
+}) {
+  const color =
+    accent === "ok"
+      ? "text-emerald-500"
+      : accent === "warn"
+        ? "text-yellow-500"
+        : "text-foreground";
   return (
     <Card>
       <CardContent className="p-3">
@@ -331,39 +413,8 @@ function Kpi({ icon, label, value }: { icon: React.ReactNode; label: string; val
           {icon}
           <span className="text-[10px] font-medium uppercase tracking-wider">{label}</span>
         </div>
-        <p className="mt-1 text-xl font-bold">{value}</p>
+        <p className={`mt-1 text-xl font-bold ${color}`}>{value}</p>
       </CardContent>
     </Card>
-  );
-}
-
-function AgentMissingBanner() {
-  return (
-    <Alert className="border-yellow-500/40 bg-yellow-500/5">
-      <AlertTriangle className="h-4 w-4 text-yellow-500" />
-      <AlertTitle className="text-yellow-500">Agente local no detectado</AlertTitle>
-      <AlertDescription className="space-y-2 text-xs">
-        <p>
-          Para escanear tu red de verdad, S.S.S necesita un pequeño programa corriendo en TU
-          equipo (no en la nube). Es un requisito físico: la nube no ve tu Wi-Fi.
-        </p>
-        <p>
-          Instalación: 30 segundos, una sola vez.{" "}
-          <a
-            href="https://github.com/oscarjnz/shs-security#instalacion"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline-offset-2 hover:underline"
-          >
-            Ver instrucciones
-          </a>
-          .
-        </p>
-        <p className="text-muted-foreground">
-          Si ya lo instalaste y aún así ves este mensaje, verifica que esté corriendo
-          (<code className="font-mono">http://localhost:3001/api/health</code> debe responder).
-        </p>
-      </AlertDescription>
-    </Alert>
   );
 }

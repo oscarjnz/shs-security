@@ -40,7 +40,7 @@ export function ResetPasswordPage() {
   const [sent, setSent] = useState(false);
   const [done, setDone] = useState(false);
 
-  // Listen for PASSWORD_RECOVERY event — fired when user opens the link from email
+  // Listen for PASSWORD_RECOVERY event - fired when user opens the link from email
   useEffect(() => {
     // If URL already contains the recovery token in the hash, Supabase will fire
     // the event on its own as soon as the SDK initializes; we just react to it.
@@ -52,7 +52,7 @@ export function ResetPasswordPage() {
       }
     });
 
-    // Also probe immediately — if the user reloads while in recovery, they already
+    // Also probe immediately - if the user reloads while in recovery, they already
     // have a valid session and we should keep the form open.
     if (window.location.hash.includes("type=recovery")) {
       setMode("set-new");

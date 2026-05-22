@@ -1,4 +1,4 @@
-# S.H.S — Security Home Services
+# S.H.S - Security Home Services
 
 Dashboard de seguridad de red doméstica en tiempo real con escaneo de red por lenguaje natural, análisis de IA y notificaciones automatizadas.
 
@@ -15,7 +15,7 @@ Dashboard de seguridad de red doméstica en tiempo real con escaneo de red por l
 | Realtime | Supabase Realtime (threats, metrics, logs, notifications, scans) |
 | Auth | Supabase Auth con JWT |
 | Backend | Express.js (agent server, puerto 3001) |
-| IA | Groq SDK — Llama 3.3 70B |
+| IA | Groq SDK - Llama 3.3 70B |
 | Email | Resend (6 plantillas HTML en español) |
 | Cron | node-cron (reportes, digest semanal, limpieza) |
 | Scanner | nmap, ping, traceroute, etc. vía child_process |
@@ -109,10 +109,10 @@ cp agent/.env.example agent/.env
 ## Ejecución
 
 ```bash
-# Terminal 1 — Frontend (puerto 8080)
+# Terminal 1 - Frontend (puerto 8080)
 npm run dev
 
-# Terminal 2 — Agent backend (puerto 3001)
+# Terminal 2 - Agent backend (puerto 3001)
 cd agent
 npm run dev
 ```
@@ -142,12 +142,12 @@ npm run dev
 
 Ejecutar en Supabase SQL Editor en este orden:
 
-1. `001_enums_and_profiles.sql` — Enums, profiles, permissions, triggers
-2. `002_core_tables.sql` — network_metrics, devices, threats, vulns, logs
-3. `003_reports_and_scheduling.sql` — reports, email_config, scheduled_reports, prefs
-4. `004_notifications.sql` — notifications con soporte broadcast
-5. `005_scan_results.sql` — Tabla de resultados de escaneo
-6. `006_realtime_and_rls.sql` — Publicación Realtime + RLS
+1. `001_enums_and_profiles.sql` - Enums, profiles, permissions, triggers
+2. `002_core_tables.sql` - network_metrics, devices, threats, vulns, logs
+3. `003_reports_and_scheduling.sql` - reports, email_config, scheduled_reports, prefs
+4. `004_notifications.sql` - notifications con soporte broadcast
+5. `005_scan_results.sql` - Tabla de resultados de escaneo
+6. `006_realtime_and_rls.sql` - Publicación Realtime + RLS
 
 ### Realtime
 
@@ -191,14 +191,14 @@ Tablas con suscripción en tiempo real: `threats`, `network_metrics`, `activity_
 
 | Método | Ruta | Permiso | Descripción |
 |--------|------|---------|-------------|
-| POST | `/api/auth/login` | — | Registra login en activity_logs |
+| POST | `/api/auth/login` | - | Registra login en activity_logs |
 | POST | `/api/reports/generate` | reports/full | Genera reporte (SSE) |
 | POST | `/api/reports/send` | reports/full | Envía reporte por email |
 | POST | `/api/ai/analyze` | ai_analysis/view | Chat con IA (SSE) |
 | POST | `/api/scan/chat` | network/full | Escaneo de red por NLP |
-| POST | `/api/notifications/test-email` | — | Enviar email de prueba |
-| GET | `/api/notifications/email-config` | — | Obtener config de email |
-| PUT | `/api/notifications/email-config` | — | Guardar config de email |
+| POST | `/api/notifications/test-email` | - | Enviar email de prueba |
+| GET | `/api/notifications/email-config` | - | Obtener config de email |
+| PUT | `/api/notifications/email-config` | - | Guardar config de email |
 
 ### Admin (rol admin requerido)
 

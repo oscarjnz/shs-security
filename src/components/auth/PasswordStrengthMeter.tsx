@@ -60,7 +60,7 @@ export function PasswordStrengthMeter({
 
   if (hideWhenEmpty && !password) return null;
 
-  const label = LABELS[score] ?? "—";
+  const label = LABELS[score] ?? "-";
   const color = COLORS[score] ?? "bg-muted";
 
   return (

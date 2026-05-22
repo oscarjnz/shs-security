@@ -153,7 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       });
       if (error) return error.message;
-      // If Supabase returned a session, auto-confirm is ON — user is logged in already.
+      // If Supabase returned a session, auto-confirm is ON - user is logged in already.
       if (data.session) return null;
       // No session = needs to click the confirmation email first.
       return "__confirm_email__";

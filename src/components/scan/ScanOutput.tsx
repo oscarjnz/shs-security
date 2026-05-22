@@ -84,7 +84,7 @@ export function ScanOutput({ state, knownIps, knownMacs }: ScanOutputProps) {
           />
           <KpiCard
             label="Duración"
-            value={state.summary ? `${(state.summary.durationMs / 1000).toFixed(1)}s` : state.isRunning ? "…" : "—"}
+            value={state.summary ? `${(state.summary.durationMs / 1000).toFixed(1)}s` : state.isRunning ? "…" : "-"}
             icon={<Clock className="h-4 w-4" />}
           />
         </div>
@@ -171,7 +171,7 @@ export function ScanOutput({ state, knownIps, knownMacs }: ScanOutputProps) {
         </CardContent>
       </Card>
 
-      {/* Devices — filtered to hide already-known ones */}
+      {/* Devices - filtered to hide already-known ones */}
       {(() => {
         const filtered = state.devices.filter((d) => {
           const macKnown = d.mac && knownMacs?.has(d.mac.toUpperCase());
@@ -275,7 +275,7 @@ export function ScanOutput({ state, knownIps, knownMacs }: ScanOutputProps) {
                               </span>
                             </TableCell>
                             <TableCell className="py-1.5 text-xs text-muted-foreground max-w-[200px] truncate">
-                              {p.version ?? "—"}
+                              {p.version ?? "-"}
                             </TableCell>
                           </TableRow>
                         ))}

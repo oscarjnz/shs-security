@@ -414,7 +414,7 @@ export async function streamScan(
     });
 
     // Kill child if the caller aborts (typically because the SSE client
-    // closed the connection — the user clicked "Detener").
+    // closed the connection - the user clicked "Detener").
     const onAbort = () => {
       if (child.killed) return;
       aborted = true;

@@ -125,7 +125,7 @@ export function TopMetricCards({
                     hasScore ? scoreColor(displayScore) : "text-muted-foreground",
                   )}
                 >
-                  {hasScore ? displayScore : "—"}
+                  {hasScore ? displayScore : "-"}
                 </span>
               </div>
             ) : (

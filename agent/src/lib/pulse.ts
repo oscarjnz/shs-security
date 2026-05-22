@@ -7,7 +7,7 @@ import { listLocalPrivateSubnets } from "./local-net.js";
 const execFileAsync = promisify(execFile);
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Pulso de la red — Fase 1
+   Pulso de la red - Fase 1
    ───────────────────────────────────────────────────────────────────────────
    Every PULSE_INTERVAL_MS, for each device whose IP is in a subnet visible
    from THIS agent's interfaces, run a single ICMP ping with a short timeout
@@ -187,7 +187,7 @@ async function runPulseTick(supabase: SupabaseClient): Promise<void> {
 
 export function startPulse(supabase: SupabaseClient): void {
   if (intervalHandle) return;
-  console.log(`[Pulse] Starting — interval ${PULSE_INTERVAL_MS}ms, timeout ${PULSE_TIMEOUT_MS}ms, concurrency ${PULSE_CONCURRENCY}`);
+  console.log(`[Pulse] Starting - interval ${PULSE_INTERVAL_MS}ms, timeout ${PULSE_TIMEOUT_MS}ms, concurrency ${PULSE_CONCURRENCY}`);
   // Fire once immediately so the UI has data on first load
   void runPulseTick(supabase);
   intervalHandle = setInterval(() => void runPulseTick(supabase), PULSE_INTERVAL_MS);

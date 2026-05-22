@@ -1,4 +1,4 @@
--- 005: Scan results table (NEW — stores network security scan history)
+-- 005: Scan results table (NEW - stores network security scan history)
 -- Down: DROP TABLE scan_results;
 
 CREATE TABLE scan_results (

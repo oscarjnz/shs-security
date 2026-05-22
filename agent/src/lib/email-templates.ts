@@ -29,7 +29,7 @@ export const TEMPLATES: Record<EmailTemplate, (data: Record<string, unknown>) =>
     return `
     <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;color:#e2e8f0;background:#0f172a;">
       <div style="background:linear-gradient(135deg,#0f172a,#1e293b);padding:24px;text-align:center;">
-        <h1 style="color:#f8fafc;margin:0;font-size:20px;">S.S.S — Reporte de Seguridad</h1>
+        <h1 style="color:#f8fafc;margin:0;font-size:20px;">S.S.S - Reporte de Seguridad</h1>
       </div>
       <div style="padding:32px;background:#1e293b;">
         <h2 style="color:#f8fafc;margin:0 0 16px;">${d.title}</h2>
@@ -53,7 +53,7 @@ export const TEMPLATES: Record<EmailTemplate, (data: Record<string, unknown>) =>
   threat_alert: (d) => `
     <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;color:#e2e8f0;background:#0f172a;">
       <div style="background:linear-gradient(135deg,#7f1d1d,#991b1b);padding:24px;text-align:center;">
-        <h1 style="color:#fca5a5;margin:0;font-size:20px;">⚠ Alerta de Amenaza — S.S.S</h1>
+        <h1 style="color:#fca5a5;margin:0;font-size:20px;">⚠ Alerta de Amenaza - S.S.S</h1>
       </div>
       <div style="padding:32px;background:#1e293b;">
         <h2 style="color:#f8fafc;margin:0 0 8px;">Amenaza: ${d.type}</h2>
@@ -66,7 +66,7 @@ export const TEMPLATES: Record<EmailTemplate, (data: Record<string, unknown>) =>
   vuln_alert: (d) => `
     <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;color:#e2e8f0;background:#0f172a;">
       <div style="background:linear-gradient(135deg,#78350f,#92400e);padding:24px;text-align:center;">
-        <h1 style="color:#fcd34d;margin:0;font-size:20px;">Vulnerabilidad Detectada — S.S.S</h1>
+        <h1 style="color:#fcd34d;margin:0;font-size:20px;">Vulnerabilidad Detectada - S.S.S</h1>
       </div>
       <div style="padding:32px;background:#1e293b;">
         <h2 style="color:#f8fafc;margin:0 0 16px;">${d.name ?? "Vulnerabilidad"}</h2>
@@ -83,12 +83,12 @@ export const TEMPLATES: Record<EmailTemplate, (data: Record<string, unknown>) =>
   weekly_digest: (d) => `
     <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;color:#e2e8f0;background:#0f172a;">
       <div style="background:linear-gradient(135deg,#0f172a,#1e293b);padding:24px;text-align:center;">
-        <h1 style="color:#f8fafc;margin:0;font-size:20px;">Resumen Semanal — S.S.S</h1>
+        <h1 style="color:#f8fafc;margin:0;font-size:20px;">Resumen Semanal - S.S.S</h1>
       </div>
       <div style="padding:32px;background:#1e293b;">
         <table style="width:100%;border-collapse:collapse;text-align:center;margin-bottom:24px;">
           <tr>
-            <td style="padding:16px;background:#0f172a;border-radius:8px;"><strong style="color:#f1f5f9;font-size:24px;">${d.score ?? "—"}</strong><br/><span style="color:#64748b;font-size:11px;">Score</span></td>
+            <td style="padding:16px;background:#0f172a;border-radius:8px;"><strong style="color:#f1f5f9;font-size:24px;">${d.score ?? "-"}</strong><br/><span style="color:#64748b;font-size:11px;">Score</span></td>
             <td style="width:8px;"></td>
             <td style="padding:16px;background:#0f172a;border-radius:8px;"><strong style="color:#f1f5f9;font-size:24px;">${d.threats_count ?? 0}</strong><br/><span style="color:#64748b;font-size:11px;">Amenazas</span></td>
             <td style="width:8px;"></td>
@@ -103,7 +103,7 @@ export const TEMPLATES: Record<EmailTemplate, (data: Record<string, unknown>) =>
   test: () => `
     <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;color:#e2e8f0;background:#0f172a;">
       <div style="background:linear-gradient(135deg,#0f172a,#1e293b);padding:24px;text-align:center;">
-        <h1 style="color:#f8fafc;margin:0;font-size:20px;">S.S.S — Email de Prueba</h1>
+        <h1 style="color:#f8fafc;margin:0;font-size:20px;">S.S.S - Email de Prueba</h1>
       </div>
       <div style="padding:32px;background:#1e293b;text-align:center;">
         <p style="color:#10b981;font-size:32px;margin:0 0 16px;">✓</p>

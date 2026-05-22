@@ -6,7 +6,7 @@
 --     back to /login because their profile row never got created or has
 --     invalid data.
 --
--- This migration is idempotent — safe to run multiple times.
+-- This migration is idempotent - safe to run multiple times.
 
 -- ────────────────────────────────────────────────────────────────────────
 -- 1) Make sure profiles has every column the trigger expects.
@@ -52,7 +52,7 @@ BEGIN
     v_role := v_role_raw::user_role;
   END IF;
 
-  -- The actual insert. If anything goes wrong, we LOG and continue — we
+  -- The actual insert. If anything goes wrong, we LOG and continue - we
   -- never let the trigger abort the auth.users insert (otherwise users
   -- can never sign up).
   BEGIN

@@ -189,7 +189,7 @@ const requirePerm = (section: string, level: "view" | "full") =>
 /* ─── health ─── */
 
 /* ──────────────────────────────────────────────
-   DEMO endpoints (PUBLIC — no auth, no DB writes)
+   DEMO endpoints (PUBLIC - no auth, no DB writes)
    Restricted scan for the landing page, so a visitor can try the
    scanner against their own LAN without creating an account.
    ────────────────────────────────────────────── */
@@ -521,7 +521,7 @@ app.post(
         .from("reports")
         .insert({
           generated_by: userId,
-          title: `Reporte ${type} — ${new Date().toLocaleDateString("es-ES")}`,
+          title: `Reporte ${type} - ${new Date().toLocaleDateString("es-ES")}`,
           type: validType,
           status: "draft",
           sections,
@@ -590,7 +590,7 @@ app.post(
       await resend.emails.send({
         from: RESEND_FROM,
         to: recipients,
-        subject: `S.S.S — ${report.title}`,
+        subject: `S.S.S - ${report.title}`,
         html,
       });
 
@@ -682,7 +682,7 @@ Responde de forma clara, concisa y en español. Si el usuario pregunta algo no r
 );
 
 /* ──────────────────────────────────────────────
-   NETWORK SCANNER v2 — direct execution, no NLP gating
+   NETWORK SCANNER v2 - direct execution, no NLP gating
    ────────────────────────────────────────────── */
 
 const INTERNAL_NOTIFY_URL = `http://localhost:${PORT}/api/notifications/threat`;
@@ -692,7 +692,7 @@ app.get("/api/scan/profiles", requireAuth, requirePerm("network", "view"), (_req
 });
 
 /* ──────────────────────────────────────────────
-   PULSE (Fase 1 — per-device latency)
+   PULSE (Fase 1 - per-device latency)
    ────────────────────────────────────────────── */
 
 // Status of the pulse worker itself
@@ -1116,7 +1116,7 @@ app.post(
       await supabaseAdmin.from("activity_logs").insert({
         user_id: userId,
         event: "network_scan",
-        details: `Scan ${input.profileId ?? "custom"} en ${input.target} — ${summary}`,
+        details: `Scan ${input.profileId ?? "custom"} en ${input.target} - ${summary}`,
         level: resolved.isPublic ? "warning" : "info",
       });
 
@@ -1149,7 +1149,7 @@ REGLAS DE FORMATO (estrictas):
 - Texto plano. NADA de Markdown: ni #, ni ##, ni **, ni *, ni \`backticks\`, ni ---, ni tablas.
 - Listas con guiones simples al inicio de línea ("- "), una idea por bullet, sin asteriscos.
 - Comandos, IPs, puertos y nombres técnicos van tal cual, sin envolver en nada.
-- Si necesitas resaltar, usa una línea aparte que empiece con "Importante:" o "Aviso:" — y SÓLO si lo que sigue realmente lo justifica.
+- Si necesitas resaltar, usa una línea aparte que empiece con "Importante:" o "Aviso:" - y SÓLO si lo que sigue realmente lo justifica.
 
 REGLAS DE CONTENIDO:
 - Español claro y didáctico, sin tecnicismo gratis.
@@ -1322,7 +1322,7 @@ REGLAS ESPECÍFICAS PARA ESTE MODO:
 );
 
 /* ──────────────────────────────────────────────
-   ADMIN — USER MANAGEMENT
+   ADMIN - USER MANAGEMENT
    ────────────────────────────────────────────── */
 
 app.post(
@@ -1575,7 +1575,7 @@ app.post(
           await resend.emails.send({
             from: RESEND_FROM,
             to: [emailConfig.email_address],
-            subject: `⚠ S.S.S — Amenaza ${input.severity}`,
+            subject: `⚠ S.S.S - Amenaza ${input.severity}`,
             html: TEMPLATES.threat_alert({
               type: input.type ?? input.severity,
               description: input.description,
@@ -1625,7 +1625,7 @@ app.post(
           await resend.emails.send({
             from: RESEND_FROM,
             to: [emailConfig.email_address],
-            subject: `S.S.S — Vulnerabilidad ${input.cve ?? ""} (CVSS ${cvss})`,
+            subject: `S.S.S - Vulnerabilidad ${input.cve ?? ""} (CVSS ${cvss})`,
             html: TEMPLATES.vuln_alert({
               name: input.name,
               cve: input.cve,
@@ -1670,7 +1670,7 @@ app.post("/api/notifications/test-email", requireAuth, async (req: Authenticated
     await resend.emails.send({
       from: RESEND_FROM,
       to: [profile.email],
-      subject: "S.S.S — Email de Prueba",
+      subject: "S.S.S - Email de Prueba",
       html: TEMPLATES.test({}),
     });
     ok(res, { sent: true, to: profile.email });
@@ -1746,7 +1746,7 @@ cron.schedule("0 * * * *", async () => {
 
       await supabaseAdmin.from("reports").insert({
         generated_by: userId,
-        title: `Reporte automático — ${now.toLocaleDateString("es-ES")}`,
+        title: `Reporte automático - ${now.toLocaleDateString("es-ES")}`,
         type: "weekly",
         status: "draft",
         sections: { automated: true, threats: threats.count, devices: devices.count },
@@ -1786,9 +1786,9 @@ cron.schedule("0 8 * * 1", async () => {
         await resend.emails.send({
           from: RESEND_FROM,
           to: [email],
-          subject: "S.S.S — Resumen Semanal",
+          subject: "S.S.S - Resumen Semanal",
           html: TEMPLATES.weekly_digest({
-            score: latestReport.data?.security_score ?? "—",
+            score: latestReport.data?.security_score ?? "-",
             threats_count: threats.count ?? 0,
             devices_count: devices.count ?? 0,
           }),
