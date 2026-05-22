@@ -11,6 +11,7 @@ import { ActiveNetworkMonitoring } from "@/components/dashboard/ActiveNetworkMon
 import { WeeklyReport } from "@/components/dashboard/WeeklyReport";
 import { AISecurityAssistant } from "@/components/dashboard/AISecurityAssistant";
 import { CurrentNetworkCard } from "@/components/dashboard/CurrentNetworkCard";
+import { SecurityChecksGrid } from "@/components/security/SecurityChecksGrid";
 
 function DashboardSkeleton() {
   return (
@@ -75,6 +76,9 @@ export function DashboardPage() {
 
       {/* Current network - auto-detect */}
       <CurrentNetworkCard />
+
+      {/* Security audit grid - cloud + browser checks, no agent needed */}
+      <SecurityChecksGrid />
 
       {/* KPI Cards */}
       <TopMetricCards
