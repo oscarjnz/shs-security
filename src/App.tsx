@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,6 +9,8 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/MainLayout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
+import { LandingPage } from "@/pages/LandingPage";
+import { DemoPage } from "@/pages/DemoPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { SignUpPage } from "@/pages/SignUpPage";
 import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
@@ -48,10 +50,12 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
+              {/* Public routes (no auth required) */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/demo" element={<DemoPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignUpPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
               <Route element={<ProtectedRoute />}>
                 <Route element={<MainLayout />}>
