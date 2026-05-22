@@ -76,9 +76,21 @@ export function CurrentNetworkCard() {
 
   if (!primary) {
     return (
-      <Card>
-        <CardContent className="py-6 text-center text-sm text-muted-foreground">
-          No se detectó ninguna red local. ¿El agent S.S.S está corriendo en tu equipo y has ejecutado la migration 010 en Supabase?
+      <Card className="border-yellow-500/30 bg-yellow-500/5">
+        <CardContent className="space-y-2 py-5">
+          <div className="flex items-center gap-2 text-sm font-medium text-yellow-600 dark:text-yellow-400">
+            <Wifi className="h-4 w-4" />
+            Estás en un dispositivo sin agente local
+          </div>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Puedes ver todo el historial de tu cuenta (escaneos, dispositivos, amenazas, reportes)
+            porque vive en la nube. Pero para escanear la Wi-Fi de este equipo necesitas instalar
+            el agente aquí también.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            En tu PC con agente instalado, esta tarjeta muestra tu red Wi-Fi detectada
+            automáticamente.
+          </p>
         </CardContent>
       </Card>
     );

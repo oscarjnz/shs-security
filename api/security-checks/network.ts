@@ -37,21 +37,26 @@ function clientIp(req: Request): string | null {
   return candidate || null;
 }
 
-interface IpApiResponse {
-  status: "success" | "fail";
+// We use ipwho.is (free, HTTPS, no API key, no obvious rate-limit per source).
+// Shape: https://ipwho.is/
+interface IpWhoIsResponse {
+  ip?: string;
+  success: boolean;
   message?: string;
+  type?: "IPv4" | "IPv6";
   country?: string;
-  countryCode?: string;
+  country_code?: string;
   region?: string;
-  regionName?: string;
   city?: string;
-  isp?: string;
-  org?: string;
-  as?: string;
-  asname?: string;
-  proxy?: boolean;
-  hosting?: boolean;
-  mobile?: boolean;
+  is_eu?: boolean;
+  connection?: {
+    asn?: number;
+    org?: string;
+    isp?: string;
+    domain?: string;
+  };
+  // ipwho.is does not expose proxy/hosting/mobile flags reliably, so we
+  // infer those from ASN keywords below.
 }
 
 export default async function handler(req: Request): Promise<Response> {
@@ -68,36 +73,64 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response(JSON.stringify({ success: false, error: "No pude determinar tu IP" }), { status: 400, headers });
   }
 
-  let enrich: IpApiResponse;
+  let enrich: IpWhoIsResponse;
   try {
-    const r = await fetch(
-      `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,message,country,countryCode,region,regionName,city,isp,org,as,asname,proxy,hosting,mobile`,
-      { headers: { "User-Agent": "SSS-Security-Check/1.0" } },
-    );
-    enrich = (await r.json()) as IpApiResponse;
+    const r = await fetch(`https://ipwho.is/${encodeURIComponent(ip)}`, {
+      headers: { "User-Agent": "SSS-Security-Check/1.0" },
+    });
+    if (!r.ok) {
+      return new Response(
+        JSON.stringify({ success: false, error: `Servicio de enriquecimiento devolvió ${r.status}`, ip }),
+        { status: 502, headers },
+      );
+    }
+    const text = await r.text();
+    try {
+      enrich = JSON.parse(text) as IpWhoIsResponse;
+    } catch {
+      return new Response(
+        JSON.stringify({ success: false, error: "Respuesta del enriquecimiento no es JSON", ip }),
+        { status: 502, headers },
+      );
+    }
   } catch (err) {
     return new Response(
-      JSON.stringify({ success: false, error: "No pude enriquecer la IP", ip }),
+      JSON.stringify({
+        success: false,
+        error: err instanceof Error ? err.message : "No pude enriquecer la IP",
+        ip,
+      }),
       { status: 502, headers },
     );
   }
 
-  if (enrich.status !== "success") {
+  if (enrich.success === false) {
     return new Response(
       JSON.stringify({ success: false, error: enrich.message ?? "IP enrichment failed", ip }),
       { status: 502, headers },
     );
   }
 
-  // VPN/proxy verdict combining ip-api hints + our ASN hint list
-  const asnId = (enrich.as ?? "").split(" ")[0] ?? "";
-  const looksLikeVpn = enrich.proxy === true || VPN_ASN_HINTS.has(asnId);
-  const looksLikeDatacenter = enrich.hosting === true && !enrich.mobile;
+  // Infer VPN / datacenter / mobile from ASN keywords + our curated list
+  const conn = enrich.connection ?? {};
+  const asnId = conn.asn ? `AS${conn.asn}` : "";
+  const asnOrg = (conn.org ?? "").toLowerCase();
+  const asnIsp = (conn.isp ?? "").toLowerCase();
+  const combined = `${asnOrg} ${asnIsp}`;
+
+  const vpnKeywords = ["vpn", "proxy", "tor exit", "private internet access", "nord", "expressvpn", "surfshark", "mullvad", "protonvpn"];
+  const datacenterKeywords = ["digitalocean", "linode", "vultr", "ovh", "hetzner", "amazon", "aws", "google cloud", "microsoft azure", "oracle cloud", "datacamp", "leaseweb", "choopa", "m247"];
+  const mobileKeywords = ["mobile", "wireless", "cellular", "lte", "4g", "5g", "celular", "móvil", "movil"];
+
+  const looksLikeVpn = VPN_ASN_HINTS.has(asnId) || vpnKeywords.some((k) => combined.includes(k));
+  const looksLikeDatacenter = !looksLikeVpn && datacenterKeywords.some((k) => combined.includes(k));
+  const looksLikeMobile = mobileKeywords.some((k) => combined.includes(k));
+
   const verdict: "residential" | "vpn" | "datacenter" | "mobile" | "unknown" =
     looksLikeVpn ? "vpn"
-      : enrich.mobile ? "mobile"
+      : looksLikeMobile ? "mobile"
         : looksLikeDatacenter ? "datacenter"
-          : (enrich.isp ?? "").length > 0 ? "residential"
+          : (conn.isp ?? "").length > 0 ? "residential"
             : "unknown";
 
   return new Response(
@@ -106,18 +139,18 @@ export default async function handler(req: Request): Promise<Response> {
       data: {
         ip,
         country: enrich.country ?? null,
-        countryCode: enrich.countryCode ?? null,
-        region: enrich.regionName ?? null,
+        countryCode: enrich.country_code ?? null,
+        region: enrich.region ?? null,
         city: enrich.city ?? null,
-        isp: enrich.isp ?? null,
-        org: enrich.org ?? null,
+        isp: conn.isp ?? null,
+        org: conn.org ?? null,
         asn: asnId,
-        asnName: enrich.asname ?? null,
+        asnName: conn.org ?? null,
         verdict,
         flags: {
-          isProxy: enrich.proxy === true,
-          isHosting: enrich.hosting === true,
-          isMobile: enrich.mobile === true,
+          isProxy: looksLikeVpn,
+          isHosting: looksLikeDatacenter,
+          isMobile: looksLikeMobile,
           asnInVpnList: VPN_ASN_HINTS.has(asnId),
         },
       },
