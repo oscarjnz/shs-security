@@ -493,6 +493,35 @@ export type Database = {
           { foreignKeyName: "scan_results_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
         ];
       };
+      device_pings: {
+        Row: {
+          id: number;
+          device_id: string;
+          user_id: string;
+          sampled_at: string;
+          rtt_ms: number | null;
+          alive: boolean;
+        };
+        Insert: {
+          id?: number;
+          device_id: string;
+          user_id: string;
+          sampled_at?: string;
+          rtt_ms?: number | null;
+          alive?: boolean;
+        };
+        Update: {
+          id?: number;
+          device_id?: string;
+          user_id?: string;
+          sampled_at?: string;
+          rtt_ms?: number | null;
+          alive?: boolean;
+        };
+        Relationships: [
+          { foreignKeyName: "device_pings_device_id_fkey"; columns: ["device_id"]; isOneToOne: false; referencedRelation: "devices"; referencedColumns: ["id"] },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

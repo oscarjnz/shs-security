@@ -27,7 +27,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ReportRow } from "@/lib/database.types";
 
-type ReportSectionKey = "threats" | "devices" | "vulnerabilities" | "network" | "scans" | "ai_summary";
+type ReportSectionKey = "threats" | "devices" | "vulnerabilities" | "network" | "scans" | "pulse" | "ai_summary";
 
 const SECTION_OPTIONS: Array<{ key: ReportSectionKey; label: string; description: string }> = [
   { key: "threats", label: "Amenazas", description: "Activas e investigadas, con su tipo y severidad." },
@@ -35,6 +35,7 @@ const SECTION_OPTIONS: Array<{ key: ReportSectionKey; label: string; description
   { key: "vulnerabilities", label: "Vulnerabilidades", description: "Inventario de CVEs y CVSS detectados." },
   { key: "network", label: "Métricas de red", description: "Velocidad, latencia y pérdida de paquetes recientes." },
   { key: "scans", label: "Historial de escaneos", description: "Últimos escaneos ejecutados con sus resultados." },
+  { key: "pulse", label: "Pulso de la red", description: "Uptime y latencia de cada dispositivo en los últimos 7 días." },
   { key: "ai_summary", label: "Resumen ejecutivo con IA", description: "ACi genera un análisis del estado general." },
 ];
 

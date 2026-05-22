@@ -25,6 +25,7 @@ import { UsersPage } from "@/pages/settings/UsersPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
 import { ScanPage } from "@/pages/ScanPage";
 import { ScanHistoryPage } from "@/pages/ScanHistoryPage";
+import { PulsePage } from "@/pages/PulsePage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -64,6 +65,7 @@ const App = () => (
                   <Route path="/reports" element={<ReportsPage />} />
                   <Route path="/scan" element={<ScanPage />} />
                   <Route path="/scan/history" element={<ScanHistoryPage />} />
+                  <Route path="/pulse" element={<PulsePage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/settings/users" element={<UsersPage />} />
                   <Route path="/notifications" element={<NotificationsPage />} />

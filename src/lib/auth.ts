@@ -70,6 +70,13 @@ export const SECTION_PATHS: Record<SectionKey, string> = {
   settings: "/settings",
 };
 
-export const PATH_TO_SECTION: Record<string, SectionKey> = Object.fromEntries(
-  Object.entries(SECTION_PATHS).map(([k, v]) => [v, k as SectionKey]),
-);
+export const PATH_TO_SECTION: Record<string, SectionKey> = {
+  ...Object.fromEntries(
+    Object.entries(SECTION_PATHS).map(([k, v]) => [v, k as SectionKey]),
+  ),
+  // Sub-paths that share the parent's permission requirement
+  "/scan": "network",
+  "/scan/history": "network",
+  "/pulse": "network",
+  "/settings/users": "settings",
+};
