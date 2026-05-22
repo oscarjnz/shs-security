@@ -32,3 +32,9 @@ Thumbs.db
 # Agent runtime artifacts (created by install-windows-service.ps1)
 agent/run-agent.cmd
 agent/agent.log
+
+# Author working files (notes, scripts, video drafts) — not part of the product
+*.docx
+*.doc
+~$*
+PROMPT_CLAUDECODE.md
