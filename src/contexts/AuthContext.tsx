@@ -144,12 +144,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = useCallback(
     async (email: string, password: string, fullName: string) => {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { full_name: fullName } },
+        options: {
+          data: { full_name: fullName },
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+        },
       });
       if (error) return error.message;
+      // If Supabase returned a session, auto-confirm is ON — user is logged in already.
+      if (data.session) return null;
+      // No session = needs to click the confirmation email first.
       return "__confirm_email__";
     },
     [],
