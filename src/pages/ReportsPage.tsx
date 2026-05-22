@@ -379,7 +379,7 @@ export function ReportsPage() {
         </div>
       )}
 
-      {/* Generate dialog — pick sections */}
+      {/* Generate dialog - pick sections */}
       <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>

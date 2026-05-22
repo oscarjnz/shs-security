@@ -7,7 +7,7 @@ interface LogoProps {
 }
 
 /**
- * Brand logo for S.S.S — Security Smart Services.
+ * Brand logo for S.S.S - Security Smart Services.
  * Inline SVG so it inherits color via currentColor and stays crisp at any size.
  */
 export function Logo({ className, accent = "#00ff88" }: LogoProps) {

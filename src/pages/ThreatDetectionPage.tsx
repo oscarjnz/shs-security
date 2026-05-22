@@ -178,10 +178,10 @@ export function ThreatDetectionPage() {
                       {threat.type}
                     </TableCell>
                     <TableCell className="font-mono text-sm text-muted-foreground">
-                      {threat.source ?? "—"}
+                      {threat.source ?? "-"}
                     </TableCell>
                     <TableCell className="font-mono text-sm text-muted-foreground">
-                      {threat.target ?? "—"}
+                      {threat.target ?? "-"}
                     </TableCell>
                     <TableCell>
                       <SeverityBadge severity={threat.severity} />

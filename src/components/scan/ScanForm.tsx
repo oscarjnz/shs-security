@@ -61,12 +61,12 @@ export function ScanForm({ isRunning, onSubmit, onAbort }: ScanFormProps) {
           // prefer the subnet whose interface name contains Wi-Fi / Wireless / wlan / en
           const preferred =
             nets.find((n) => /wi-?fi|wireless|wlan|en0/i.test(n.interfaceName)) ?? nets[0]!;
-          // Use the scan-friendly /24 (or smaller) — full /20 nets would be rejected
+          // Use the scan-friendly /24 (or smaller) - full /20 nets would be rejected
           setTarget(preferred.suggestedCidr ?? preferred.cidr);
         }
       })
       .catch(() => {
-        // Subnet detection failed — leave target empty; user fills it manually.
+        // Subnet detection failed - leave target empty; user fills it manually.
       });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -168,7 +168,7 @@ export function ScanForm({ isRunning, onSubmit, onAbort }: ScanFormProps) {
                     </SelectItem>,
                   ];
                   // If the real subnet differs from the suggested /24, show it too as
-                  // "red completa" but with a warning — most users will be rejected.
+                  // "red completa" but with a warning - most users will be rejected.
                   if (s.cidr !== (s.suggestedCidr ?? s.cidr)) {
                     items.push(
                       <SelectItem key={`${s.interfaceName}-full`} value={s.cidr}>
@@ -384,7 +384,7 @@ function ValidationFeedback({ result }: { result: ValidateResult }) {
           )}
           {result.ai && result.ai.warnings.length > 0 && (
             <div>
-              <p className="text-xs font-medium">IA — advertencias:</p>
+              <p className="text-xs font-medium">IA - advertencias:</p>
               <ul className="list-disc pl-4 space-y-1">
                 {result.ai.warnings.map((w, i) => (
                   <li key={i} className="text-xs">{w}</li>
@@ -394,7 +394,7 @@ function ValidationFeedback({ result }: { result: ValidateResult }) {
           )}
           {result.ai && result.ai.suggestions.length > 0 && (
             <div>
-              <p className="text-xs font-medium">IA — sugerencias:</p>
+              <p className="text-xs font-medium">IA - sugerencias:</p>
               <ul className="list-disc pl-4 space-y-1">
                 {result.ai.suggestions.map((s, i) => (
                   <li key={i} className="text-xs">{s}</li>

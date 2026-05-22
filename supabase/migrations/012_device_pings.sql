@@ -1,4 +1,4 @@
--- 012: Per-device latency history (Fase 1 — pulso de la red)
+-- 012: Per-device latency history (Fase 1 - pulso de la red)
 --
 -- The agent pings each known LAN device every ~60s. Each ping result
 -- (RTT in ms or "unreachable") gets one row here.

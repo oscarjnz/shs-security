@@ -1,165 +1,140 @@
-import { useState, useCallback, useRef } from "react";
-import { AGENT_URL } from "@/lib/supabase";
-import type { ScanDevice, ScanState, ScanWarning, ScanSummary, ScanThreatEvent } from "@/hooks/useScanRun";
+import { useState, useCallback, useEffect } from "react";
 
 /**
- * Public demo scan client. Hits /api/demo/scan on the LOCAL agent
- * without an Authorization header. The agent enforces rate-limit by IP,
- * only allows 'discovery' + 'quick_top100', and never writes to the DB.
+ * Cloud-only demo scan. Hits a Vercel Serverless Function that:
+ *   1) Reads the caller's PUBLIC IP from request headers.
+ *   2) TCP-probes a curated list of ports on THAT IP (so no abuse: a user
+ *      can only ever scan their own router's WAN side, not a third party).
+ *   3) Returns JSON with open/closed/filtered per port.
+ *
+ * No local agent is needed. Results are kept in browser localStorage so
+ * the visitor sees their history across reloads (until they clear it).
  */
 
-const INITIAL_STATE: ScanState = {
-  isRunning: false,
-  lines: [],
-  devices: [],
-  threats: [],
-  warnings: [],
-  summary: null,
-  error: null,
-  progress: null,
-};
+const STORAGE_KEY = "sss:demo-scans";
 
 export interface DemoProfile {
-  id: "discovery" | "quick_top100";
+  id: string;
   name: string;
   description: string;
-  flags: string[];
-  etaSeconds: number;
+  portCount: number;
+  warn?: string;
 }
 
+export interface DemoPortResult {
+  port: number;
+  state: "open" | "closed" | "filtered";
+  service: string;
+  latencyMs?: number;
+}
+
+export interface DemoScanResult {
+  target: string;
+  profile: { id: string; name: string; portCount: number };
+  durationMs: number;
+  scannedAt: string;
+  counts: { open: number; closed: number; filtered: number };
+  results: DemoPortResult[];
+}
+
+export interface StoredScan extends DemoScanResult {
+  id: string;
+}
+
+/* ─── public API ─── */
+
 export async function fetchDemoProfiles(): Promise<DemoProfile[]> {
-  const res = await fetch(`${AGENT_URL}/api/demo/profiles`);
-  if (!res.ok) throw new Error(`Agente no responde (HTTP ${res.status}). ¿Lo instalaste y está corriendo en este equipo?`);
+  const res = await fetch("/api/cloud-demo/scan", { method: "GET" });
+  if (!res.ok) throw new Error(`No pude cargar los perfiles (HTTP ${res.status})`);
   const json = await res.json();
-  return ((json as { data?: DemoProfile[] }).data ?? []) as DemoProfile[];
+  if (!json.success) throw new Error(json.error ?? "Respuesta inválida");
+  return json.data as DemoProfile[];
+}
+
+export interface DemoState {
+  isRunning: boolean;
+  error: string | null;
+  result: DemoScanResult | null;
+  history: StoredScan[];
 }
 
 export function useDemoScan() {
-  const [state, setState] = useState<ScanState>(INITIAL_STATE);
-  const abortRef = useRef<AbortController | null>(null);
+  const [state, setState] = useState<DemoState>({
+    isRunning: false,
+    error: null,
+    result: null,
+    history: loadHistory(),
+  });
 
-  const reset = useCallback(() => setState(INITIAL_STATE), []);
-
-  const abort = useCallback(() => {
-    abortRef.current?.abort();
-    abortRef.current = null;
-    setState((s) => ({
-      ...s,
-      isRunning: false,
-      progress: null,
-      lines: [...s.lines, "[escaneo cancelado]"],
-    }));
+  // Listen for storage changes from other tabs
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY) {
+        setState((s) => ({ ...s, history: loadHistory() }));
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  const runDemo = useCallback(async (target: string, profileId: "discovery" | "quick_top100") => {
-    abortRef.current?.abort();
-    const ctrl = new AbortController();
-    abortRef.current = ctrl;
-    setState({ ...INITIAL_STATE, isRunning: true, progress: "Conectando con el agente local…" });
-
+  const runDemo = useCallback(async (profileId: string) => {
+    setState((s) => ({ ...s, isRunning: true, error: null, result: null }));
     try {
-      const res = await fetch(`${AGENT_URL}/api/demo/scan`, {
+      const res = await fetch("/api/cloud-demo/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ target, profileId }),
-        signal: ctrl.signal,
+        body: JSON.stringify({ profileId }),
       });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: `Error ${res.status}` }));
-        throw new Error(err.error ?? `Error ${res.status}`);
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error ?? `Error ${res.status}`);
       }
-
-      const reader = res.body?.getReader();
-      if (!reader) throw new Error("Stream no disponible");
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let currentEvent: string | null = null;
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-        for (const line of lines) {
-          if (line.startsWith("event: ")) {
-            currentEvent = line.slice(7).trim();
-            continue;
-          }
-          if (line.startsWith("data: ") && currentEvent) {
-            try {
-              const data = JSON.parse(line.slice(6));
-              applyEvent(currentEvent, data, setState);
-            } catch {}
-            currentEvent = null;
-          }
-        }
-      }
-      setState((s) => ({ ...s, isRunning: false }));
+      const result = json.data as DemoScanResult;
+      const stored: StoredScan = { ...result, id: crypto.randomUUID() };
+      const newHistory = [stored, ...loadHistory()].slice(0, 20);
+      saveHistory(newHistory);
+      setState({
+        isRunning: false,
+        error: null,
+        result,
+        history: newHistory,
+      });
     } catch (err) {
-      if ((err as Error).name === "AbortError") {
-        setState((s) => ({ ...s, isRunning: false, progress: null }));
-        return;
-      }
       const msg = err instanceof Error ? err.message : "Error desconocido";
-      // Friendlier error if the agent isn't reachable
-      const friendly =
-        msg.includes("Failed to fetch") || msg.includes("NetworkError")
-          ? "No detectamos el agente de S.S.S en tu equipo. Necesitas instalarlo primero (sólo unos clicks) para hacer escaneos reales en tu red."
-          : msg;
-      setState((s) => ({ ...s, isRunning: false, error: friendly, progress: null }));
-    } finally {
-      if (abortRef.current === ctrl) abortRef.current = null;
+      setState((s) => ({ ...s, isRunning: false, error: msg }));
     }
   }, []);
 
-  return { state, runDemo, abort, reset };
+  const clearHistory = useCallback(() => {
+    saveHistory([]);
+    setState((s) => ({ ...s, history: [], result: null }));
+  }, []);
+
+  return { state, runDemo, clearHistory };
 }
 
-function applyEvent(
-  event: string,
-  data: unknown,
-  setState: React.Dispatch<React.SetStateAction<ScanState>>,
-): void {
-  switch (event) {
-    case "progress":
-      setState((s) => ({ ...s, progress: (data as { message: string }).message }));
-      break;
-    case "line":
-      setState((s) => ({ ...s, lines: [...s.lines, (data as { line: string }).line] }));
-      break;
-    case "device":
-      setState((s) => {
-        const dev = data as ScanDevice;
-        const i = s.devices.findIndex((d) => d.ip === dev.ip);
-        if (i === -1) return { ...s, devices: [...s.devices, dev] };
-        const next = [...s.devices];
-        next[i] = { ...next[i]!, ...dev };
-        return { ...s, devices: next };
-      });
-      break;
-    case "threat":
-      setState((s) => ({ ...s, threats: [...s.threats, data as ScanThreatEvent] }));
-      break;
-    case "warning":
-      setState((s) => {
-        const w = data as ScanWarning;
-        if (s.warnings.some((x) => x.code === w.code)) return s;
-        return { ...s, warnings: [...s.warnings, w] };
-      });
-      break;
-    case "summary":
-      setState((s) => ({ ...s, summary: data as ScanSummary }));
-      break;
-    case "done":
-      setState((s) => {
-        const d = data as { devices: ScanDevice[] };
-        return { ...s, devices: d.devices.length ? d.devices : s.devices, progress: null };
-      });
-      break;
-    case "error":
-      setState((s) => ({ ...s, error: (data as { message: string }).message, isRunning: false, progress: null }));
-      break;
+/* ─── localStorage helpers ─── */
+
+function loadHistory(): StoredScan[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as StoredScan[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory(items: StoredScan[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  } catch {
+    /* quota exceeded -> drop oldest */
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items.slice(0, 5)));
+    } catch {
+      /* give up silently */
+    }
   }
 }

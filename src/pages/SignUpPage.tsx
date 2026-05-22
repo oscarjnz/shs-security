@@ -66,7 +66,7 @@ export function SignUpPage() {
         variant: "destructive",
       });
     } else {
-      // Session is active — redirect immediately
+      // Session is active - redirect immediately
       navigate("/dashboard", { replace: true });
     }
   }
@@ -98,7 +98,7 @@ export function SignUpPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-foreground">
-                  Cuenta creada — confirma tu correo
+                  Cuenta creada - confirma tu correo
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Te enviamos un email a{" "}

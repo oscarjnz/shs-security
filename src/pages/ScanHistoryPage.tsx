@@ -161,7 +161,7 @@ export function ScanHistoryPage() {
                       </TableCell>
                       <TableCell className="text-xs">
                         <Badge variant="outline" className="text-[10px]">
-                          {s.profile_id ?? s.intent ?? "—"}
+                          {s.profile_id ?? s.intent ?? "-"}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-mono">{s.device_count}</TableCell>
@@ -286,7 +286,7 @@ function ScanDetailDrawer({
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm">
-                  Dispositivos detectados ({devices.length}) — {openPorts} puerto(s) abierto(s)
+                  Dispositivos detectados ({devices.length}) - {openPorts} puerto(s) abierto(s)
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">

@@ -172,13 +172,13 @@ export function PulsePage() {
         />
         <Kpi
           label="Uptime promedio 24h"
-          value={avgUptime !== null ? `${avgUptime}%` : "—"}
+          value={avgUptime !== null ? `${avgUptime}%` : "-"}
           icon={<TrendingUp className="h-4 w-4" />}
           accent={avgUptime === null ? "neutral" : avgUptime >= 95 ? "ok" : avgUptime >= 80 ? "warn" : "bad"}
         />
         <Kpi
           label="Latencia promedio ahora"
-          value={avgRtt !== null ? `${avgRtt} ms` : "—"}
+          value={avgRtt !== null ? `${avgRtt} ms` : "-"}
           icon={<Activity className="h-4 w-4" />}
           accent={avgRtt === null ? "neutral" : avgRtt <= 30 ? "ok" : avgRtt <= 80 ? "warn" : "bad"}
         />
@@ -214,7 +214,7 @@ export function PulsePage() {
             </div>
           ) : (historyQuery.data ?? []).length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
-              Aún no hay mediciones en este rango. El pulso muestrea cada ~60 s — espera unos minutos
+              Aún no hay mediciones en este rango. El pulso muestrea cada ~60 s - espera unos minutos
               después de un escaneo.
             </p>
           ) : (
@@ -396,7 +396,7 @@ function DeviceRow({
   const uptime = device.uptime_24h_pct;
   const lastSeenAgo = device.last_seen
     ? formatDistanceToNow(parseISO(device.last_seen), { addSuffix: true, locale: es })
-    : "—";
+    : "-";
 
   return (
     <TableRow>
@@ -420,17 +420,17 @@ function DeviceRow({
         </div>
       </TableCell>
       <TableCell className="font-medium">
-        {device.name || "—"}
+        {device.name || "-"}
         {device.vendor && (
           <p className="text-[10px] text-muted-foreground">{device.vendor}</p>
         )}
       </TableCell>
-      <TableCell className="font-mono text-xs">{device.ip ?? "—"}</TableCell>
+      <TableCell className="font-mono text-xs">{device.ip ?? "-"}</TableCell>
       <TableCell className="text-right font-mono text-xs">
         {alive && typeof rtt === "number" ? (
           <span className={rtt > 80 ? "text-yellow-500" : "text-foreground"}>{rtt} ms</span>
         ) : (
-          <span className="text-muted-foreground">—</span>
+          <span className="text-muted-foreground">-</span>
         )}
       </TableCell>
       <TableCell className="text-right text-xs">

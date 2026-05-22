@@ -1,4 +1,4 @@
--- 002: Core data tables — network_metrics, devices, threats, vulnerability_scans, activity_logs
+-- 002: Core data tables - network_metrics, devices, threats, vulnerability_scans, activity_logs
 -- Down: DROP TABLE activity_logs, vulnerability_scans, threats, devices, network_metrics;
 
 CREATE TABLE network_metrics (

@@ -1,4 +1,4 @@
--- 009: Better handle_new_user — extracts full_name + avatar_url from OAuth metadata.
+-- 009: Better handle_new_user - extracts full_name + avatar_url from OAuth metadata.
 -- Supports Google, GitHub, Microsoft (Azure), and email/password signups.
 -- Also adds profiles.email (mirrored from auth.users for convenient joins).
 

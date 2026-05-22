@@ -73,7 +73,7 @@ export function DashboardPage() {
       {/* Header */}
       <DashboardHeader />
 
-      {/* Current network — auto-detect */}
+      {/* Current network - auto-detect */}
       <CurrentNetworkCard />
 
       {/* KPI Cards */}

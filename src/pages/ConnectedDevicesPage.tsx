@@ -167,14 +167,14 @@ export function ConnectedDevicesPage() {
                       {device.type}
                     </TableCell>
                     <TableCell className="font-mono text-sm text-muted-foreground">
-                      {device.ip ?? "—"}
+                      {device.ip ?? "-"}
                     </TableCell>
                     <TableCell className="font-mono text-sm text-muted-foreground">
-                      {device.mac ?? "—"}
+                      {device.mac ?? "-"}
                     </TableCell>
                     <TableCell>{statusBadge(device.status)}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {device.os ?? "—"}
+                      {device.os ?? "-"}
                     </TableCell>
                     <TableCell
                       className={cn(

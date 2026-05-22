@@ -1,4 +1,4 @@
--- 007: Scanner v2 — profile metadata, public scan audit, threat dedup index
+-- 007: Scanner v2 - profile metadata, public scan audit, threat dedup index
 -- Down:
 --   DROP INDEX IF EXISTS idx_threats_dedup;
 --   DROP TABLE IF EXISTS public_scan_audit;

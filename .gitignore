@@ -33,7 +33,7 @@ Thumbs.db
 agent/run-agent.cmd
 agent/agent.log
 
-# Author working files (notes, scripts, video drafts) — not part of the product
+# Author working files (notes, scripts, video drafts) - not part of the product
 *.docx
 *.doc
 ~$*

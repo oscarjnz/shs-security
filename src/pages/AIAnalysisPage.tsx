@@ -255,7 +255,7 @@ export function AIAnalysisPage() {
         <div className="flex items-center gap-2">
           <Brain className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            ACi — Asistente de Ciberseguridad
+            ACi - Asistente de Ciberseguridad
           </h1>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">

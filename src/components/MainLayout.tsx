@@ -136,7 +136,7 @@ export function MainLayout() {
                 {profile?.full_name || "Usuario"}
               </p>
               <p className="text-[10px] capitalize text-muted-foreground">
-                {profile?.role || "—"}
+                {profile?.role || "-"}
               </p>
             </div>
           </div>

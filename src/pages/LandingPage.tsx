@@ -133,7 +133,7 @@ export function LandingPage() {
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
               Por defecto sólo permitimos escanear tu LAN (192.168/16, 10/8, 172.16-31/12).
               Escanear redes públicas sin autorización es delito en muchos países y violaría
-              los TOS de tu ISP — no lo hacemos.
+              los TOS de tu ISP - no lo hacemos.
             </p>
           </div>
         </div>
@@ -144,7 +144,7 @@ export function LandingPage() {
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
             <Activity className="h-3.5 w-3.5" />
-            <span>S.S.S — Security Smart Services</span>
+            <span>S.S.S - Security Smart Services</span>
           </div>
           <div className="flex items-center gap-4">
             <a
