@@ -1,6 +1,14 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Shield, Loader2, Mail, Lock, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Shield, Loader2, Mail, ArrowLeft, CheckCircle2, AlertCircle } from "lucide-react";
+import { PasswordInput } from "@/components/auth/PasswordInput";
+import {
+  PasswordStrengthMeter,
+  evaluatePassword,
+  passwordScore,
+  MIN_PASSWORD_SCORE,
+} from "@/components/auth/PasswordStrengthMeter";
+import { useMemo } from "react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -141,62 +149,14 @@ export function ResetPasswordPage() {
                 </p>
               </div>
             ) : (
-              <form onSubmit={handleSetNew} className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="new-pwd" className="text-sm text-muted-foreground">
-                    Nueva contraseña
-                  </Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="new-pwd"
-                      type="password"
-                      placeholder="********"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      minLength={8}
-                      autoComplete="new-password"
-                      className="border-cyber-border bg-cyber-dark/60 pl-10 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-pwd" className="text-sm text-muted-foreground">
-                    Confirmar contraseña
-                  </Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="confirm-pwd"
-                      type="password"
-                      placeholder="********"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
-                      minLength={8}
-                      autoComplete="new-password"
-                      className="border-cyber-border bg-cyber-dark/60 pl-10 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
-                    />
-                  </div>
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full gap-2 bg-cyber-green font-semibold text-cyber-dark hover:bg-cyber-green/90"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Actualizando...
-                    </>
-                  ) : (
-                    "Guardar nueva contraseña"
-                  )}
-                </Button>
-              </form>
+              <ResetSetNewForm
+                password={password}
+                setPassword={setPassword}
+                confirmPassword={confirmPassword}
+                setConfirmPassword={setConfirmPassword}
+                isSubmitting={isSubmitting}
+                onSubmit={handleSetNew}
+              />
             )
           ) : (
             // Mode: request
@@ -276,5 +236,96 @@ export function ResetPasswordPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+/* ─── set-new-password subform with strength meter + match check ─── */
+
+interface ResetSetNewFormProps {
+  password: string;
+  setPassword: (s: string) => void;
+  confirmPassword: string;
+  setConfirmPassword: (s: string) => void;
+  isSubmitting: boolean;
+  onSubmit: (e: React.FormEvent) => void;
+}
+
+function ResetSetNewForm({
+  password,
+  setPassword,
+  confirmPassword,
+  setConfirmPassword,
+  isSubmitting,
+  onSubmit,
+}: ResetSetNewFormProps) {
+  const criteria = useMemo(() => evaluatePassword(password), [password]);
+  const score = passwordScore(criteria);
+  const matches = password.length > 0 && password === confirmPassword;
+  const valid = score >= MIN_PASSWORD_SCORE && criteria.longEnough && matches;
+
+  return (
+    <form onSubmit={onSubmit} className="space-y-5">
+      <div className="space-y-2">
+        <Label htmlFor="new-pwd" className="text-sm text-muted-foreground">
+          Nueva contraseña
+        </Label>
+        <PasswordInput
+          id="new-pwd"
+          placeholder="Mínimo 8 caracteres"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          minLength={8}
+          autoComplete="new-password"
+          className="border-cyber-border bg-cyber-dark/60 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
+        />
+        <PasswordStrengthMeter password={password} />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="confirm-pwd" className="text-sm text-muted-foreground">
+          Confirma la contraseña
+        </Label>
+        <PasswordInput
+          id="confirm-pwd"
+          placeholder="Repite la contraseña"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          required
+          minLength={8}
+          autoComplete="new-password"
+          className="border-cyber-border bg-cyber-dark/60 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
+        />
+        {confirmPassword.length > 0 && (
+          <p
+            className={`flex items-center gap-1 text-xs ${
+              matches ? "text-emerald-400" : "text-red-400"
+            }`}
+          >
+            {matches ? (
+              <CheckCircle2 className="h-3.5 w-3.5" />
+            ) : (
+              <AlertCircle className="h-3.5 w-3.5" />
+            )}
+            {matches ? "Las contraseñas coinciden" : "Las contraseñas no coinciden"}
+          </p>
+        )}
+      </div>
+
+      <Button
+        type="submit"
+        disabled={isSubmitting || !valid}
+        className="w-full gap-2 bg-cyber-green font-semibold text-cyber-dark hover:bg-cyber-green/90"
+      >
+        {isSubmitting ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Actualizando...
+          </>
+        ) : (
+          "Guardar nueva contraseña"
+        )}
+      </Button>
+    </form>
   );
 }

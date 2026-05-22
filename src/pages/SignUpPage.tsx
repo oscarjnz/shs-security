@@ -1,7 +1,6 @@
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useMemo, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Loader2, Mail, Lock, User as UserIcon, CheckCircle2 } from "lucide-react";
-import { Logo } from "@/components/Logo";
+import { Loader2, Mail, User as UserIcon, CheckCircle2, AlertCircle } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -11,6 +10,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { OAuthButtons } from "@/components/auth/OAuthButtons";
+import { PasswordInput } from "@/components/auth/PasswordInput";
+import {
+  PasswordStrengthMeter,
+  evaluatePassword,
+  passwordScore,
+  MIN_PASSWORD_SCORE,
+} from "@/components/auth/PasswordStrengthMeter";
+import { Logo } from "@/components/Logo";
 
 export function SignUpPage() {
   const navigate = useNavigate();
@@ -19,6 +26,7 @@ export function SignUpPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
@@ -28,18 +36,19 @@ export function SignUpPage() {
     }
   }, [user, authLoading, navigate]);
 
+  const criteria = useMemo(() => evaluatePassword(password), [password]);
+  const score = passwordScore(criteria);
+  const passwordsMatch = password.length > 0 && password === confirmPassword;
+  const passwordStrong = score >= MIN_PASSWORD_SCORE && criteria.longEnough;
+  const formValid =
+    fullName.trim().length >= 2 &&
+    email.trim().length > 0 &&
+    passwordStrong &&
+    passwordsMatch;
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!email.trim() || !password.trim() || !fullName.trim()) return;
-
-    if (password.length < 8) {
-      toast({
-        title: "Contraseña demasiado corta",
-        description: "Usa al menos 8 caracteres. Mejor con números y símbolos.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!formValid) return;
 
     setIsSubmitting(true);
     const result = await signUp(email.trim(), password, fullName.trim());
@@ -57,6 +66,7 @@ export function SignUpPage() {
         variant: "destructive",
       });
     } else {
+      // Session is active — redirect immediately
       navigate("/dashboard", { replace: true });
     }
   }
@@ -146,27 +156,55 @@ export function SignUpPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-sm text-muted-foreground">
-                    Contraseña (mínimo 8 caracteres)
+                    Contraseña
                   </Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="********"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      minLength={8}
-                      autoComplete="new-password"
-                      className="border-cyber-border bg-cyber-dark/60 pl-10 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
-                    />
-                  </div>
+                  <PasswordInput
+                    id="password"
+                    placeholder="Mínimo 8 caracteres"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={8}
+                    autoComplete="new-password"
+                    className="border-cyber-border bg-cyber-dark/60 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
+                  />
+                  <PasswordStrengthMeter password={password} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password" className="text-sm text-muted-foreground">
+                    Confirma tu contraseña
+                  </Label>
+                  <PasswordInput
+                    id="confirm-password"
+                    placeholder="Repite la contraseña"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    autoComplete="new-password"
+                    className="border-cyber-border bg-cyber-dark/60 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
+                  />
+                  {confirmPassword.length > 0 && (
+                    <p
+                      className={`flex items-center gap-1 text-xs ${
+                        passwordsMatch ? "text-emerald-400" : "text-red-400"
+                      }`}
+                    >
+                      {passwordsMatch ? (
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                      ) : (
+                        <AlertCircle className="h-3.5 w-3.5" />
+                      )}
+                      {passwordsMatch
+                        ? "Las contraseñas coinciden"
+                        : "Las contraseñas no coinciden"}
+                    </p>
+                  )}
                 </div>
 
                 <Button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !formValid}
                   className="w-full gap-2 bg-cyber-green font-semibold text-cyber-dark hover:bg-cyber-green/90"
                 >
                   {isSubmitting ? (
