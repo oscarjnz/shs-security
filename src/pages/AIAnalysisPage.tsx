@@ -71,6 +71,7 @@ function LoadingDots() {
 export function AIAnalysisPage() {
   const [searchParams] = useSearchParams();
   const scanContextId = searchParams.get("scan");
+  const preloadedQuestion = searchParams.get("q");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -210,9 +211,11 @@ export function AIAnalysisPage() {
     if (hasInitialized || messages.length > 0) return;
     setHasInitialized(true);
 
-    const initContent = scanContextId
-      ? "Resume este escaneo en 4 o 5 líneas: qué se buscaba, qué se encontró, y si hay riesgos prioritarios. Si todo está limpio, dilo. Texto plano, sin Markdown."
-      : "Hola ACi, preséntate en 3 o 4 líneas: tu nombre, qué temas de ciberseguridad cubres y qué puedes hacer con mi red. Texto plano, sin Markdown ni símbolos de formato.";
+    const initContent = preloadedQuestion
+      ? preloadedQuestion
+      : scanContextId
+        ? "Resume este escaneo en 4 o 5 líneas: qué se buscaba, qué se encontró, y si hay riesgos prioritarios. Si todo está limpio, dilo. Texto plano, sin Markdown."
+        : "Hola ACi, preséntate en 3 o 4 líneas: tu nombre, qué temas de ciberseguridad cubres y qué puedes hacer con mi red. Texto plano, sin Markdown ni símbolos de formato.";
 
     const initMsg: ChatMessage = {
       id: crypto.randomUUID(),
@@ -222,7 +225,7 @@ export function AIAnalysisPage() {
     };
     setMessages([initMsg]);
     streamMessage(initContent, []);
-  }, [hasInitialized, messages.length, streamMessage, scanContextId]);
+  }, [hasInitialized, messages.length, streamMessage, scanContextId, preloadedQuestion]);
 
   const handleSend = () => {
     const trimmed = input.trim();
