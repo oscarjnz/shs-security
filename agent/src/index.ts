@@ -319,8 +319,10 @@ app.post("/api/auth/login", requireAuth, async (req: AuthenticatedRequest, res) 
   try {
     await supabaseAdmin.from("activity_logs").insert({
       user_id: userId,
-      event:"login",
-      details: "Inicio de sesión exitoso",
+      event: "login",
+      source: "auth",
+      ip: clientIp(req),
+      details: `Inicio de sesión exitoso desde ${req.headers["user-agent"] ?? "cliente desconocido"}`,
       level: "info",
     });
   } catch {
@@ -534,8 +536,10 @@ app.post(
 
       await supabaseAdmin.from("activity_logs").insert({
         user_id: userId,
-        event:"report_generated",
-        details: `Reporte generado: ${type} (score: ${score})`,
+        event: "report_generated",
+        source: "reports",
+        ip: clientIp(req),
+        details: `Reporte de tipo "${type}" generado con score ${score}/100. Secciones incluidas: ${requestedSections?.join(", ") ?? "todas"}.`,
         level: "info",
       });
 
@@ -579,25 +583,63 @@ app.post(
 
     try {
       const sections = (report.sections ?? {}) as Record<string, unknown>;
+
+      // Enrich the email with the user identity + their latest known Wi-Fi network,
+      // so the report header shows who generated it and from which LAN.
+      const [{ data: profile }, { data: caller }, { data: lastNetwork }] = await Promise.all([
+        supabaseAdmin
+          .from("profiles")
+          .select("full_name, role")
+          .eq("id", userId)
+          .maybeSingle(),
+        supabaseAdmin.auth.admin.getUserById(userId),
+        supabaseAdmin
+          .from("user_networks")
+          .select("label, subnet, interface_name, last_seen")
+          .eq("user_id", userId)
+          .order("last_seen", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+
+      const sectionsMeta = (sections.meta as { includedSections?: string | string[] } | undefined);
+      const includedSections =
+        sectionsMeta?.includedSections === "all" || !sectionsMeta?.includedSections
+          ? ["Todas las secciones"]
+          : Array.isArray(sectionsMeta.includedSections)
+            ? sectionsMeta.includedSections
+            : [String(sectionsMeta.includedSections)];
+
       const html = TEMPLATES.report({
         title: report.title ?? "Reporte de Seguridad",
         score: report.security_score ?? 0,
         summary: (sections.aiSummary as string) ?? "",
         threats: (sections.threats as { active?: number })?.active ?? 0,
         devices: (sections.devices as { total?: number })?.total ?? 0,
+        report_id: report.id,
+        report_type: report.type,
+        generated_at: report.generated_at,
+        user_full_name: profile?.full_name || caller?.user?.user_metadata?.full_name || "Usuario S.S.S",
+        user_email: caller?.user?.email ?? "",
+        user_role: profile?.role ?? "normal",
+        network_label: lastNetwork?.label ?? lastNetwork?.interface_name ?? null,
+        network_subnet: lastNetwork?.subnet ?? null,
+        sections_included: includedSections,
       });
 
       await resend.emails.send({
         from: RESEND_FROM,
         to: recipients,
-        subject: `S.S.S - ${report.title}`,
+        subject: `S.S.S — ${report.title}`,
         html,
       });
 
       await supabaseAdmin.from("activity_logs").insert({
         user_id: userId,
-        event:"report_sent",
-        details: `Reporte enviado a ${recipients.length} destinatario(s)`,
+        event: "report_sent",
+        source: "reports",
+        ip: clientIp(req),
+        details: `Reporte "${report.title}" enviado por email a ${recipients.length} destinatario(s): ${recipients.join(", ")}`,
         level: "info",
       });
 
@@ -1116,7 +1158,9 @@ app.post(
       await supabaseAdmin.from("activity_logs").insert({
         user_id: userId,
         event: "network_scan",
-        details: `Scan ${input.profileId ?? "custom"} en ${input.target} - ${summary}`,
+        source: "scanner",
+        ip: clientIp(req),
+        details: `Escaneo "${input.profileId ?? "custom"}" sobre ${input.target}${resolved.isPublic ? " (objetivo público)" : ""}. ${summary}`,
         level: resolved.isPublic ? "warning" : "info",
       });
 
@@ -1379,8 +1423,10 @@ app.post(
 
       await supabaseAdmin.from("activity_logs").insert({
         user_id: req.callerUserId!,
-        event:"user_created",
-        details: `Usuario creado: ${input.email} (${input.role})`,
+        event: "user_created",
+        source: "admin",
+        ip: clientIp(req),
+        details: `Nuevo usuario creado por administrador: ${input.email} con rol "${input.role}".`,
         level: "info",
       });
 
@@ -1423,8 +1469,10 @@ app.put(
 
       await supabaseAdmin.from("activity_logs").insert({
         user_id: req.callerUserId!,
-        event:"user_updated",
-        details: `Usuario actualizado: ${input.user_id}`,
+        event: "user_updated",
+        source: "admin",
+        ip: clientIp(req),
+        details: `Perfil del usuario ${input.user_id} actualizado por administrador.`,
         level: "info",
       });
 
@@ -1464,8 +1512,10 @@ app.put(
 
       await supabaseAdmin.from("activity_logs").insert({
         user_id: req.callerUserId!,
-        event:is_active ? "user_activated" : "user_deactivated",
-        details: `Usuario ${is_active ? "activado" : "desactivado"}: ${user_id}`,
+        event: is_active ? "user_activated" : "user_deactivated",
+        source: "admin",
+        ip: clientIp(req),
+        details: `Cuenta ${is_active ? "activada" : "desactivada"} para el usuario ${user_id}.`,
         level: "warning",
       });
 
@@ -1496,8 +1546,10 @@ app.delete(
 
       await supabaseAdmin.from("activity_logs").insert({
         user_id: req.callerUserId!,
-        event:"user_deleted",
-        details: `Usuario eliminado: ${user_id}`,
+        event: "user_deleted",
+        source: "admin",
+        ip: clientIp(req),
+        details: `Cuenta eliminada permanentemente: ${user_id}.`,
         level: "warning",
       });
 
