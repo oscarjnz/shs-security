@@ -37,6 +37,9 @@ import {
 } from "@/hooks/useDemoScan";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
+import { useQuery } from "@tanstack/react-query";
+import { getCvesForPorts } from "@/lib/cveApi";
+import { BookOpen } from "lucide-react";
 
 export function DemoPage() {
   const { state, runScan, clearHistory } = useDemoScan();
@@ -349,7 +352,91 @@ function ResultBlock({ result }: { result: DemoScanResult }) {
           </CardContent>
         </Card>
       )}
+
+      {result && result.counts.openPorts > 0 && (
+        <CveSuggestionsBlock devices={result.devices} />
+      )}
     </div>
+  );
+}
+
+function CveSuggestionsBlock({ devices }: { devices: DemoDevice[] }) {
+  const openPorts = useMemo(() => {
+    const set = new Set<number>();
+    for (const d of devices) {
+      for (const p of d.ports ?? []) {
+        if (p.state === "open") set.add(p.port);
+      }
+    }
+    return [...set];
+  }, [devices]);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["cve-by-ports", openPorts.sort().join(",")],
+    queryFn: () => getCvesForPorts(openPorts),
+    enabled: openPorts.length > 0,
+    staleTime: 1000 * 60 * 30,
+  });
+
+  if (openPorts.length === 0) return null;
+  if (isLoading) return null;
+  const groups = (data ?? []).filter((g) => g.suggestions.length > 0);
+  if (groups.length === 0) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <BookOpen className="h-4 w-4 text-primary" />
+            Vulnerabilidades educativas relacionadas
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-xs text-muted-foreground">
+            No tengo CVEs famosos en mi base de datos para los puertos detectados, pero igualmente
+            te recomiendo cerrar los que no uses.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <BookOpen className="h-4 w-4 text-primary" />
+          Vulnerabilidades famosas relacionadas a tus puertos abiertos
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Que un puerto esté abierto NO significa que seas vulnerable. Estos son CVEs
+          históricos asociados a esos servicios para que aprendas y los investigues.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {groups.map((g) => (
+          <div key={g.port} className="rounded-md border p-3">
+            <div className="mb-2 flex items-center gap-2">
+              <Badge variant="outline" className="font-mono">Puerto {g.port}</Badge>
+            </div>
+            <div className="space-y-2">
+              {g.suggestions.map((s) => (
+                <div key={s.cveId} className="rounded border border-border bg-muted/30 p-2">
+                  <div className="mb-1 flex items-center gap-2">
+                    <Link
+                      to={`/vulnerability/${s.cveId}`}
+                      className="font-mono text-xs font-bold text-primary hover:underline"
+                    >
+                      {s.cveId}
+                    </Link>
+                    <span className="text-xs font-medium">{s.shortName}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{s.why}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }
 
