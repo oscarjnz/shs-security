@@ -23,5 +23,11 @@
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/kev/sync",
+      "schedule": "0 6 * * *"
+    }
   ]
 }
