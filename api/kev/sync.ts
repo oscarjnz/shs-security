@@ -11,6 +11,7 @@
  */
 
 import { getSupabaseAdmin } from "../_lib/supabaseAdmin.js";
+import { webHandler } from "../_lib/adapter.js";
 
 export const config = { runtime: "nodejs", maxDuration: 60 };
 
@@ -36,7 +37,7 @@ interface KevFeed {
   vulnerabilities?: KevEntry[];
 }
 
-export default async function handler(req: Request): Promise<Response> {
+async function handler(req: Request): Promise<Response> {
   const headers = { "Content-Type": "application/json" };
 
   // Vercel cron auth (when CRON_SECRET is set)
@@ -116,3 +117,5 @@ export default async function handler(req: Request): Promise<Response> {
     { headers },
   );
 }
+
+export default webHandler(handler);

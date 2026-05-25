@@ -4,10 +4,11 @@
  */
 
 import { OWASP_TOP_10 } from "../_lib/owaspContext.js";
+import { webHandler } from "../_lib/adapter.js";
 
 export const config = { runtime: "nodejs" };
 
-export default function handler(req: Request): Response {
+function handler(req: Request): Response {
   if (req.method !== "GET") {
     return new Response(JSON.stringify({ success: false, error: "Método no permitido" }), {
       status: 405,
@@ -22,3 +23,5 @@ export default function handler(req: Request): Response {
     },
   });
 }
+
+export default webHandler(handler);
