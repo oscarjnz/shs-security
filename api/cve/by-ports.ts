@@ -8,10 +8,11 @@
  */
 
 import { suggestCvesForPorts } from "../_lib/portCves.js";
+import { webHandler } from "../_lib/adapter.js";
 
 export const config = { runtime: "nodejs" };
 
-export default async function handler(req: Request): Promise<Response> {
+async function handler(req: Request): Promise<Response> {
   const headers = {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": "*",
@@ -55,3 +56,5 @@ export default async function handler(req: Request): Promise<Response> {
 
   return new Response(JSON.stringify({ success: true, data }), { headers });
 }
+
+export default webHandler(handler);

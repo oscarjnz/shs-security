@@ -6,13 +6,14 @@
  */
 
 import { getSupabaseAdmin } from "../_lib/supabaseAdmin.js";
+import { webHandler } from "../_lib/adapter.js";
 
 export const config = { runtime: "nodejs" };
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
 
-export default async function handler(req: Request): Promise<Response> {
+async function handler(req: Request): Promise<Response> {
   const baseHeaders = {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": "*",
@@ -77,3 +78,5 @@ export default async function handler(req: Request): Promise<Response> {
     { headers: baseHeaders },
   );
 }
+
+export default webHandler(handler);

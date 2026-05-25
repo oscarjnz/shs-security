@@ -9,6 +9,7 @@
 
 import { getSupabaseAdmin } from "../_lib/supabaseAdmin.js";
 import { groqComplete } from "../_lib/groq.js";
+import { webHandler } from "../_lib/adapter.js";
 
 export const config = { runtime: "nodejs" };
 
@@ -192,7 +193,7 @@ async function generateSpanishExplanation(
 
 /* ─── handler ─── */
 
-export default async function handler(req: Request): Promise<Response> {
+async function handler(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 204,
@@ -383,3 +384,5 @@ export default async function handler(req: Request): Promise<Response> {
 
   return jsonResponse({ success: true, data: payload });
 }
+
+export default webHandler(handler);

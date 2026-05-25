@@ -19,6 +19,7 @@ import { createHash } from "node:crypto";
 import { getSupabaseAdmin } from "../_lib/supabaseAdmin.js";
 import { groqStream, groqComplete } from "../_lib/groq.js";
 import { owaspSystemPrompt } from "../_lib/owaspContext.js";
+import { webHandler } from "../_lib/adapter.js";
 
 export const config = { runtime: "nodejs", maxDuration: 30 };
 
@@ -63,7 +64,7 @@ async function streamStoredVariant(text: string): Promise<Response> {
   });
 }
 
-export default async function handler(req: Request): Promise<Response> {
+async function handler(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 204,
@@ -224,3 +225,5 @@ export default async function handler(req: Request): Promise<Response> {
     },
   });
 }
+
+export default webHandler(handler);
