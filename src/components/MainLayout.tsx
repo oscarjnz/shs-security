@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Network, Monitor, ShieldAlert, Bug, ScrollText,
   Brain, FileBarChart, Settings, Users, Bell, LogOut, ScanSearch, History, Activity, Menu, X,
+  BookOpen, Flame,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Dispositivos", path: "/devices", icon: Monitor, section: "devices" },
   { label: "Amenazas", path: "/threats", icon: ShieldAlert, section: "threats" },
   { label: "Vulnerabilidades", path: "/vulnerabilities", icon: Bug, section: "vulnerabilities" },
+  { label: "OWASP & ACi", path: "/owasp", icon: BookOpen, section: "dashboard" },
+  { label: "Explotadas (CISA KEV)", path: "/kev", icon: Flame, section: "dashboard" },
   { label: "Scanner", path: "/scan", icon: ScanSearch, section: "network" },
   { label: "Historial Scans", path: "/scan/history", icon: History, section: "network" },
   { label: "Pulso", path: "/pulse", icon: Activity, section: "network" },

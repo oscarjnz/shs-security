@@ -19,6 +19,9 @@ import { NetworkOverviewPage } from "@/pages/NetworkOverviewPage";
 import { ConnectedDevicesPage } from "@/pages/ConnectedDevicesPage";
 import { ThreatDetectionPage } from "@/pages/ThreatDetectionPage";
 import { VulnerabilityScannerPage } from "@/pages/VulnerabilityScannerPage";
+import { VulnerabilityDetailPage } from "@/pages/VulnerabilityDetailPage";
+import { OwaspPage } from "@/pages/OwaspPage";
+import { KevCatalogPage } from "@/pages/KevCatalogPage";
 import { ActivityLogsPage } from "@/pages/ActivityLogsPage";
 import { AIAnalysisPage } from "@/pages/AIAnalysisPage";
 import { ReportsPage } from "@/pages/ReportsPage";
@@ -64,6 +67,9 @@ const App = () => (
                   <Route path="/devices" element={<ConnectedDevicesPage />} />
                   <Route path="/threats" element={<ThreatDetectionPage />} />
                   <Route path="/vulnerabilities" element={<VulnerabilityScannerPage />} />
+                  <Route path="/vulnerability/:cveId" element={<VulnerabilityDetailPage />} />
+                  <Route path="/owasp" element={<OwaspPage />} />
+                  <Route path="/kev" element={<KevCatalogPage />} />
                   <Route path="/logs" element={<ActivityLogsPage />} />
                   <Route path="/ai-analysis" element={<AIAnalysisPage />} />
                   <Route path="/reports" element={<ReportsPage />} />
