@@ -163,12 +163,15 @@ async function generateSpanishExplanation(
     "estructura y analogías cada vez que respondes.";
 
   const userPrompt =
-    `${ctx}\n\nDevuelve un JSON estricto con dos campos:\n` +
-    `1. "description": explicación de qué es esta vulnerabilidad, qué afecta y por qué importa al usuario común. ` +
-    `Máximo 180 palabras. Cierra mencionando que la fuente original está en inglés.\n` +
-    `2. "mitigations": 3 a 5 acciones concretas que el usuario común puede tomar (ej. "actualiza tu router", ` +
-    `"cierra este puerto"), en lenguaje simple, separadas por saltos de línea con guiones.\n\n` +
-    `Responde SOLO el JSON, sin markdown ni explicación adicional.`;
+    `${ctx}\n\nDevuelve EXACTAMENTE este formato, sin JSON, sin markdown de código:\n\n` +
+    `===DESCRIPCION===\n` +
+    `(Explicación de qué es esta vulnerabilidad, qué afecta y por qué le importa al usuario común. ` +
+    `Máximo 180 palabras. Texto plano corrido, sin guiones ni listas. Puedes usar **negrita** para resaltar ` +
+    `palabras clave. Cierra mencionando que la fuente original está en inglés en NVD.)\n\n` +
+    `===MITIGACIONES===\n` +
+    `(De 3 a 5 acciones concretas que un usuario común puede hacer. Una por línea, cada línea empezando ` +
+    `con "- " seguido del consejo. En lenguaje simple. Sin numeración, sin negritas.)\n\n` +
+    `Responde SOLO esos dos bloques con sus marcadores exactos.`;
 
   const raw = await groqComplete(
     [
@@ -178,17 +181,21 @@ async function generateSpanishExplanation(
     { temperature: 0.8, max_tokens: 700 },
   );
 
-  // Best-effort JSON extraction (Groq sometimes wraps in ```json)
-  const cleaned = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```$/i, "").trim();
-  try {
-    const parsed = JSON.parse(cleaned) as { description?: string; mitigations?: string };
-    return {
-      description: parsed.description ?? cleaned,
-      mitigations: parsed.mitigations ?? "",
-    };
-  } catch {
-    return { description: cleaned, mitigations: "" };
+  return parseExplanationResponse(raw);
+}
+
+/** Parse the marker-based response. Tolerant to extra whitespace/text. */
+function parseExplanationResponse(raw: string): { description: string; mitigations: string } {
+  const text = raw.trim();
+  const descMatch = text.match(/===DESCRIPCION===\s*([\s\S]*?)(?=\s*===MITIGACIONES===|$)/i);
+  const mitMatch = text.match(/===MITIGACIONES===\s*([\s\S]*?)$/i);
+  const description = (descMatch?.[1] ?? "").trim();
+  const mitigations = (mitMatch?.[1] ?? "").trim();
+  // Fallback: if no markers, treat the whole thing as description
+  if (!description && !mitigations) {
+    return { description: text, mitigations: "" };
   }
+  return { description, mitigations };
 }
 
 /* ─── handler ─── */
@@ -229,8 +236,17 @@ async function handler(req: Request): Promise<Response> {
     .eq("cve_id", cveId)
     .maybeSingle();
 
+  // Cache freshness: TTL not expired AND content is in the new (non-JSON) format.
+  // Old cached entries from the JSON-based prompt have descriptions that start
+  // with "{" — treat those as stale so we regenerate cleanly.
+  const cachedDescEs = (cached?.description_es as string | null) ?? "";
+  const looksLikeOldJsonFormat =
+    cachedDescEs.trim().startsWith("{") ||
+    cachedDescEs.includes('"description":') ||
+    cachedDescEs.includes('"mitigations":');
   const isFresh =
     cached &&
+    !looksLikeOldJsonFormat &&
     Date.now() - new Date(cached.fetched_at as string).getTime() <
       CACHE_TTL_DAYS * 24 * 60 * 60 * 1000;
 
