@@ -522,6 +522,126 @@ export type Database = {
           { foreignKeyName: "device_pings_device_id_fkey"; columns: ["device_id"]; isOneToOne: false; referencedRelation: "devices"; referencedColumns: ["id"] },
         ];
       };
+      cve_cache: {
+        Row: {
+          cve_id: string;
+          nvd_data: Json;
+          cvss_score: number | null;
+          cvss_version: string | null;
+          severity: string | null;
+          description_en: string | null;
+          description_es: string | null;
+          mitigations_es: string | null;
+          vendor: string | null;
+          product: string | null;
+          published_at: string | null;
+          modified_at: string | null;
+          fetched_at: string;
+        };
+        Insert: {
+          cve_id: string;
+          nvd_data: Json;
+          cvss_score?: number | null;
+          cvss_version?: string | null;
+          severity?: string | null;
+          description_en?: string | null;
+          description_es?: string | null;
+          mitigations_es?: string | null;
+          vendor?: string | null;
+          product?: string | null;
+          published_at?: string | null;
+          modified_at?: string | null;
+          fetched_at?: string;
+        };
+        Update: {
+          cve_id?: string;
+          nvd_data?: Json;
+          cvss_score?: number | null;
+          cvss_version?: string | null;
+          severity?: string | null;
+          description_en?: string | null;
+          description_es?: string | null;
+          mitigations_es?: string | null;
+          vendor?: string | null;
+          product?: string | null;
+          published_at?: string | null;
+          modified_at?: string | null;
+          fetched_at?: string;
+        };
+        Relationships: [];
+      };
+      kev_catalog: {
+        Row: {
+          cve_id: string;
+          vendor: string | null;
+          product: string | null;
+          vulnerability_name: string | null;
+          date_added: string | null;
+          short_description: string | null;
+          required_action: string | null;
+          due_date: string | null;
+          known_ransomware_use: string | null;
+          notes: string | null;
+          synced_at: string;
+        };
+        Insert: {
+          cve_id: string;
+          vendor?: string | null;
+          product?: string | null;
+          vulnerability_name?: string | null;
+          date_added?: string | null;
+          short_description?: string | null;
+          required_action?: string | null;
+          due_date?: string | null;
+          known_ransomware_use?: string | null;
+          notes?: string | null;
+          synced_at?: string;
+        };
+        Update: {
+          cve_id?: string;
+          vendor?: string | null;
+          product?: string | null;
+          vulnerability_name?: string | null;
+          date_added?: string | null;
+          short_description?: string | null;
+          required_action?: string | null;
+          due_date?: string | null;
+          known_ransomware_use?: string | null;
+          notes?: string | null;
+          synced_at?: string;
+        };
+        Relationships: [];
+      };
+      groq_response_variants: {
+        Row: {
+          id: string;
+          question_hash: string;
+          question: string;
+          response: string;
+          variant_num: number;
+          context_kind: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          question_hash: string;
+          question: string;
+          response: string;
+          variant_num: number;
+          context_kind?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          question_hash?: string;
+          question?: string;
+          response?: string;
+          variant_num?: number;
+          context_kind?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -561,3 +681,6 @@ export type NotificationRow = Database["public"]["Tables"]["notifications"]["Row
 export type VulnRow = Database["public"]["Tables"]["vulnerability_scans"]["Row"];
 export type ScanResultRow = Database["public"]["Tables"]["scan_results"]["Row"];
 export type PermissionRow = Database["public"]["Tables"]["permissions"]["Row"];
+export type CveCacheRow = Database["public"]["Tables"]["cve_cache"]["Row"];
+export type KevCatalogRow = Database["public"]["Tables"]["kev_catalog"]["Row"];
+export type GroqVariantRow = Database["public"]["Tables"]["groq_response_variants"]["Row"];
