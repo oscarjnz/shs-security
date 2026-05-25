@@ -13,6 +13,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { ShieldCheck, Loader2, Send, Sparkles, BookOpen, ExternalLink } from "lucide-react";
+import { SimpleMarkdown } from "@/lib/simpleMarkdown";
 
 interface ChatMsg {
   role: "user" | "assistant";
@@ -203,9 +204,13 @@ function ChatPanel() {
                   <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     {m.role === "user" ? "Tú" : "ACi"}
                   </div>
-                  <div className="whitespace-pre-wrap leading-relaxed">
-                    {m.content || (streaming && i === messages.length - 1 ? "…" : "")}
-                  </div>
+                  {m.role === "assistant" && m.content ? (
+                    <SimpleMarkdown text={m.content} className="leading-relaxed" />
+                  ) : (
+                    <div className="whitespace-pre-wrap leading-relaxed">
+                      {m.content || (streaming && i === messages.length - 1 ? "…" : "")}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
