@@ -12,6 +12,8 @@
  * No DB writes. No auth required (the data is about the requester themselves).
  */
 
+import { webHandler } from "../_lib/adapter.js";
+
 export const config = { runtime: "nodejs" };
 
 /* ASNs that strongly imply the user is going through a VPN/proxy. Not
@@ -59,7 +61,7 @@ interface IpWhoIsResponse {
   // infer those from ASN keywords below.
 }
 
-export default async function handler(req: Request): Promise<Response> {
+async function handler(req: Request): Promise<Response> {
   const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: { ...headers, "Access-Control-Allow-Methods": "GET" } });
@@ -158,3 +160,5 @@ export default async function handler(req: Request): Promise<Response> {
     { headers },
   );
 }
+
+export default webHandler(handler);

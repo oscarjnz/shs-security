@@ -14,11 +14,13 @@
  * SHA1 work. We never see the password or the full hash.
  */
 
+import { webHandler } from "../_lib/adapter.js";
+
 export const config = { runtime: "nodejs" };
 
 const HIBP_URL = "https://api.pwnedpasswords.com/range/";
 
-export default async function handler(req: Request): Promise<Response> {
+async function handler(req: Request): Promise<Response> {
   const headers = { "Content-Type": "text/plain", "Access-Control-Allow-Origin": "*" };
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -45,3 +47,5 @@ export default async function handler(req: Request): Promise<Response> {
   const text = await r.text();
   return new Response(text, { headers });
 }
+
+export default webHandler(handler);
