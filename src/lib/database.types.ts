@@ -187,6 +187,8 @@ export type Database = {
           cvss: number | null;
           description: string | null;
           discovered_at: string;
+          source: string;
+          detected_port: number | null;
         };
         Insert: {
           id?: string;
@@ -199,6 +201,8 @@ export type Database = {
           cvss?: number | null;
           description?: string | null;
           discovered_at?: string;
+          source?: string;
+          detected_port?: number | null;
         };
         Update: {
           id?: string;
@@ -211,6 +215,8 @@ export type Database = {
           cvss?: number | null;
           description?: string | null;
           discovered_at?: string;
+          source?: string;
+          detected_port?: number | null;
         };
         Relationships: [
           { foreignKeyName: "vulnerability_scans_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },

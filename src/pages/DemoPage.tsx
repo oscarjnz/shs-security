@@ -38,12 +38,17 @@ import {
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
-import { getCvesForPorts } from "@/lib/cveApi";
+import { getCvesForPorts, ingestScanFindings } from "@/lib/cveApi";
 import { BookOpen } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 export function DemoPage() {
   const { state, runScan, clearHistory } = useDemoScan();
+  const { user } = useAuth();
   const [profileId, setProfileId] = useState<string | null>(null);
+  const [lastIngestedScanAt, setLastIngestedScanAt] = useState<string | null>(null);
 
   // Auto-pick a sensible default profile based on the detected mode
   const profiles = state.mode === "lan" ? LAN_PROFILES : CLOUD_PROFILES;
@@ -52,6 +57,47 @@ export function DemoPage() {
       setProfileId(profiles[0]!.id);
     }
   }, [profiles, profileId]);
+
+  /* When a scan finishes AND the user is authenticated AND there are open
+     ports, persist the findings to the user's vulnerability history. */
+  useEffect(() => {
+    const result = state.result;
+    if (!user) return;
+    if (!result) return;
+    if (result.scannedAt === lastIngestedScanAt) return;
+    if (result.counts.openPorts === 0) {
+      setLastIngestedScanAt(result.scannedAt);
+      return;
+    }
+    const openPorts: number[] = [];
+    for (const d of result.devices) {
+      for (const p of d.ports ?? []) {
+        if (p.state === "open") openPorts.push(p.port);
+      }
+    }
+    if (openPorts.length === 0) return;
+
+    setLastIngestedScanAt(result.scannedAt);
+    void (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
+        const res = await ingestScanFindings(
+          session.access_token,
+          [...new Set(openPorts)],
+          result.target,
+        );
+        if (res.inserted > 0) {
+          toast.success(
+            `Guardé ${res.inserted} hallazgo${res.inserted === 1 ? "" : "s"} en tu historial de Vulnerabilidades`,
+          );
+        }
+      } catch (err) {
+        // Silent fail: the scan still shows results, just not saved.
+        console.warn("Could not save scan findings:", err);
+      }
+    })();
+  }, [state.result, user, lastIngestedScanAt]);
 
   const selectedProfile = useMemo(
     () => profiles.find((p) => p.id === profileId),
