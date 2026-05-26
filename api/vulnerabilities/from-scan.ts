@@ -182,6 +182,7 @@ async function handler(req: Request): Promise<Response> {
       description: `Tu último escaneo descubrió ${insertedCount} riesgo${insertedCount === 1 ? "" : "s"} por puertos abiertos en ${target}. Revísalos en la sección Vulnerabilidades.`,
       type: findings.some((f) => f.severity === "critical") ? "critical" : "warning",
       link: "/vulnerabilities",
+      source: "scan_finding",
     }).then(() => undefined, () => undefined);
   }
 

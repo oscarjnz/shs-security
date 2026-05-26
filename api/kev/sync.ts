@@ -76,7 +76,17 @@ async function handler(req: Request): Promise<Response> {
 
   const supabase = getSupabaseAdmin();
 
-  // Batch upserts in chunks of 500 to avoid hitting payload limits
+  // 0) Snapshot the CVE ids we already know about, so after the upsert we
+  //    can tell which ones are genuinely NEW (worth notifying users about).
+  const incomingIds = items.map((it) => it.cveID);
+  const { data: existingRows } = await supabase
+    .from("kev_catalog")
+    .select("cve_id")
+    .in("cve_id", incomingIds);
+  const existingIds = new Set((existingRows ?? []).map((r) => r.cve_id as string));
+  const newCveIds = incomingIds.filter((id) => !existingIds.has(id));
+
+  // 1) Batch upserts in chunks of 500 to avoid hitting payload limits
   const CHUNK = 500;
   let upserted = 0;
   for (let i = 0; i < items.length; i += CHUNK) {
@@ -107,12 +117,45 @@ async function handler(req: Request): Promise<Response> {
     upserted += chunk.length;
   }
 
+  // 2) Broadcast notification when CISA added something new today.
+  //    user_id = NULL means "visible to every authenticated user" (RLS
+  //    policy in migration 004 already supports this).
+  if (newCveIds.length > 0) {
+    const sample = items
+      .filter((it) => newCveIds.includes(it.cveID))
+      .slice(0, 3)
+      .map((it) => `${it.cveID} (${it.vendorProject ?? "?"} ${it.product ?? ""})`.trim())
+      .join(", ");
+    const ransomwareCount = items.filter(
+      (it) =>
+        newCveIds.includes(it.cveID) &&
+        (it.knownRansomwareCampaignUse ?? "").toLowerCase().includes("known"),
+    ).length;
+
+    await supabase
+      .from("notifications")
+      .insert({
+        user_id: null,
+        category: "vulnerability",
+        type: ransomwareCount > 0 ? "critical" : "warning",
+        title: `CISA agregó ${newCveIds.length} vulnerabilidad${newCveIds.length === 1 ? "" : "es"} explotada${newCveIds.length === 1 ? "" : "s"} hoy`,
+        description:
+          `Nuevos CVEs en explotación activa${ransomwareCount > 0 ? ` (${ransomwareCount} usados en ransomware)` : ""}: ` +
+          `${sample}${newCveIds.length > 3 ? `, +${newCveIds.length - 3} más` : ""}. ` +
+          `Revisa el catálogo completo en /kev.`,
+        link: "/kev",
+        source: "kev_sync",
+      })
+      .then(() => undefined, () => undefined);
+  }
+
   return new Response(
     JSON.stringify({
       success: true,
       catalogVersion: feed.catalogVersion,
       dateReleased: feed.dateReleased,
       upserted,
+      newCves: newCveIds.length,
     }),
     { headers },
   );

@@ -417,6 +417,7 @@ export type Database = {
           category: string;
           link: string | null;
           dismissed: boolean;
+          source: string;
         };
         Insert: {
           id?: string;
@@ -428,6 +429,7 @@ export type Database = {
           category?: string;
           link?: string | null;
           dismissed?: boolean;
+          source?: string;
         };
         Update: {
           id?: string;
@@ -439,6 +441,7 @@ export type Database = {
           category?: string;
           link?: string | null;
           dismissed?: boolean;
+          source?: string;
         };
         Relationships: [
           { foreignKeyName: "notifications_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
