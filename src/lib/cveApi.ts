@@ -174,6 +174,40 @@ export function severityBadgeColor(severity: string | null): string {
   }
 }
 
+export interface IngestScanResult {
+  inserted: number;
+  total: number;
+  findings: { port: number; cve: string; name: string; severity: string }[];
+}
+
+/**
+ * Take the open ports from a scan and persist them to the logged-in user's
+ * vulnerability_scans history. Requires a Supabase JWT.
+ */
+export async function ingestScanFindings(
+  accessToken: string,
+  openPorts: number[],
+  target?: string,
+): Promise<IngestScanResult> {
+  const res = await fetch("/api/vulnerabilities/from-scan", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ openPorts, target }),
+  });
+  const json = (await res.json()) as {
+    success: boolean;
+    data?: IngestScanResult;
+    error?: string;
+  };
+  if (!res.ok || !json.success || !json.data) {
+    throw new Error(json.error ?? `HTTP ${res.status}`);
+  }
+  return json.data;
+}
+
 export function severityLabelEs(severity: string | null): string {
   switch ((severity ?? "").toLowerCase()) {
     case "critical": return "Crítica";
