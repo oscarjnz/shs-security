@@ -168,7 +168,7 @@ function ChatPanel() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <Sparkles className="h-4 w-4 text-primary" />
-          ACi — Pregúntame
+          ACi: Pregúntame
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-3">

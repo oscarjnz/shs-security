@@ -630,7 +630,7 @@ app.post(
       await resend.emails.send({
         from: RESEND_FROM,
         to: recipients,
-        subject: `S.S.S — ${report.title}`,
+        subject: `S.S.S: ${report.title}`,
         html,
       });
 

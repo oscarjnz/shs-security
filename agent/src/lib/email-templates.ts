@@ -1,10 +1,10 @@
 export type EmailTemplate = "welcome" | "report" | "threat_alert" | "vuln_alert" | "weekly_digest" | "test";
 
-/** Public site URL — used for all "Visit site" / footer links. */
+/** Public site URL, used for all "Visit site" / footer links. */
 const SITE_URL = "https://securitysmartservices.site";
 const SITE_DOMAIN = "securitysmartservices.site";
 
-/** App URL (Vercel deployment) — used for in-product links (dashboard, reports, etc). */
+/** App URL (Vercel deployment), used for in-product links (dashboard, reports, etc). */
 const APP_URL = process.env["VITE_APP_URL"] || SITE_URL;
 
 /* ─── shared design tokens ─── */
@@ -25,7 +25,7 @@ const COLORS = {
 } as const;
 
 /** Inline SVG logo (matches /public/logo.svg). Email clients support inline SVG poorly,
- *  so we keep a tight version + fall back gracefully — Gmail strips it but Outlook/Apple Mail render it.
+ *  so we keep a tight version + fall back gracefully. Gmail strips it but Outlook/Apple Mail render it.
  *  To maximise compatibility we ALSO render a textual "S³" badge alongside. */
 function logoBadge(): string {
   return `
@@ -65,7 +65,7 @@ function footer(): string {
               font-family:'Segoe UI',Arial,sans-serif;
               font-size:13px;
               font-weight:600;
-            ">S.S.S — Security Smart Services</span>
+            ">S.S.S - Security Smart Services</span>
           </td>
           <td style="text-align:right;vertical-align:middle;">
             <a href="${SITE_URL}" style="
@@ -93,7 +93,7 @@ function footer(): string {
     </div>`;
 }
 
-/** Outer wrapper — body background, max-width container. */
+/** Outer wrapper: body background, max-width container. */
 function wrap(inner: string): string {
   return `
   <div style="background:${COLORS.bg};padding:0;margin:0;">
@@ -122,7 +122,7 @@ function escapeHtml(s: unknown): string {
 /** Format an ISO date to a readable Spanish string. */
 function formatWhen(iso?: unknown): { date: string; time: string } {
   const d = iso ? new Date(String(iso)) : new Date();
-  if (Number.isNaN(d.getTime())) return { date: "—", time: "—" };
+  if (Number.isNaN(d.getTime())) return { date: "-", time: "-" };
   return {
     date: d.toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" }),
     time: d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
@@ -205,7 +205,7 @@ export const TEMPLATES: Record<EmailTemplate, (data: Record<string, unknown>) =>
               <span style="
                 display:inline-block;margin-left:10px;vertical-align:middle;
                 color:${COLORS.text};font-size:15px;font-weight:700;letter-spacing:0.3px;
-              ">S.S.S — Reporte de Seguridad</span>
+              ">S.S.S - Reporte de Seguridad</span>
             </td>
             <td style="text-align:right;vertical-align:middle;">
               <span style="
@@ -337,7 +337,7 @@ export const TEMPLATES: Record<EmailTemplate, (data: Record<string, unknown>) =>
         <tr>
           <td style="vertical-align:middle;">
             ${logoBadge()}
-            <span style="display:inline-block;margin-left:10px;vertical-align:middle;color:${COLORS.text};font-size:15px;font-weight:700;">S.S.S — Alerta de Amenaza</span>
+            <span style="display:inline-block;margin-left:10px;vertical-align:middle;color:${COLORS.text};font-size:15px;font-weight:700;">S.S.S - Alerta de Amenaza</span>
           </td>
           <td style="text-align:right;vertical-align:middle;">
             <span style="display:inline-block;padding:4px 10px;background:${COLORS.danger}1a;border:1px solid ${COLORS.danger}55;border-radius:999px;color:#fca5a5;font-size:11px;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;">Crítico</span>
@@ -360,7 +360,7 @@ export const TEMPLATES: Record<EmailTemplate, (data: Record<string, unknown>) =>
         <tr>
           <td style="vertical-align:middle;">
             ${logoBadge()}
-            <span style="display:inline-block;margin-left:10px;vertical-align:middle;color:${COLORS.text};font-size:15px;font-weight:700;">S.S.S — Vulnerabilidad Detectada</span>
+            <span style="display:inline-block;margin-left:10px;vertical-align:middle;color:${COLORS.text};font-size:15px;font-weight:700;">S.S.S - Vulnerabilidad Detectada</span>
           </td>
           <td style="text-align:right;vertical-align:middle;">
             <span style="display:inline-block;padding:4px 10px;background:${COLORS.warn}1a;border:1px solid ${COLORS.warn}66;border-radius:999px;color:${COLORS.warn};font-size:11px;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;">Atención</span>
@@ -387,7 +387,7 @@ export const TEMPLATES: Record<EmailTemplate, (data: Record<string, unknown>) =>
         <tr>
           <td style="vertical-align:middle;">
             ${logoBadge()}
-            <span style="display:inline-block;margin-left:10px;vertical-align:middle;color:${COLORS.text};font-size:15px;font-weight:700;">S.S.S — Resumen Semanal</span>
+            <span style="display:inline-block;margin-left:10px;vertical-align:middle;color:${COLORS.text};font-size:15px;font-weight:700;">S.S.S - Resumen Semanal</span>
           </td>
         </tr>
       </table>
@@ -396,7 +396,7 @@ export const TEMPLATES: Record<EmailTemplate, (data: Record<string, unknown>) =>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;border-spacing:8px;margin-bottom:24px;">
         <tr>
           <td style="padding:18px;background:${COLORS.panelAlt};border:1px solid ${COLORS.border};border-radius:10px;text-align:center;width:33%;">
-            <strong style="color:${COLORS.text};font-size:26px;">${escapeHtml(d.score ?? "—")}</strong><br/>
+            <strong style="color:${COLORS.text};font-size:26px;">${escapeHtml(d.score ?? "-")}</strong><br/>
             <span style="color:${COLORS.textMuted};font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">Score</span>
           </td>
           <td style="padding:18px;background:${COLORS.panelAlt};border:1px solid ${COLORS.border};border-radius:10px;text-align:center;width:33%;">

@@ -21,7 +21,7 @@ import {
 } from "@/hooks/useSecurityChecks";
 
 /**
- * Auditoría de seguridad — un set de cards que se ejecutan automáticamente
+ * Auditoría de seguridad: un set de cards que se ejecutan automáticamente
  * (o on-demand para el de password) y muestran un veredicto digerible para
  * el usuario. Todo funciona SIN agente local: son checks que el browser o
  * un Vercel function pueden hacer.

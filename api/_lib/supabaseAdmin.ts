@@ -1,6 +1,6 @@
 /*
  * Shared Supabase admin client for Vercel Serverless Functions.
- * Uses service role key — never expose this to the frontend.
+ * Uses service role key. Never expose this to the frontend.
  *
  * Required env vars (set in Vercel Project Settings → Environment Variables):
  *   - SUPABASE_URL  (or VITE_SUPABASE_URL as fallback)

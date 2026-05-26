@@ -160,7 +160,8 @@ async function generateSpanishExplanation(
     "Estilo: cercano, sin jerga, con analogías cotidianas cuando ayude. NUNCA copies texto " +
     "técnico inglés palabra por palabra. SIEMPRE cierra recordando que la información oficial " +
     "está en inglés en NVD/NIST y que tú la estás traduciendo y explicando. Varía vocabulario, " +
-    "estructura y analogías cada vez que respondes.";
+    "estructura y analogías cada vez que respondes. NUNCA uses el carácter de raya larga " +
+    "(em dash) en tus respuestas. Usa dos puntos, coma, punto o paréntesis según el caso.";
 
   const userPrompt =
     `${ctx}\n\nDevuelve EXACTAMENTE este formato, sin JSON, sin markdown de código:\n\n` +
@@ -238,7 +239,7 @@ async function handler(req: Request): Promise<Response> {
 
   // Cache freshness: TTL not expired AND content is in the new (non-JSON) format.
   // Old cached entries from the JSON-based prompt have descriptions that start
-  // with "{" — treat those as stale so we regenerate cleanly.
+  // with "{". Treat those as stale so we regenerate cleanly.
   const cachedDescEs = (cached?.description_es as string | null) ?? "";
   const looksLikeOldJsonFormat =
     cachedDescEs.trim().startsWith("{") ||
@@ -349,7 +350,7 @@ async function handler(req: Request): Promise<Response> {
       descEs = explained.description;
       mitigationsEs = explained.mitigations;
     } catch (err) {
-      // Don't fail the whole request if Groq is down — return without ES content
+      // Don't fail the whole request if Groq is down. Return without ES content
       console.error("Groq failed:", err);
     }
   }
