@@ -259,16 +259,16 @@ export function ActivityLogsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {log.source ?? "—"}
+                        {log.source ?? "-"}
                       </TableCell>
                       <TableCell className="font-mono text-xs">
-                        {log.ip ?? "—"}
+                        {log.ip ?? "-"}
                       </TableCell>
                       <TableCell
                         className="max-w-xs truncate text-sm text-muted-foreground"
                         title={log.details ?? ""}
                       >
-                        {log.details ?? "—"}
+                        {log.details ?? "-"}
                       </TableCell>
                       <TableCell
                         className="text-xs text-muted-foreground"
@@ -337,10 +337,10 @@ export function ActivityLogsPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Origen">
-                    <span className="text-sm">{selected.source ?? "—"}</span>
+                    <span className="text-sm">{selected.source ?? "-"}</span>
                   </Field>
                   <Field label="Dirección IP">
-                    <span className="font-mono text-sm">{selected.ip ?? "—"}</span>
+                    <span className="font-mono text-sm">{selected.ip ?? "-"}</span>
                   </Field>
                 </div>
 

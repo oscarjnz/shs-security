@@ -17,7 +17,7 @@ export const OWASP_TOP_10: OwaspItem[] = [
   {
     id: "A01",
     rank: 1,
-    name: "A01:2021 — Pérdida de control de acceso",
+    name: "A01:2021 -Pérdida de control de acceso",
     shortName: "Control de acceso roto",
     description:
       "Pasa cuando una aplicación deja entrar a alguien a un sitio donde no debería: ver datos de otra persona, cambiar configuración que no le pertenece, o saltarse pantallas de permisos. Suele ser un descuido del programador al revisar quién es quién antes de enseñar información.",
@@ -29,7 +29,7 @@ export const OWASP_TOP_10: OwaspItem[] = [
   {
     id: "A02",
     rank: 2,
-    name: "A02:2021 — Fallas criptográficas",
+    name: "A02:2021 -Fallas criptográficas",
     shortName: "Datos sin cifrar correctamente",
     description:
       "Cuando información sensible (contraseñas, tarjetas, identificaciones) se guarda o viaja sin protección adecuada, o con métodos de cifrado anticuados que ya no sirven.",
@@ -41,7 +41,7 @@ export const OWASP_TOP_10: OwaspItem[] = [
   {
     id: "A03",
     rank: 3,
-    name: "A03:2021 — Inyección",
+    name: "A03:2021 -Inyección",
     shortName: "Inyección (SQLi, XSS, etc.)",
     description:
       "Cuando lo que el usuario escribe se mete directo en una consulta a la base de datos o en una página web sin limpiarlo, permitiendo que un atacante inserte instrucciones maliciosas.",
@@ -53,7 +53,7 @@ export const OWASP_TOP_10: OwaspItem[] = [
   {
     id: "A04",
     rank: 4,
-    name: "A04:2021 — Diseño inseguro",
+    name: "A04:2021 -Diseño inseguro",
     shortName: "Diseño inseguro",
     description:
       "Errores que vienen desde el plano: la aplicación nunca tuvo en cuenta amenazas básicas al diseñarla. No es un bug, es una omisión de seguridad de raíz.",
@@ -65,7 +65,7 @@ export const OWASP_TOP_10: OwaspItem[] = [
   {
     id: "A05",
     rank: 5,
-    name: "A05:2021 — Configuración de seguridad incorrecta",
+    name: "A05:2021 -Configuración de seguridad incorrecta",
     shortName: "Mala configuración",
     description:
       "La app está bien hecha, pero quedó mal instalada: usuarios por defecto, paneles de admin expuestos, mensajes de error que revelan información, servicios innecesarios encendidos.",
@@ -77,7 +77,7 @@ export const OWASP_TOP_10: OwaspItem[] = [
   {
     id: "A06",
     rank: 6,
-    name: "A06:2021 — Componentes vulnerables y desactualizados",
+    name: "A06:2021 -Componentes vulnerables y desactualizados",
     shortName: "Librerías desactualizadas",
     description:
       "Casi toda app moderna usa librerías y plugins de terceros. Si están desactualizados, las vulnerabilidades conocidas de esas piezas pasan automáticamente a tu aplicación.",
@@ -89,7 +89,7 @@ export const OWASP_TOP_10: OwaspItem[] = [
   {
     id: "A07",
     rank: 7,
-    name: "A07:2021 — Fallas de identificación y autenticación",
+    name: "A07:2021 -Fallas de identificación y autenticación",
     shortName: "Autenticación débil",
     description:
       "Sistemas de login que aceptan contraseñas débiles, no bloquean tras intentos fallidos, no exigen segundo factor o exponen tokens de sesión.",
@@ -101,7 +101,7 @@ export const OWASP_TOP_10: OwaspItem[] = [
   {
     id: "A08",
     rank: 8,
-    name: "A08:2021 — Fallas en integridad de software y datos",
+    name: "A08:2021 -Fallas en integridad de software y datos",
     shortName: "Cadena de suministro",
     description:
       "Cuando se confía ciegamente en código, librerías o actualizaciones que vienen de fuera, sin verificar que no las hayan alterado.",
@@ -113,7 +113,7 @@ export const OWASP_TOP_10: OwaspItem[] = [
   {
     id: "A09",
     rank: 9,
-    name: "A09:2021 — Fallas de registro y monitoreo",
+    name: "A09:2021 -Fallas de registro y monitoreo",
     shortName: "Sin logs ni monitoreo",
     description:
       "Cuando un sistema no registra eventos importantes (logins fallidos, cambios de permisos, errores), un ataque puede pasar inadvertido durante meses.",
@@ -125,7 +125,7 @@ export const OWASP_TOP_10: OwaspItem[] = [
   {
     id: "A10",
     rank: 10,
-    name: "A10:2021 — Server-Side Request Forgery (SSRF)",
+    name: "A10:2021 -Server-Side Request Forgery (SSRF)",
     shortName: "SSRF",
     description:
       "Cuando una aplicación hace peticiones a URLs que el usuario indica, sin validar. Un atacante puede hacer que el servidor pida cosas internas que no debería.",
@@ -149,7 +149,8 @@ export function owaspSystemPrompt(): string {
     "respondas: no repitas la misma frase dos veces seguidas. Cierra recordando " +
     "que la información oficial original está en inglés en owasp.org y que tú la " +
     "estás explicando y adaptando al español. Si la pregunta no tiene que ver con " +
-    "seguridad, redirige amablemente al tema.\n\n" +
+    "seguridad, redirige amablemente al tema. NUNCA uses el carácter de raya larga " +
+    "(em dash) en tus respuestas. Usa dos puntos, coma, punto o paréntesis según el caso.\n\n" +
     "CONOCIMIENTO BASE (OWASP Top 10 2021):\n\n" +
     summary
   );

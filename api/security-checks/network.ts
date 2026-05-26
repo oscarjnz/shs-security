@@ -15,7 +15,7 @@
 export const config = { runtime: "nodejs" };
 
 /* ASNs that strongly imply the user is going through a VPN/proxy. Not
-   exhaustive — meant as a "smells like" heuristic, not a definitive answer. */
+   exhaustive. Meant as a "smells like" heuristic, not a definitive answer. */
 const VPN_ASN_HINTS = new Set([
   "AS9009",    // M247 (used by many VPN brands)
   "AS60068",   // CDN77 / Datacamp (used by Nord, Surfshark)

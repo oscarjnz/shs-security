@@ -50,7 +50,7 @@ export function KevCatalogPage() {
         <Flame className="h-8 w-8 shrink-0 text-red-500" />
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-foreground">
-            CISA KEV — Explotados activamente
+            CISA KEV: Explotados activamente
           </h1>
           <p className="text-sm text-muted-foreground">
             Catálogo oficial de vulnerabilidades que se sabe están siendo explotadas por

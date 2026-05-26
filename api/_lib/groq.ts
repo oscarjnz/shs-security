@@ -1,6 +1,6 @@
 /*
  * Minimal Groq client for Vercel Serverless. We do not pull groq-sdk into the
- * root package.json — the Groq REST API is OpenAI-compatible, so plain fetch
+ * root package.json. The Groq REST API is OpenAI-compatible, so plain fetch
  * is enough.
  *
  * Required env var: GROQ_API_KEY

@@ -61,7 +61,7 @@ export function useNetworkCheck() {
           summary = `Conectado vía VPN (${d.isp ?? d.asnName}). Tu IP real está oculta.`;
         } else if (d.verdict === "datacenter") {
           status = "warn";
-          summary = `Tu IP parece ser de un datacenter (${d.org ?? d.isp}). Inusual desde casa — ¿estás en un servidor remoto?`;
+          summary = `Tu IP parece ser de un datacenter (${d.org ?? d.isp}). Inusual desde casa. ¿Estás en un servidor remoto?`;
         } else if (d.verdict === "mobile") {
           status = "ok";
           summary = `Datos móviles (${d.isp ?? d.asnName}, ${d.country}). NAT del operador protege bastante.`;
@@ -175,7 +175,7 @@ export function useConnectionCheck() {
       summary = `Detectamos: ${issues.join(", ")}.`;
     } else if (!info.doNotTrack && !info.globalPrivacyControl) {
       status = "neutral";
-      summary = "Conexión segura. Tu navegador no envía señales de privacidad (DNT / GPC) — opcional.";
+      summary = "Conexión segura. Tu navegador no envía señales de privacidad (DNT / GPC), es opcional.";
     }
 
     return {
@@ -232,7 +232,7 @@ export function usePwnedPasswordCheck() {
         title: "¿Tu contraseña fue filtrada?",
         summary: pwned
           ? `Tu contraseña apareció en ${count.toLocaleString("es")} filtraciones públicas. Cámbiala YA en cualquier servicio donde la uses.`
-          : "No encontramos tu contraseña en las filtraciones públicas. (Bien — pero igual usa una distinta por servicio).",
+          : "No encontramos tu contraseña en las filtraciones públicas. (Bien, pero igual usa una distinta por servicio).",
         data: { count, pwned },
         ranAt: new Date().toISOString(),
       });

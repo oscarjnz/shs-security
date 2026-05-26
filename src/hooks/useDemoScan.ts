@@ -21,7 +21,7 @@ const STORAGE_KEY = "sss:demo-scans";
 
 export type DemoMode = "lan" | "cloud" | "detecting";
 
-/* ─── profile catalogs (hardcoded — no backend round-trip needed) ─── */
+/* ─── profile catalogs (hardcoded, no backend round-trip needed) ─── */
 
 export interface DemoProfile {
   id: string;
