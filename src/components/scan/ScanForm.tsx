@@ -213,10 +213,10 @@ export function ScanForm({ isRunning, onSubmit, onAbort }: ScanFormProps) {
                 type="button"
                 disabled={isRunning}
                 onClick={() => setProfileId(p.id)}
-                className={`text-left rounded-md border p-3 transition-colors min-w-0 overflow-hidden ${
+                className={`text-left rounded-md border p-3 outline-none transition-[border-color,background-color,box-shadow,transform] duration-150 ease-out-quart focus-visible:ring-2 focus-visible:ring-ring/60 active:scale-[0.99] min-w-0 overflow-hidden ${
                   profileId === p.id
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:bg-muted/50"
+                    ? "border-primary/70 bg-primary/[0.06] shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.25),0_8px_24px_-16px_hsl(142_71%_45%/0.4)]"
+                    : "border-border hover:border-input/80 hover:bg-muted/40"
                 } ${isRunning ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 <div className="flex items-center justify-between gap-2">

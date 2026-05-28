@@ -73,6 +73,13 @@ export default {
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'
   		},
+  		transitionTimingFunction: {
+  			'out-quart': 'cubic-bezier(0.23, 1, 0.32, 1)',
+  			'out-expo': 'cubic-bezier(0.19, 1, 0.22, 1)',
+  			'in-out-quart': 'cubic-bezier(0.77, 0, 0.175, 1)',
+  			'drawer': 'cubic-bezier(0.32, 0.72, 0, 1)',
+  			'spring': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+  		},
   		keyframes: {
   			'accordion-down': {
   				from: {

@@ -25,19 +25,19 @@ export function DashboardHeader() {
   const displayName = profile?.full_name ?? "Usuario";
 
   return (
-    <header className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+    <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-3">
         <div
           className={cn(
-            "flex h-10 w-10 items-center justify-center rounded-lg",
+            "flex h-10 w-10 items-center justify-center rounded-lg ring-1 ring-inset ring-cyber-green/20",
             "bg-cyber-green/10 text-cyber-green",
           )}
         >
-          <Shield className="h-6 w-6" />
+          <Shield className="h-5 w-5" />
         </div>
 
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold tracking-[-0.02em] text-foreground sm:text-2xl">
             {greeting},{" "}
             <span className="text-cyber-green">{displayName}</span>
           </h1>
@@ -49,13 +49,13 @@ export function DashboardHeader() {
 
       <div
         className={cn(
-          "mt-2 flex items-center gap-2 rounded-md px-3 py-1.5 sm:mt-0",
-          "border border-cyber-border bg-cyber-card/60 text-xs text-muted-foreground",
+          "flex items-center gap-2 rounded-full px-3 py-1.5",
+          "border border-cyber-border/80 bg-cyber-card/60 text-xs font-medium text-muted-foreground backdrop-blur-sm",
         )}
       >
         <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyber-green opacity-75" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-cyber-green" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyber-green opacity-60" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-cyber-green shadow-[0_0_6px_0_hsl(142_71%_45%/0.8)]" />
         </span>
         Sistema activo
       </div>
