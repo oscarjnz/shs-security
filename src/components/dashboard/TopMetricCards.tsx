@@ -113,15 +113,15 @@ export function TopMetricCards({
       {cards.map((card) => (
         <Card
           key={card.label}
-          className="border-cyber-border bg-cyber-card/80 backdrop-blur-sm"
+          className="group/metric border-cyber-border bg-cyber-card/80 backdrop-blur-sm transition-[border-color,box-shadow,transform] duration-200 ease-out-quart hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_12px_28px_-14px_hsl(142_71%_45%/0.3)]"
         >
           <CardContent className="flex items-center gap-4 p-5">
             {"gauge" in card && card.gauge ? (
-              <div className="relative flex-shrink-0">
+              <div className="relative flex-shrink-0 transition-transform duration-200 ease-out-quart group-hover/metric:scale-[1.03]">
                 <GaugeMini value={hasScore ? displayScore : 0} />
                 <span
                   className={cn(
-                    "absolute inset-0 flex items-center justify-center text-sm font-bold",
+                    "absolute inset-0 flex items-center justify-center text-sm font-bold tabular-nums",
                     hasScore ? scoreColor(displayScore) : "text-muted-foreground",
                   )}
                 >
@@ -131,7 +131,7 @@ export function TopMetricCards({
             ) : (
               <div
                 className={cn(
-                  "flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg",
+                  "flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg ring-1 ring-inset ring-foreground/[0.04] transition-transform duration-200 ease-out-quart group-hover/metric:scale-[1.03]",
                   card.iconBg,
                 )}
               >
@@ -140,7 +140,7 @@ export function TopMetricCards({
             )}
 
             <div className="min-w-0">
-              <p className="truncate text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <p className="truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 {card.label}
               </p>
               {"gauge" in card && card.gauge ? (
@@ -159,7 +159,7 @@ export function TopMetricCards({
                         : "Critico"}
                 </p>
               ) : (
-                <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">
+                <p className="mt-1 text-2xl font-bold tracking-[-0.02em] tabular-nums text-foreground">
                   {card.format?.(card.value)}
                 </p>
               )}

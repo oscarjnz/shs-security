@@ -4,40 +4,47 @@
 
 @layer base {
   :root {
-    --background: 222.2 84% 4.9%;
+    --background: 222 47% 5%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 222 40% 7%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: 222 40% 7%;
     --popover-foreground: 210 40% 98%;
     --primary: 142 71% 45%;
-    --primary-foreground: 144 72% 10%;
-    --secondary: 217.2 32.6% 17.5%;
+    --primary-foreground: 144 72% 8%;
+    --secondary: 217 32% 14%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
+    --muted: 217 32% 14%;
+    --muted-foreground: 215 18% 62%;
+    --accent: 217 32% 14%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --border: 217 32% 16%;
+    --input: 217 32% 16%;
     --ring: 142 71% 45%;
-    --radius: 0.5rem;
+    --radius: 0.75rem;
     --chart-1: 142 71% 45%;
     --chart-2: 199 89% 48%;
     --chart-3: 47 96% 53%;
     --chart-4: 0 72% 51%;
     --chart-5: 262 83% 58%;
 
-    --sidebar-background: 220 25% 7%;
+    --sidebar-background: 222 45% 5%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 142 71% 45%;
-    --sidebar-primary-foreground: 144 72% 10%;
-    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-primary-foreground: 144 72% 8%;
+    --sidebar-accent: 217 32% 14%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-border: 217 32% 14%;
     --sidebar-ring: 142 71% 45%;
+
+    /* Custom easing curves — stronger than the CSS defaults */
+    --ease-out-quart: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+    --ease-in-out-quart: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 }
 
@@ -45,22 +52,236 @@
   * {
     @apply border-border;
   }
+
+  html {
+    font-feature-settings: "cv11", "ss01", "ss03";
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
     @apply bg-background text-foreground;
+    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, hsl(142 71% 45% / 0.08), transparent 60%),
+      radial-gradient(ellipse 60% 50% at 100% 0%, hsl(199 89% 48% / 0.04), transparent 50%),
+      radial-gradient(ellipse 60% 50% at 0% 100%, hsl(142 71% 45% / 0.04), transparent 50%);
+    background-attachment: fixed;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: "Geist", "Inter", ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.015em;
+  }
+
+  ::selection {
+    background: hsl(142 71% 45% / 0.3);
+    color: hsl(210 40% 98%);
+  }
+
+  /* Subtle global focus ring that matches the brand */
+  :focus-visible {
+    outline: none;
   }
 }
 
+/* Scrollbar — slimmer, themed */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted));
-  border-radius: 3px;
+  background: hsl(var(--border));
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground));
+  background: hsl(var(--muted-foreground) / 0.6);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+@layer utilities {
+  /* Premium surface treatments */
+  .surface-glass {
+    background: linear-gradient(
+      180deg,
+      hsl(222 40% 9% / 0.7),
+      hsl(222 40% 6% / 0.7)
+    );
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    border: 1px solid hsl(217 32% 18% / 0.6);
+    box-shadow:
+      inset 0 1px 0 0 hsl(210 40% 98% / 0.04),
+      0 1px 0 0 hsl(0 0% 0% / 0.4),
+      0 20px 40px -20px hsl(0 0% 0% / 0.5);
+  }
+
+  .surface-elevated {
+    background: linear-gradient(
+      180deg,
+      hsl(222 40% 9%),
+      hsl(222 40% 6%)
+    );
+    border: 1px solid hsl(217 32% 18%);
+    box-shadow:
+      inset 0 1px 0 0 hsl(210 40% 98% / 0.03),
+      0 4px 16px -8px hsl(0 0% 0% / 0.6);
+  }
+
+  /* Brand glow — for primary CTAs / hero accents */
+  .brand-glow {
+    box-shadow:
+      0 0 0 1px hsl(142 71% 45% / 0.4),
+      0 8px 24px -6px hsl(142 71% 45% / 0.35),
+      inset 0 1px 0 0 hsl(210 40% 98% / 0.2);
+  }
+
+  .brand-glow-sm {
+    box-shadow:
+      0 0 24px -4px hsl(142 71% 45% / 0.35),
+      inset 0 1px 0 0 hsl(210 40% 98% / 0.15);
+  }
+
+  /* Gradient text — used sparingly for hero headings */
+  .gradient-text-brand {
+    background: linear-gradient(
+      135deg,
+      hsl(142 90% 60%) 0%,
+      hsl(160 80% 50%) 50%,
+      hsl(180 70% 55%) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  /* Subtle grid background — for hero / empty states */
+  .bg-grid-fade {
+    background-image:
+      linear-gradient(to right, hsl(217 32% 18% / 0.4) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(217 32% 18% / 0.4) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse 60% 50% at 50% 0%, black 30%, transparent 80%);
+    -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 0%, black 30%, transparent 80%);
+  }
+
+  /* Pressable — adds the satisfying scale-on-press feedback */
+  .pressable {
+    transition: transform 160ms var(--ease-out-quart);
+  }
+  .pressable:active {
+    transform: scale(0.97);
+  }
+
+  /* Cohesive focus ring — softer than default Tailwind ring */
+  .focus-ring {
+    @apply outline-none;
+    transition: box-shadow 160ms var(--ease-out-quart);
+  }
+  .focus-ring:focus-visible {
+    box-shadow:
+      0 0 0 2px hsl(var(--background)),
+      0 0 0 4px hsl(var(--ring) / 0.6);
+  }
+
+  /* Hoverable card — gentle lift */
+  .hoverable-card {
+    transition:
+      transform 220ms var(--ease-out-quart),
+      border-color 220ms var(--ease-out-quart),
+      box-shadow 220ms var(--ease-out-quart);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .hoverable-card:hover {
+      transform: translateY(-2px);
+      border-color: hsl(142 71% 45% / 0.4);
+      box-shadow:
+        0 12px 32px -16px hsl(142 71% 45% / 0.25),
+        inset 0 1px 0 0 hsl(210 40% 98% / 0.04);
+    }
+  }
+
+  /* Skeleton — shimmer beats a flat pulse */
+  .skeleton-shimmer {
+    position: relative;
+    overflow: hidden;
+    background: hsl(var(--muted));
+  }
+  .skeleton-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(210 40% 98% / 0.06),
+      transparent
+    );
+    animation: skeletonShimmer 1.8s var(--ease-in-out-quart) infinite;
+  }
+
+  /* Entry animations — keep durations short, use custom easings */
+  .animate-fade-up {
+    animation: fadeUp 360ms var(--ease-out-quart) both;
+  }
+  .animate-scale-in {
+    animation: scaleIn 220ms var(--ease-out-quart) both;
+  }
+  .animate-shimmer {
+    background-size: 200% 100%;
+    animation: shimmer 2.4s linear infinite;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+@keyframes skeletonShimmer {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .hoverable-card:hover {
+    transform: none;
+  }
 }
