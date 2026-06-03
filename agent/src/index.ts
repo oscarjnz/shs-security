@@ -5,6 +5,7 @@ import cron from "node-cron";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import Groq from "groq-sdk";
 import { Resend } from "resend";
+import { verifyToken, createClerkClient } from "@clerk/express";
 
 import type { Response, NextFunction } from "express";
 import type { AuthenticatedRequest } from "./lib/auth.js";
@@ -59,8 +60,13 @@ import { startKeepAliveCron, pingSupabase, getLastPingResult } from "./lib/keep-
 
 const SUPABASE_URL = process.env["SUPABASE_URL"];
 const SUPABASE_SERVICE_ROLE_KEY = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+const CLERK_SECRET_KEY = process.env["CLERK_SECRET_KEY"];
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   console.error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required");
+  process.exit(1);
+}
+if (!CLERK_SECRET_KEY) {
+  console.error("CLERK_SECRET_KEY is required");
   process.exit(1);
 }
 
@@ -83,6 +89,7 @@ const supabaseAdmin: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_SERVIC
 
 const groq = GROQ_API_KEY ? new Groq({ apiKey: GROQ_API_KEY }) : null;
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
+const clerk = createClerkClient({ secretKey: CLERK_SECRET_KEY });
 
 /* ─── express setup ─── */
 
@@ -120,7 +127,7 @@ app.use(express.json({ limit: "2mb" }));
 
 /* ─── middleware ─── */
 
-function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
+async function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
   const header = req.headers.authorization;
   if (!header?.startsWith("Bearer ")) {
     fail(res, 401, "Token de autorización requerido");
@@ -129,19 +136,17 @@ function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunctio
 
   const token = header.slice(7);
 
-  supabaseAdmin.auth
-    .getUser(token)
-    .then(({ data, error }) => {
-      if (error || !data.user) {
-        fail(res, 401, "Token inválido o expirado");
-        return;
-      }
-      req.callerUserId = data.user.id;
-      next();
-    })
-    .catch(() => {
-      fail(res, 500, "Error validando token");
-    });
+  try {
+    const payload = await verifyToken(token, { secretKey: CLERK_SECRET_KEY! });
+    if (!payload.sub) {
+      fail(res, 401, "Token inválido o expirado");
+      return;
+    }
+    req.callerUserId = payload.sub;
+    next();
+  } catch {
+    fail(res, 401, "Token inválido o expirado");
+  }
 }
 
 function requireAdmin(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
@@ -586,13 +591,12 @@ app.post(
 
       // Enrich the email with the user identity + their latest known Wi-Fi network,
       // so the report header shows who generated it and from which LAN.
-      const [{ data: profile }, { data: caller }, { data: lastNetwork }] = await Promise.all([
+      const [{ data: profile }, { data: lastNetwork }] = await Promise.all([
         supabaseAdmin
           .from("profiles")
-          .select("full_name, role")
+          .select("full_name, role, email")
           .eq("id", userId)
           .maybeSingle(),
-        supabaseAdmin.auth.admin.getUserById(userId),
         supabaseAdmin
           .from("user_networks")
           .select("label, subnet, interface_name, last_seen")
@@ -619,8 +623,8 @@ app.post(
         report_id: report.id,
         report_type: report.type,
         generated_at: report.generated_at,
-        user_full_name: profile?.full_name || caller?.user?.user_metadata?.full_name || "Usuario S.S.S",
-        user_email: caller?.user?.email ?? "",
+        user_full_name: profile?.full_name ?? "Usuario S.S.S",
+        user_email: profile?.email ?? "",
         user_role: profile?.role ?? "normal",
         network_label: lastNetwork?.label ?? lastNetwork?.interface_name ?? null,
         network_subnet: lastNetwork?.subnet ?? null,
@@ -1378,24 +1382,31 @@ app.post(
     const input = getValidated<CreateUserInput>(req);
 
     try {
-      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email: input.email,
-        password: input.password ?? Math.random().toString(36).slice(2) + "A1!",
-        email_confirm: true,
-        user_metadata: { full_name: input.full_name },
-      });
-
-      if (authError) {
-        fail(res, 400, authError.message);
+      let clerkUser: Awaited<ReturnType<typeof clerk.users.createUser>>;
+      try {
+        clerkUser = await clerk.users.createUser({
+          emailAddress: [input.email],
+          password: input.password ?? Math.random().toString(36).slice(2) + "A1!",
+          firstName: input.full_name.split(" ")[0],
+          lastName: input.full_name.split(" ").slice(1).join(" ") || undefined,
+          skipPasswordChecks: false,
+        });
+      } catch (clerkErr) {
+        const msg = clerkErr instanceof Error ? clerkErr.message : "Error creando usuario en Clerk";
+        fail(res, 400, msg);
         return;
       }
 
-      const newUserId = authUser.user.id;
+      const newUserId = clerkUser.id;
 
       await supabaseAdmin
         .from("profiles")
-        .update({ full_name: input.full_name, role: input.role })
-        .eq("id", newUserId);
+        .upsert({
+          id: newUserId,
+          email: input.email,
+          full_name: input.full_name,
+          role: input.role,
+        });
 
       if (input.permissions) {
         const rows = Object.entries(input.permissions).map(([section, level]) => ({
@@ -1501,13 +1512,9 @@ app.put(
       if (error) throw error;
 
       if (!is_active) {
-        await supabaseAdmin.auth.admin.updateUserById(user_id, {
-          ban_duration: "876000h",
-        });
+        await clerk.users.banUser(user_id);
       } else {
-        await supabaseAdmin.auth.admin.updateUserById(user_id, {
-          ban_duration: "none",
-        });
+        await clerk.users.unbanUser(user_id);
       }
 
       await supabaseAdmin.from("activity_logs").insert({
@@ -1541,8 +1548,7 @@ app.delete(
     }
 
     try {
-      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(user_id);
-      if (authError) throw authError;
+      await clerk.users.deleteUser(user_id);
 
       await supabaseAdmin.from("activity_logs").insert({
         user_id: req.callerUserId!,

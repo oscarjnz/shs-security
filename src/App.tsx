@@ -1,9 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { AuthenticateWithRedirectCallback } from "@clerk/react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { ProfileProvider } from "@/contexts/AuthContext";
 import { ScanProvider } from "@/contexts/ScanContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/MainLayout";
@@ -46,7 +47,7 @@ const queryClient = new QueryClient({
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
+      <ProfileProvider>
         <ScanProvider>
         <TooltipProvider>
           <Toaster />
@@ -59,6 +60,7 @@ const App = () => (
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignUpPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/sso-callback" element={<AuthenticateWithRedirectCallback />} />
 
               <Route element={<ProtectedRoute />}>
                 <Route element={<MainLayout />}>
@@ -87,7 +89,7 @@ const App = () => (
           </BrowserRouter>
         </TooltipProvider>
         </ScanProvider>
-      </AuthProvider>
+      </ProfileProvider>
     </QueryClientProvider>
   </ErrorBoundary>
 );

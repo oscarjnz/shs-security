@@ -2,11 +2,11 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Shield } from "lucide-react";
 
-import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 
 export function DashboardHeader() {
-  const { profile } = useAuth();
+  const { profile } = useProfile();
 
   const now = new Date();
   const hour = now.getHours();

@@ -1,15 +1,10 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
+import { useUser } from "@clerk/react";
 
-/**
- * Header used on public (unauthenticated) pages: landing, demo, login, signup.
- * If a session is active it shows a "Ir al dashboard" button instead of
- * Login / Sign up.
- */
 export function PublicHeader() {
-  const { user } = useAuth();
+  const { isSignedIn } = useUser();
   const navigate = useNavigate();
 
   return (
@@ -31,7 +26,7 @@ export function PublicHeader() {
             Probar demo
           </Link>
 
-          {user ? (
+          {isSignedIn ? (
             <Button size="sm" onClick={() => navigate("/dashboard")} className="gap-2">
               Ir al dashboard
             </Button>

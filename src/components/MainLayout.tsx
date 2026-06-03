@@ -1,5 +1,6 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { UserButton, useClerk } from "@clerk/react";
+import { useProfile } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
 import { hasPermission } from "@/lib/auth";
 import type { SectionKey } from "@/lib/database.types";
@@ -39,7 +40,8 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 export function MainLayout() {
-  const { profile, permissions, isAdmin, signOut } = useAuth();
+  const { profile, permissions, isAdmin } = useProfile();
+  const { signOut } = useClerk();
   const { unreadCount } = useNotifications();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -179,6 +181,7 @@ export function MainLayout() {
             <Menu className="h-5 w-5" />
           </button>
           <div className="flex-1" />
+          <UserButton />
           <Button
             variant="ghost"
             size="icon"

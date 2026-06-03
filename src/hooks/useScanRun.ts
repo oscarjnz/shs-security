@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { supabase, AGENT_URL } from "@/lib/supabase";
+import { AGENT_URL } from "@/lib/supabase";
 
 export type ScanProfileId =
   | "discovery"
@@ -93,7 +93,7 @@ const INITIAL_STATE: ScanState = {
   progress: null,
 };
 
-export function useScanRun() {
+export function useScanRun(getToken: () => Promise<string | null>) {
   const [state, setState] = useState<ScanState>(INITIAL_STATE);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -119,16 +119,14 @@ export function useScanRun() {
     });
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error("Sesión no válida. Vuelve a iniciar sesión.");
+      const token = await getToken();
+      if (!token) throw new Error("Sesión no válida. Vuelve a iniciar sesión.");
 
       const res = await fetch(`${AGENT_URL}/api/scan/run`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(args),
         signal: ctrl.signal,
@@ -181,7 +179,7 @@ export function useScanRun() {
       const msg = err instanceof Error ? err.message : "Error desconocido";
       setState((s) => ({ ...s, isRunning: false, error: msg, progress: null }));
     }
-  }, []);
+  }, [getToken]);
 
   return { state, runScan, reset, abort };
 }
@@ -235,14 +233,9 @@ function applyEvent(
 
 /* ─── helper: fetch profiles ─── */
 
-export async function fetchScanProfiles(): Promise<ScanProfile[]> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session?.access_token) throw new Error("No autenticado");
-
+export async function fetchScanProfiles(token: string): Promise<ScanProfile[]> {
   const res = await fetch(`${AGENT_URL}/api/scan/profiles`, {
-    headers: { Authorization: `Bearer ${session.access_token}` },
+    headers: { Authorization: `Bearer ${token}` },
   });
   const json = await res.json();
   return (json.data ?? []) as ScanProfile[];
@@ -256,9 +249,7 @@ export interface LocalSubnet {
   netmask: string;
   cidr: string;
   prefix: number;
-  /** Scan-friendly /24 around your IP. Use this for the scan target by default. */
   suggestedCidr: string;
-  // Enriched fields from /api/network/local-subnets:
   knownId?: string | null;
   label?: string | null;
   firstSeen?: string | null;
@@ -266,15 +257,12 @@ export interface LocalSubnet {
   isNew?: boolean;
 }
 
-export async function updateNetworkLabel(networkId: string, label: string): Promise<void> {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) throw new Error("No autenticado");
-
+export async function updateNetworkLabel(networkId: string, label: string, token: string): Promise<void> {
   const res = await fetch(`${AGENT_URL}/api/network/networks/${networkId}/label`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${session.access_token}`,
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ label }),
   });
@@ -284,14 +272,9 @@ export async function updateNetworkLabel(networkId: string, label: string): Prom
   }
 }
 
-export async function fetchLocalSubnets(): Promise<LocalSubnet[]> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session?.access_token) throw new Error("No autenticado");
-
+export async function fetchLocalSubnets(token: string): Promise<LocalSubnet[]> {
   const res = await fetch(`${AGENT_URL}/api/network/local-subnets`, {
-    headers: { Authorization: `Bearer ${session.access_token}` },
+    headers: { Authorization: `Bearer ${token}` },
   });
   const json = await res.json();
   return (json.data ?? []) as LocalSubnet[];
@@ -308,17 +291,13 @@ export interface ValidateResult {
 export async function validateCustomCommand(
   target: string,
   customArgs: string[],
+  token: string,
 ): Promise<ValidateResult> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session?.access_token) throw new Error("No autenticado");
-
   const res = await fetch(`${AGENT_URL}/api/scan/validate`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${session.access_token}`,
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ target, customArgs }),
   });

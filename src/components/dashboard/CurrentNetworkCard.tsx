@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "@clerk/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Wifi, Sparkles, MapPin, Loader2, Pencil, Check, X } from "lucide-react";
 import { format, parseISO, formatDistanceToNow } from "date-fns";
@@ -12,10 +13,15 @@ import { fetchLocalSubnets, updateNetworkLabel, type LocalSubnet } from "@/hooks
 import { toast } from "@/hooks/use-toast";
 
 export function CurrentNetworkCard() {
+  const { getToken } = useAuth();
   const qc = useQueryClient();
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["local-subnets-enriched"],
-    queryFn: fetchLocalSubnets,
+    queryFn: async () => {
+      const token = await getToken();
+      if (!token) throw new Error("No autenticado");
+      return fetchLocalSubnets(token);
+    },
     refetchInterval: 60_000, // refresh every minute so we notice network changes
     refetchOnWindowFocus: true,
   });
@@ -48,7 +54,9 @@ export function CurrentNetworkCard() {
 
   const saveLabel = async (networkId: string) => {
     try {
-      await updateNetworkLabel(networkId, labelDraft.trim());
+      const token = await getToken();
+      if (!token) throw new Error("No autenticado");
+      await updateNetworkLabel(networkId, labelDraft.trim(), token);
       setEditingId(null);
       setLabelDraft("");
       toast({ title: "Nombre guardado" });
