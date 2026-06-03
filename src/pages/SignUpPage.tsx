@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useUser } from "@clerk/react";
+import { useSignUp } from "@clerk/react/legacy";
 import { Loader2, Mail, User as UserIcon, CheckCircle2, AlertCircle } from "lucide-react";
 
-import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -21,20 +22,22 @@ import { Logo } from "@/components/Logo";
 
 export function SignUpPage() {
   const navigate = useNavigate();
-  const { user, signUp, isLoading: authLoading } = useAuth();
+  const { isSignedIn } = useUser();
+  const { signUp, isLoaded, setActive } = useSignUp();
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [pendingVerification, setPendingVerification] = useState(false);
+  const [verificationCode, setVerificationCode] = useState("");
 
   useEffect(() => {
-    if (!authLoading && user) {
+    if (isSignedIn) {
       navigate("/dashboard", { replace: true });
     }
-  }, [user, authLoading, navigate]);
+  }, [isSignedIn, navigate]);
 
   const criteria = useMemo(() => evaluatePassword(password), [password]);
   const score = passwordScore(criteria);
@@ -48,27 +51,68 @@ export function SignUpPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!formValid) return;
+    if (!isLoaded || !signUp || !formValid) return;
 
     setIsSubmitting(true);
-    const result = await signUp(email.trim(), password, fullName.trim());
-    setIsSubmitting(false);
+    try {
+      await signUp.create({
+        emailAddress: email.trim(),
+        password,
+        firstName: fullName.trim(),
+      });
 
-    if (result === "__confirm_email__") {
-      setNeedsConfirmation(true);
-      return;
-    }
-
-    if (result) {
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      setPendingVerification(true);
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === "object" && "errors" in err
+          ? (err as { errors: { message: string }[] }).errors[0]?.message ?? "Error desconocido"
+          : "Error desconocido";
       toast({
         title: "No se pudo crear la cuenta",
-        description: result,
+        description: message,
         variant: "destructive",
       });
-    } else {
-      // Session is active - redirect immediately
-      navigate("/dashboard", { replace: true });
+    } finally {
+      setIsSubmitting(false);
     }
+  }
+
+  async function handleVerify(e: FormEvent) {
+    e.preventDefault();
+    if (!isLoaded || !signUp) return;
+
+    setIsSubmitting(true);
+    try {
+      const result = await signUp.attemptEmailAddressVerification({
+        code: verificationCode,
+      });
+
+      if (result.status === "complete" && result.createdSessionId) {
+        await setActive({ session: result.createdSessionId });
+        navigate("/dashboard", { replace: true });
+      }
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === "object" && "errors" in err
+          ? (err as { errors: { message: string }[] }).errors[0]?.message ?? "Codigo incorrecto"
+          : "Codigo incorrecto";
+      toast({
+        title: "Verificacion fallida",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-cyber-dark">
+        <Loader2 className="h-8 w-8 animate-spin text-cyber-green" />
+      </div>
+    );
   }
 
   return (
@@ -85,34 +129,62 @@ export function SignUpPage() {
               Crear cuenta
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Únete a S.S.S y protege tu red sin complicaciones
+              Unete a S.S.S y protege tu red sin complicaciones
             </p>
           </div>
         </CardHeader>
 
         <CardContent className="px-6 pb-8 pt-4">
-          {needsConfirmation ? (
-            <div className="flex flex-col items-center gap-4 py-4 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10">
-                <CheckCircle2 className="h-8 w-8 text-emerald-400" />
+          {pendingVerification ? (
+            <form onSubmit={handleVerify} className="space-y-5">
+              <div className="flex flex-col items-center gap-4 py-2 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10">
+                  <CheckCircle2 className="h-8 w-8 text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    Verifica tu correo
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Enviamos un codigo a{" "}
+                    <span className="font-medium text-cyber-green">{email}</span>.
+                    Introdúcelo abajo.
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">
-                  Cuenta creada - confirma tu correo
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Te enviamos un email a{" "}
-                  <span className="font-medium text-cyber-green">{email}</span>{" "}
-                  con un enlace para activar tu cuenta. Una vez confirmado podrás iniciar sesión.
-                </p>
+
+              <div className="space-y-2">
+                <Label htmlFor="code" className="text-sm text-muted-foreground">
+                  Codigo de verificacion
+                </Label>
+                <Input
+                  id="code"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="123456"
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value)}
+                  required
+                  autoComplete="one-time-code"
+                  className="border-cyber-border bg-cyber-dark/60 text-center text-lg tracking-widest text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
+                />
               </div>
-              <Link
-                to="/login"
-                className="mt-2 text-sm text-cyber-green/80 underline-offset-4 hover:text-cyber-green hover:underline"
+
+              <Button
+                type="submit"
+                disabled={isSubmitting || verificationCode.length < 4}
+                className="w-full gap-2 bg-cyber-green font-semibold text-cyber-dark hover:bg-cyber-green/90"
               >
-                Volver al inicio de sesión
-              </Link>
-            </div>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Verificando...
+                  </>
+                ) : (
+                  "Verificar cuenta"
+                )}
+              </Button>
+            </form>
           ) : (
             <>
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -137,7 +209,7 @@ export function SignUpPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-sm text-muted-foreground">
-                    Correo electrónico
+                    Correo electronico
                   </Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -156,11 +228,11 @@ export function SignUpPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-sm text-muted-foreground">
-                    Contraseña
+                    Contrasena
                   </Label>
                   <PasswordInput
                     id="password"
-                    placeholder="Mínimo 8 caracteres"
+                    placeholder="Minimo 8 caracteres"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -173,11 +245,11 @@ export function SignUpPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="confirm-password" className="text-sm text-muted-foreground">
-                    Confirma tu contraseña
+                    Confirma tu contrasena
                   </Label>
                   <PasswordInput
                     id="confirm-password"
-                    placeholder="Repite la contraseña"
+                    placeholder="Repite la contrasena"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
@@ -196,8 +268,8 @@ export function SignUpPage() {
                         <AlertCircle className="h-3.5 w-3.5" />
                       )}
                       {passwordsMatch
-                        ? "Las contraseñas coinciden"
-                        : "Las contraseñas no coinciden"}
+                        ? "Las contrasenas coinciden"
+                        : "Las contrasenas no coinciden"}
                     </p>
                   )}
                 </div>
@@ -221,7 +293,7 @@ export function SignUpPage() {
               <div className="my-5 flex items-center gap-3">
                 <Separator className="flex-1 bg-cyber-border" />
                 <span className="text-xs uppercase tracking-wider text-muted-foreground">
-                  o regístrate con
+                  o registrate con
                 </span>
                 <Separator className="flex-1 bg-cyber-border" />
               </div>
@@ -234,7 +306,7 @@ export function SignUpPage() {
                   to="/login"
                   className="text-cyber-green/80 underline-offset-4 hover:text-cyber-green hover:underline"
                 >
-                  Inicia sesión
+                  Inicia sesion
                 </Link>
               </p>
             </>

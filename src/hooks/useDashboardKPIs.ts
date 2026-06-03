@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/contexts/AuthContext";
+import { useUser } from "@clerk/react";
 import { startOfMonth, formatISO } from "date-fns";
 
 interface KPIs {
@@ -11,7 +11,7 @@ interface KPIs {
 }
 
 export function useDashboardKPIs() {
-  const { user } = useAuth();
+  const { user } = useUser();
 
   return useQuery({
     queryKey: ["dashboard-kpis", user?.id],

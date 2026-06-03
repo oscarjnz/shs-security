@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Settings, Loader2, Mail, Bell, Palette } from "lucide-react";
 import { supabase, AGENT_URL } from "@/lib/supabase";
-import { useAuth } from "@/contexts/AuthContext";
+import { useUser, useAuth as useClerkAuth } from "@clerk/react";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +26,8 @@ interface UserPreferences {
 }
 
 export function SettingsPage() {
-  const { user } = useAuth();
+  const { user } = useUser();
+  const { getToken } = useClerkAuth();
 
   // --- Notifications state ---
   const [emailConfig, setEmailConfig] = useState<EmailConfig | null>(null);
@@ -68,7 +69,7 @@ export function SettingsPage() {
         notify_threats: true,
         notify_vulns: true,
         notify_reports: true,
-        recipient_email: user.email ?? null,
+        recipient_email: user.primaryEmailAddress?.emailAddress ?? null,
       };
 
       const { data: created, error: createErr } = await supabase
@@ -159,19 +160,17 @@ export function SettingsPage() {
     setTestingEmail(true);
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error("Sin sesion activa");
+      const token = await getToken();
+      if (!token) throw new Error("Sin sesion activa");
 
       const res = await fetch(`${AGENT_URL}/api/notifications/test-email`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          recipient: emailConfig?.recipient_email ?? user?.email,
+          recipient: emailConfig?.recipient_email ?? user?.primaryEmailAddress?.emailAddress,
         }),
       });
 

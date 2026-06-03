@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, type FormEvent } from "react";
+import { useAuth } from "@clerk/react";
 import {
   fetchScanProfiles,
   fetchLocalSubnets,
@@ -39,6 +40,7 @@ const CONSENT_TEXT =
   "Declaro bajo mi responsabilidad que soy el propietario del sistema objetivo o cuento con autorización expresa y por escrito del propietario para realizar este escaneo. Entiendo que escanear sistemas sin autorización es delito en mi jurisdicción y puede violar los términos de servicio de mi proveedor de red.";
 
 export function ScanForm({ isRunning, onSubmit, onAbort }: ScanFormProps) {
+  const { getToken } = useAuth();
   const [target, setTarget] = useState("");
   const [mode, setMode] = useState<"profile" | "custom">("profile");
   const [profileId, setProfileId] = useState<ScanProfileId>("discovery");
@@ -51,23 +53,22 @@ export function ScanForm({ isRunning, onSubmit, onAbort }: ScanFormProps) {
   const [isValidating, setIsValidating] = useState(false);
 
   useEffect(() => {
-    fetchScanProfiles()
-      .then((p) => setProfiles(p))
-      .catch((err) => setProfilesError(err instanceof Error ? err.message : "Error cargando perfiles"));
-    fetchLocalSubnets()
-      .then((nets) => {
-        setSubnets(nets);
-        if (nets.length > 0 && !target) {
-          // prefer the subnet whose interface name contains Wi-Fi / Wireless / wlan / en
-          const preferred =
-            nets.find((n) => /wi-?fi|wireless|wlan|en0/i.test(n.interfaceName)) ?? nets[0]!;
-          // Use the scan-friendly /24 (or smaller) - full /20 nets would be rejected
-          setTarget(preferred.suggestedCidr ?? preferred.cidr);
-        }
-      })
-      .catch(() => {
-        // Subnet detection failed - leave target empty; user fills it manually.
-      });
+    getToken().then((t) => {
+      if (!t) return;
+      fetchScanProfiles(t)
+        .then((p) => setProfiles(p))
+        .catch((err) => setProfilesError(err instanceof Error ? err.message : "Error cargando perfiles"));
+      fetchLocalSubnets(t)
+        .then((nets) => {
+          setSubnets(nets);
+          if (nets.length > 0 && !target) {
+            const preferred =
+              nets.find((n) => /wi-?fi|wireless|wlan|en0/i.test(n.interfaceName)) ?? nets[0]!;
+            setTarget(preferred.suggestedCidr ?? preferred.cidr);
+          }
+        })
+        .catch(() => {});
+    });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isPublic = useMemo(() => !isTargetPrivate(target), [target]);
@@ -93,7 +94,9 @@ export function ScanForm({ isRunning, onSubmit, onAbort }: ScanFormProps) {
     setIsValidating(true);
     setValidateResult(null);
     try {
-      const result = await validateCustomCommand(target, customArgs);
+      const token = await getToken();
+      if (!token) throw new Error("No autenticado");
+      const result = await validateCustomCommand(target, customArgs, token);
       setValidateResult(result);
     } catch (err) {
       setValidateResult({

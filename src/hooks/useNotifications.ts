@@ -1,11 +1,11 @@
 import { useEffect, useCallback, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/contexts/AuthContext";
+import { useUser } from "@clerk/react";
 import type { NotificationRow } from "@/lib/database.types";
 
 export function useNotifications() {
-  const { user } = useAuth();
+  const { user } = useUser();
   const qc = useQueryClient();
   const key = ["notifications", user?.id];
   const channelIdRef = useRef<string>(`notifications-rt-${crypto.randomUUID()}`);

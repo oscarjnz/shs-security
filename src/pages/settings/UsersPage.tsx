@@ -10,7 +10,8 @@ import {
   Loader2,
 } from "lucide-react";
 import { supabase, AGENT_URL } from "@/lib/supabase";
-import { useAuth } from "@/contexts/AuthContext";
+import { useUser, useAuth as useClerkAuth } from "@clerk/react";
+import { useProfile } from "@/contexts/AuthContext";
 import { permissionRowsToMap, defaultPermissionsForRole } from "@/lib/auth";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -50,7 +51,9 @@ interface UserEntry {
 }
 
 export function UsersPage() {
-  const { isAdmin, user } = useAuth();
+  const { isAdmin } = useProfile();
+  const { user } = useUser();
+  const { getToken } = useClerkAuth();
   const navigate = useNavigate();
 
   const [users, setUsers] = useState<UserEntry[]>([]);
@@ -78,9 +81,9 @@ export function UsersPage() {
 
   // Get auth token
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.access_token) {
-        setToken(session.access_token);
+    getToken().then((t) => {
+      if (t) {
+        setToken(t);
       }
     });
   }, []);

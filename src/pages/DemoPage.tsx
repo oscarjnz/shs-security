@@ -40,13 +40,13 @@ import { es } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import { getCvesForPorts, ingestScanFindings } from "@/lib/cveApi";
 import { BookOpen } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase";
+import { useUser, useAuth as useClerkAuth } from "@clerk/react";
 import { toast } from "sonner";
 
 export function DemoPage() {
   const { state, runScan, clearHistory } = useDemoScan();
-  const { user } = useAuth();
+  const { user } = useUser();
+  const { getToken } = useClerkAuth();
   const [profileId, setProfileId] = useState<string | null>(null);
   const [lastIngestedScanAt, setLastIngestedScanAt] = useState<string | null>(null);
 
@@ -80,10 +80,10 @@ export function DemoPage() {
     setLastIngestedScanAt(result.scannedAt);
     void (async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.access_token) return;
+        const token = await getToken();
+        if (!token) return;
         const res = await ingestScanFindings(
-          session.access_token,
+          token,
           [...new Set(openPorts)],
           result.target,
         );

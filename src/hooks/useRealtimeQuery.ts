@@ -1,11 +1,11 @@
 import { useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/contexts/AuthContext";
+import { useUser } from "@clerk/react";
 import type { ThreatRow, ActivityLogRow, NetworkMetricRow } from "@/lib/database.types";
 
 export function useThreats(limit = 6) {
-  const { user } = useAuth();
+  const { user } = useUser();
   const qc = useQueryClient();
   const key = ["threats", user?.id, limit];
   const channelIdRef = useRef<string>(`threats-rt-${crypto.randomUUID()}`);
@@ -42,7 +42,7 @@ export function useThreats(limit = 6) {
 }
 
 export function useActivityLogs(limit = 6) {
-  const { user } = useAuth();
+  const { user } = useUser();
   const qc = useQueryClient();
   const key = ["activity-logs", user?.id, limit];
   const channelIdRef = useRef<string>(`logs-rt-${crypto.randomUUID()}`);
@@ -78,7 +78,7 @@ export function useActivityLogs(limit = 6) {
 }
 
 export function useNetworkMetrics(limit = 40) {
-  const { user } = useAuth();
+  const { user } = useUser();
   const qc = useQueryClient();
   const key = ["network-metrics", user?.id, limit];
   const channelIdRef = useRef<string>(`metrics-rt-${crypto.randomUUID()}`);
