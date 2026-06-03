@@ -9,7 +9,7 @@ import {
   Shield,
 } from "lucide-react";
 import { supabase, AGENT_URL } from "@/lib/supabase";
-import { useAuth } from "@/contexts/AuthContext";
+import { useUser, useAuth as useClerkAuth } from "@clerk/react";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -78,7 +78,8 @@ function formatDate(iso: string): string {
 }
 
 export function ReportsPage() {
-  const { user } = useAuth();
+  const { user } = useUser();
+  const { getToken } = useClerkAuth();
   const qc = useQueryClient();
 
   const [generating, setGenerating] = useState(false);
@@ -125,10 +126,8 @@ export function ReportsPage() {
     setGeneratingSteps([]);
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error("Sin sesion activa");
+      const token = await getToken();
+      if (!token) throw new Error("Sin sesion activa");
 
       const jobId = crypto.randomUUID();
       const sectionsArray = Array.from(selectedSections);
@@ -138,7 +137,7 @@ export function ReportsPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           type: reportType,
@@ -214,10 +213,8 @@ export function ReportsPage() {
     setSending(true);
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error("Sin sesion activa");
+      const token = await getToken();
+      if (!token) throw new Error("Sin sesion activa");
 
       const emails = recipientEmails
         .split(",")
@@ -228,7 +225,7 @@ export function ReportsPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ report_id: sendingReportId, recipients: emails }),
       });

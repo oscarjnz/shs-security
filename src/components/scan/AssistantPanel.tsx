@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
-import { supabase, AGENT_URL } from "@/lib/supabase";
+import { useAuth } from "@clerk/react";
 import type { ScanState } from "@/hooks/useScanRun";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +28,7 @@ const GENERAL_PROMPTS = [
 ];
 
 export function AssistantPanel({ scanState, target, command }: AssistantPanelProps) {
+  const { getToken } = useAuth();
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -58,10 +59,8 @@ export function AssistantPanel({ scanState, target, command }: AssistantPanelPro
       abortRef.current = ctrl;
 
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (!session?.access_token) throw new Error("Sesión no válida");
+        const token = await getToken();
+        if (!token) throw new Error("Sesión no válida");
 
         const useScanContext = hasScanContext;
         const endpoint = useScanContext ? "/api/assistant/explain-scan" : "/api/assistant/chat";
@@ -83,11 +82,11 @@ export function AssistantPanel({ scanState, target, command }: AssistantPanelPro
               includeNetworkContext: false,
             };
 
-        const res = await fetch(`${AGENT_URL}${endpoint}`, {
+        const res = await fetch(endpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(body),
           signal: ctrl.signal,

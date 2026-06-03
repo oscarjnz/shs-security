@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { supabase, AGENT_URL } from "@/lib/supabase";
+import { useAuth } from "@clerk/react";
 
 interface ChatMessage {
   id: string;
@@ -69,6 +69,7 @@ function LoadingDots() {
 }
 
 export function AIAnalysisPage() {
+  const { getToken } = useAuth();
   const [searchParams] = useSearchParams();
   const scanContextId = searchParams.get("scan");
   const preloadedQuestion = searchParams.get("q");
@@ -106,10 +107,8 @@ export function AIAnalysisPage() {
       ]);
 
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (!session?.access_token) throw new Error("Sin sesion activa");
+        const token = await getToken();
+        if (!token) throw new Error("Sin sesion activa");
 
         const chatMessages = [
           ...history.map((m) => ({ role: m.role, content: m.content })),
@@ -121,11 +120,11 @@ export function AIAnalysisPage() {
           ? { scanResultId: scanContextId, question: userContent }
           : { messages: chatMessages, includeNetworkContext: true };
 
-        const res = await fetch(`${AGENT_URL}${endpoint}`, {
+        const res = await fetch(endpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(body),
           signal: abortRef.current.signal,

@@ -6,36 +6,27 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import type { User, Session } from "@supabase/supabase-js";
-import { supabase, AGENT_URL } from "@/lib/supabase";
+import { useUser, useAuth as useClerkAuth } from "@clerk/react";
+import { supabase } from "@/lib/supabase";
 import { permissionRowsToMap, defaultPermissionsForRole } from "@/lib/auth";
 import type { ProfileRow, Permissions, PermissionRow } from "@/lib/database.types";
 
-interface AuthState {
-  user: User | null;
+interface ProfileState {
   profile: ProfileRow | null;
   permissions: Permissions;
   isLoading: boolean;
   isAdmin: boolean;
 }
 
-export type OAuthProvider = "google" | "github" | "azure";
-
-interface AuthContextValue extends AuthState {
-  signIn: (email: string, password: string) => Promise<string | null>;
-  signUp: (email: string, password: string, fullName: string) => Promise<string | null>;
-  signInWithOAuth: (provider: OAuthProvider) => Promise<string | null>;
-  signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<string | null>;
-  updatePassword: (newPassword: string) => Promise<string | null>;
+interface ProfileContextValue extends ProfileState {
   refreshProfile: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+const ProfileContext = createContext<ProfileContextValue | null>(null);
 
-export function useAuth(): AuthContextValue {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be inside AuthProvider");
+export function useProfile(): ProfileContextValue {
+  const ctx = useContext(ProfileContext);
+  if (!ctx) throw new Error("useProfile must be inside ProfileProvider");
   return ctx;
 }
 
@@ -56,31 +47,40 @@ async function fetchProfileAndPermissions(userId: string) {
   return { profile, permissions };
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({
-    user: null,
+async function upsertProfile(userId: string, fullName: string, avatarUrl: string | null) {
+  await supabase.from("profiles").upsert(
+    {
+      id: userId,
+      full_name: fullName || "Usuario",
+      avatar_url: avatarUrl,
+      role: "normal" as const,
+      is_active: true,
+    },
+    { onConflict: "id" },
+  );
+}
+
+export function ProfileProvider({ children }: { children: ReactNode }) {
+  const { user, isLoaded: isUserLoaded } = useUser();
+  const { isSignedIn } = useClerkAuth();
+
+  const [state, setState] = useState<ProfileState>({
     profile: null,
     permissions: defaultPermissionsForRole("guest"),
     isLoading: true,
     isAdmin: false,
   });
 
-  const loadUser = useCallback(async (session: Session | null) => {
-    if (!session?.user) {
-      setState({
-        user: null,
-        profile: null,
-        permissions: defaultPermissionsForRole("guest"),
-        isLoading: false,
-        isAdmin: false,
-      });
-      return;
-    }
-
+  const loadProfile = useCallback(async (userId: string, fullName: string, avatarUrl: string | null) => {
     try {
-      const { profile, permissions } = await fetchProfileAndPermissions(session.user.id);
+      let { profile, permissions } = await fetchProfileAndPermissions(userId);
+
+      if (!profile) {
+        await upsertProfile(userId, fullName, avatarUrl);
+        ({ profile, permissions } = await fetchProfileAndPermissions(userId));
+      }
+
       setState({
-        user: session.user,
         profile,
         permissions,
         isLoading: false,
@@ -88,7 +88,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     } catch {
       setState({
-        user: session.user,
         profile: null,
         permissions: defaultPermissionsForRole("guest"),
         isLoading: false,
@@ -98,120 +97,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    let mounted = true;
+    if (!isUserLoaded) return;
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (mounted) loadUser(session);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted) loadUser(session);
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, [loadUser]);
-
-  const signIn = useCallback(async (email: string, password: string) => {
-    setState((s) => ({ ...s, isLoading: true }));
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setState((s) => ({ ...s, isLoading: false }));
-      return error.message;
-    }
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.access_token) {
-        fetch(`${AGENT_URL}/api/hooks/auth-login`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        }).catch(() => {});
-      }
-    } catch {
-      // fire-and-forget
-    }
-
-    return null;
-  }, []);
-
-  const signUp = useCallback(
-    async (email: string, password: string, fullName: string) => {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { full_name: fullName },
-          emailRedirectTo: `${window.location.origin}/dashboard`,
-        },
+    if (!isSignedIn || !user) {
+      setState({
+        profile: null,
+        permissions: defaultPermissionsForRole("guest"),
+        isLoading: false,
+        isAdmin: false,
       });
-      if (error) return error.message;
-      // If Supabase returned a session, auto-confirm is ON - user is logged in already.
-      if (data.session) return null;
-      // No session = needs to click the confirmation email first.
-      return "__confirm_email__";
-    },
-    [],
-  );
+      return;
+    }
 
-  const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
-    setState({
-      user: null,
-      profile: null,
-      permissions: defaultPermissionsForRole("guest"),
-      isLoading: false,
-      isAdmin: false,
-    });
-  }, []);
-
-  const signInWithOAuth = useCallback(async (provider: OAuthProvider) => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: `${window.location.origin}/dashboard`,
-        // GitHub needs explicit email scope to expose the email reliably
-        scopes: provider === "github" ? "user:email" : undefined,
-      },
-    });
-    return error ? error.message : null;
-  }, []);
-
-  const resetPassword = useCallback(async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    return error ? error.message : null;
-  }, []);
-
-  const updatePassword = useCallback(async (newPassword: string) => {
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    return error ? error.message : null;
-  }, []);
+    setState((s) => ({ ...s, isLoading: true }));
+    loadProfile(user.id, user.fullName ?? user.firstName ?? "", user.imageUrl ?? null);
+  }, [isUserLoaded, isSignedIn, user?.id, loadProfile]);
 
   const refreshProfile = useCallback(async () => {
-    if (!state.user) return;
-    const { profile, permissions } = await fetchProfileAndPermissions(state.user.id);
+    if (!user) return;
+    const { profile, permissions } = await fetchProfileAndPermissions(user.id);
     setState((s) => ({
       ...s,
       profile,
       permissions,
       isAdmin: profile?.role === "admin",
     }));
-  }, [state.user]);
+  }, [user]);
 
   return (
-    <AuthContext.Provider
-      value={{ ...state, signIn, signUp, signInWithOAuth, signOut, resetPassword, updatePassword, refreshProfile }}
-    >
+    <ProfileContext.Provider value={{ ...state, refreshProfile }}>
       {children}
-    </AuthContext.Provider>
+    </ProfileContext.Provider>
   );
 }

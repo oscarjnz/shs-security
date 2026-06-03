@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/contexts/AuthContext";
+import { useUser } from "@clerk/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,7 +56,7 @@ interface ParsedDevice {
 }
 
 export function ScanHistoryPage() {
-  const { user } = useAuth();
+  const { user } = useUser();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<ScanResultRow | null>(null);

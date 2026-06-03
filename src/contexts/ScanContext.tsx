@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from "react";
-import { supabase, AGENT_URL } from "@/lib/supabase";
+import { useAuth } from "@clerk/react";
+import { AGENT_URL } from "@/lib/supabase";
 import type {
   ScanDevice,
   ScanThreatEvent,
@@ -44,12 +45,12 @@ export function useScanContext(): ScanContextValue {
 }
 
 export function ScanProvider({ children }: { children: ReactNode }) {
+  const { getToken } = useAuth();
   const [state, setState] = useState<ScanState>(INITIAL_STATE);
   const [known, setKnown] = useState<KnownSet>({ ips: new Set(), macs: new Set() });
   const [lastTarget, setLastTarget] = useState("");
   const [lastCommand, setLastCommand] = useState<string | undefined>(undefined);
 
-  // AbortController + fetch live across re-mounts because they live in the provider
   const abortRef = useRef<AbortController | null>(null);
 
   const reset = useCallback(() => {
@@ -93,14 +94,14 @@ export function ScanProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error("Sesión no válida. Vuelve a iniciar sesión.");
+      const token = await getToken();
+      if (!token) throw new Error("Sesión no válida. Vuelve a iniciar sesión.");
 
       const res = await fetch(`${AGENT_URL}/api/scan/run`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(args),
         signal: ctrl.signal,
@@ -206,7 +207,7 @@ export function ScanProvider({ children }: { children: ReactNode }) {
           break;
       }
     }
-  }, []);
+  }, [getToken]);
 
   return (
     <ScanContext.Provider value={{ state, known, lastTarget, lastCommand, runScan, abort, reset }}>
