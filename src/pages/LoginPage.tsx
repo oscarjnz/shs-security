@@ -1,9 +1,10 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useUser } from "@clerk/react";
+import { useSignIn } from "@clerk/react/legacy";
 import { Loader2, Mail } from "lucide-react";
 import { PasswordInput } from "@/components/auth/PasswordInput";
 
-import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,38 +16,56 @@ import { Logo } from "@/components/Logo";
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { user, signIn, isLoading: authLoading } = useAuth();
+  const { isSignedIn } = useUser();
+  const { signIn, isLoaded, setActive } = useSignIn();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && user) {
+    if (isSignedIn) {
       navigate("/dashboard", { replace: true });
     }
-  }, [user, authLoading, navigate]);
+  }, [isSignedIn, navigate]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!isLoaded || !signIn) return;
     if (!email.trim() || !password.trim()) return;
 
     setIsSubmitting(true);
-    const error = await signIn(email.trim(), password);
-    setIsSubmitting(false);
+    try {
+      const result = await signIn.create({
+        identifier: email.trim(),
+        password,
+      });
 
-    if (error) {
+      if (result.status === "complete" && result.createdSessionId) {
+        await setActive({ session: result.createdSessionId });
+        navigate("/dashboard", { replace: true });
+      } else {
+        toast({
+          title: "Verificacion adicional requerida",
+          description: "Revisa tu correo o completa la verificacion.",
+        });
+      }
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === "object" && "errors" in err
+          ? (err as { errors: { message: string }[] }).errors[0]?.message ?? "Error desconocido"
+          : "Error desconocido";
       toast({
         title: "Error de autenticacion",
-        description: error,
+        description: message,
         variant: "destructive",
       });
-    } else {
-      navigate("/dashboard", { replace: true });
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
-  if (authLoading) {
+  if (!isLoaded) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-cyber-dark">
         <Loader2 className="h-8 w-8 animate-spin text-cyber-green" />
@@ -56,7 +75,6 @@ export function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-cyber-dark px-4">
-      {/* Background glow effect */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute left-1/2 top-1/4 h-96 w-96 -translate-x-1/2 rounded-full bg-cyber-green/5 blur-3xl" />
       </div>
@@ -100,7 +118,7 @@ export function LoginPage() {
                 htmlFor="password"
                 className="text-sm text-muted-foreground"
               >
-                Contraseña
+                Contrasena
               </Label>
               <PasswordInput
                 id="password"
@@ -134,14 +152,14 @@ export function LoginPage() {
               to="/reset-password"
               className="text-sm text-cyber-green/80 underline-offset-4 hover:text-cyber-green hover:underline"
             >
-              ¿Olvidaste tu contraseña?
+              ¿Olvidaste tu contrasena?
             </Link>
           </div>
 
           <div className="my-5 flex items-center gap-3">
             <Separator className="flex-1 bg-cyber-border" />
             <span className="text-xs uppercase tracking-wider text-muted-foreground">
-              o continúa con
+              o continua con
             </span>
             <Separator className="flex-1 bg-cyber-border" />
           </div>

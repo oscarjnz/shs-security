@@ -1,30 +1,21 @@
 import { useState } from "react";
+import { useSignIn } from "@clerk/react/legacy";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { useAuth, type OAuthProvider } from "@/contexts/AuthContext";
+import type { OAuthStrategy } from "@clerk/shared/types";
 
 interface ProviderMeta {
-  id: OAuthProvider;
+  id: string;
+  strategy: OAuthStrategy;
   label: string;
   icon: JSX.Element;
 }
 
-const DEFAULT_ENABLED: OAuthProvider[] = ["google", "github"];
-
-function getEnabledProviders(): Set<OAuthProvider> {
-  const raw = import.meta.env.VITE_ENABLED_PROVIDERS as string | undefined;
-  if (!raw) return new Set(DEFAULT_ENABLED);
-  const list = raw
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter((s): s is OAuthProvider => s === "google" || s === "github" || s === "azure");
-  return new Set(list.length ? list : DEFAULT_ENABLED);
-}
-
-const ALL_PROVIDERS: ProviderMeta[] = [
+const PROVIDERS: ProviderMeta[] = [
   {
     id: "google",
+    strategy: "oauth_google",
     label: "Google",
     icon: (
       <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
@@ -37,6 +28,7 @@ const ALL_PROVIDERS: ProviderMeta[] = [
   },
   {
     id: "github",
+    strategy: "oauth_github",
     label: "GitHub",
     icon: (
       <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden="true">
@@ -45,7 +37,8 @@ const ALL_PROVIDERS: ProviderMeta[] = [
     ),
   },
   {
-    id: "azure",
+    id: "microsoft",
+    strategy: "oauth_microsoft",
     label: "Microsoft",
     icon: (
       <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
@@ -63,36 +56,42 @@ interface OAuthButtonsProps {
 }
 
 export function OAuthButtons({ disabled = false }: OAuthButtonsProps) {
-  const { signInWithOAuth } = useAuth();
-  const [pending, setPending] = useState<OAuthProvider | null>(null);
-  const enabled = getEnabledProviders();
-  const providers = ALL_PROVIDERS.filter((p) => enabled.has(p.id));
+  const { signIn, isLoaded } = useSignIn();
+  const [pending, setPending] = useState<string | null>(null);
 
-  if (providers.length === 0) return null;
+  if (!isLoaded || !signIn) return null;
 
-  const handle = async (provider: OAuthProvider) => {
-    setPending(provider);
-    const err = await signInWithOAuth(provider);
-    if (err) {
+  const handle = async (provider: ProviderMeta) => {
+    setPending(provider.id);
+    try {
+      await signIn.authenticateWithRedirect({
+        strategy: provider.strategy,
+        redirectUrl: "/sso-callback",
+        redirectUrlComplete: "/dashboard",
+      });
+    } catch (err: unknown) {
       setPending(null);
+      const message =
+        err && typeof err === "object" && "errors" in err
+          ? (err as { errors: { message: string }[] }).errors[0]?.message ?? "Error"
+          : "Error desconocido";
       toast({
-        title: `No se pudo iniciar sesión con ${provider}`,
-        description: err,
+        title: `No se pudo iniciar sesion con ${provider.label}`,
+        description: message,
         variant: "destructive",
       });
     }
-    // On success the browser redirects to the OAuth provider - no need to clear pending.
   };
 
   return (
     <div className="space-y-2">
-      {providers.map((p) => (
+      {PROVIDERS.map((p) => (
         <Button
           key={p.id}
           type="button"
           variant="outline"
           disabled={disabled || pending !== null}
-          onClick={() => handle(p.id)}
+          onClick={() => handle(p)}
           className="w-full justify-center gap-2 border-cyber-border bg-cyber-dark/40 text-foreground hover:bg-cyber-dark/70"
         >
           {pending === p.id ? <Loader2 className="h-4 w-4 animate-spin" /> : p.icon}

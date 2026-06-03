@@ -11,12 +11,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-  },
-});
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
 
 export const AGENT_URL = import.meta.env.VITE_AGENT_URL || "http://localhost:3001";

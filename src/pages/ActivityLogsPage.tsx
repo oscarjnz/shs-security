@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useActivityLogs } from "@/hooks/useRealtimeQuery";
 import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/contexts/AuthContext";
+import { useUser } from "@clerk/react";
+import { useProfile } from "@/contexts/AuthContext";
 import {
   ScrollText,
   Filter,
@@ -98,7 +99,8 @@ function prettyEvent(slug: string): string {
 }
 
 export function ActivityLogsPage() {
-  const { user, profile } = useAuth();
+  const { user } = useUser();
+  const { profile } = useProfile();
   const realtimeQuery = useActivityLogs(100);
   const [extendedLogs, setExtendedLogs] = useState<ActivityLogRow[]>([]);
   const [loadingExtended, setLoadingExtended] = useState(true);
