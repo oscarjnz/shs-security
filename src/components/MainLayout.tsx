@@ -33,6 +33,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Scanner", path: "/scan", icon: ScanSearch, section: "network" },
   { label: "Historial Scans", path: "/scan/history", icon: History, section: "network" },
   { label: "Pulso", path: "/pulse", icon: Activity, section: "network" },
+  { label: "Escáneres", path: "/settings/scanners", icon: Monitor, section: "network" },
   { label: "Logs", path: "/logs", icon: ScrollText, section: "logs" },
   { label: "ACi (asistente)", path: "/ai-analysis", icon: Brain, section: "ai_analysis" },
   { label: "Reportes", path: "/reports", icon: FileBarChart, section: "reports" },
