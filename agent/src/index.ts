@@ -226,7 +226,7 @@ app.post("/api/demo/scan", express.json(), async (req, res) => {
   const now = Date.now();
   const recent = (demoRateMap.get(ip) ?? []).filter((t) => now - t < 60 * 60_000);
   if (recent.length >= DEMO_RATE_LIMIT_PER_IP_PER_HOUR) {
-    fail(res, 429, `Has agotado los ${DEMO_RATE_LIMIT_PER_IP_PER_HOUR} escaneos de prueba esta hora. Crea una cuenta gratis para escanear sin límite.`);
+    fail(res, 429, `Has agotado los ${DEMO_RATE_LIMIT_PER_IP_PER_HOUR} escaneos de prueba esta hora. Crea una cuenta para escanear sin límite.`);
     return;
   }
   recent.push(now);

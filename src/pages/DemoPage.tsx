@@ -217,7 +217,7 @@ export function DemoPage() {
                 className="w-full gap-2 bg-cyber-green text-cyber-dark hover:bg-cyber-green/90"
               >
                 <Link to="/signup">
-                  Crear cuenta gratis
+                  Crear cuenta
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>

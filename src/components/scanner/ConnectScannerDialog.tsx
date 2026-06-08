@@ -223,7 +223,7 @@ export function ConnectScannerDialog({ open, onOpenChange, token }: Props) {
                   >
                     nmap instalado <ExternalLink className="h-3 w-3" />
                   </a>{" "}
-                  (gratis, oficial).
+                  (herramienta estándar de la industria).
                 </li>
                 <li>Conexión a internet (no hay que abrir ningún puerto).</li>
               </ul>

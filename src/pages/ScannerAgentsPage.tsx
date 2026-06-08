@@ -218,8 +218,8 @@ export function ScannerAgentsPage() {
               <Cpu className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="font-semibold mb-1">Aún no tienes ningún escáner</h3>
               <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
-                Conecta un escáner para que S.S.S pueda empezar a auditar tu red. Es gratis,
-                tarda 2 minutos y puedes desconectarlo cuando quieras.
+                Conecta un escáner para que S.S.S pueda empezar a auditar tu red. La
+                instalación toma un par de minutos y puedes desconectarlo cuando quieras.
               </p>
               <Button onClick={() => setConnectOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" /> Conectar mi primer escáner
