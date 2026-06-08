@@ -48,6 +48,7 @@ import {
   streamScan,
   validateFlags,
   buildSummary,
+  parseNmapOutput,
   type SSEEvent,
 } from "./lib/scanner.js";
 import { upsertDevicesFromScan, createThreatsFromScan, loadKnownDevices } from "./lib/auto-actions.js";
@@ -55,6 +56,8 @@ import { listLocalPrivateSubnets } from "./lib/local-net.js";
 import { startPulse, getLastPulseStats } from "./lib/pulse.js";
 import { TEMPLATES, type EmailTemplate } from "./lib/email-templates.js";
 import { startKeepAliveCron, pingSupabase, getLastPingResult } from "./lib/keep-alive.js";
+import { createPairingCode, redeemPairingCode, revokeAgent } from "./lib/agents.js";
+import { dispatchScanJob, waitForJobCompletion } from "./lib/relay-dispatch.js";
 
 /* ─── env validation ─── */
 
@@ -738,6 +741,149 @@ app.get("/api/scan/profiles", requireAuth, requirePerm("network", "view"), (_req
 });
 
 /* ──────────────────────────────────────────────
+   AGENTS (escáneres locales que el cliente instala en su red)
+   ────────────────────────────────────────────── */
+
+/**
+ * Genera un código corto de emparejamiento para que el cliente lo teclee
+ * en el agente recién instalado.
+ *
+ * Body: { name?: string }   // nombre opcional pre-asignado ("Servidor casa")
+ * Respuesta: { code, expiresAt, installCommands: { windows, macos, linux } }
+ */
+app.post(
+  "/api/agents/pairing-code",
+  requireAuth,
+  requirePerm("network", "full"),
+  async (req: AuthenticatedRequest, res) => {
+    const userId = req.callerUserId!;
+    const name = String((req.body as { name?: unknown })?.name ?? "").trim().slice(0, 80) || null;
+
+    try {
+      const record = await createPairingCode(supabaseAdmin, userId, name);
+
+      ok(res, {
+        code: record.code,
+        expiresAt: record.expires_at,
+        ttlSeconds: Math.max(0, Math.round((new Date(record.expires_at).getTime() - Date.now()) / 1000)),
+        installCommands: {
+          windows: `iwr https://securitysmartservices.site/install.ps1 | iex; shs-scanner pair ${record.code}`,
+          macos: `curl -fsSL https://securitysmartservices.site/install.sh | sh && shs-scanner pair ${record.code}`,
+          linux: `curl -fsSL https://securitysmartservices.site/install.sh | sh && shs-scanner pair ${record.code}`,
+        },
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error generando código";
+      fail(res, 500, msg);
+    }
+  },
+);
+
+/**
+ * PÚBLICO — el agente lo llama directamente con su código corto.
+ * No requiere token de usuario; el código mismo es la prueba de identidad.
+ *
+ * Body: { pairingCode: string, system: object }
+ * Respuesta: { agentId, token, relayUrl, orgId }  ← token visible UNA SOLA VEZ
+ */
+app.post("/api/agents/pair", express.json(), async (req, res) => {
+  const body = req.body as { pairingCode?: unknown; system?: unknown };
+  const code = String(body.pairingCode ?? "").trim();
+  const system = (body.system && typeof body.system === "object" ? body.system : {}) as Record<string, unknown>;
+
+  if (!code) {
+    fail(res, 400, "Falta el código de emparejamiento");
+    return;
+  }
+  if (!/^[A-Z0-9-]{6,16}$/i.test(code)) {
+    fail(res, 400, "Formato de código inválido");
+    return;
+  }
+
+  try {
+    const result = await redeemPairingCode(supabaseAdmin, code, system, clientIp(req));
+
+    // Log de auditoría
+    await supabaseAdmin.from("activity_logs").insert({
+      user_id: result.userId,
+      event: "agent_paired",
+      source: "agents",
+      ip: clientIp(req),
+      details: `Nuevo escáner emparejado (agent_id=${result.agentId}, hostname=${(system["hostname"] as string) ?? "?"}, os=${(system["osVersion"] as string) ?? "?"}).`,
+      level: "info",
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        agentId: result.agentId,
+        token: result.token,
+        relayUrl: result.relayUrl,
+        orgId: result.orgId,
+      },
+      error: null,
+    });
+  } catch (err) {
+    const statusCode = (err as Error & { statusCode?: number }).statusCode ?? 500;
+    const msg = err instanceof Error ? err.message : "Error canjeando código";
+    fail(res, statusCode, msg);
+  }
+});
+
+/**
+ * Lista de agentes del usuario (lo que muestra el dashboard).
+ */
+app.get(
+  "/api/agents",
+  requireAuth,
+  requirePerm("network", "view"),
+  async (req: AuthenticatedRequest, res) => {
+    const userId = req.callerUserId!;
+    const { data, error } = await supabaseAdmin
+      .from("agents")
+      .select("id, name, status, system_info, agent_version, last_seen, last_ip, paired_at, revoked_at")
+      .eq("user_id", userId)
+      .neq("status", "revoked")
+      .order("paired_at", { ascending: false });
+
+    if (error) {
+      fail(res, 500, error.message);
+      return;
+    }
+    ok(res, data ?? []);
+  },
+);
+
+/**
+ * Revoca un agente (lo desconecta y le impide reconectarse).
+ */
+app.delete(
+  "/api/agents/:id",
+  requireAuth,
+  requirePerm("network", "full"),
+  async (req: AuthenticatedRequest, res) => {
+    const userId = req.callerUserId!;
+    const agentId = req.params.id;
+
+    try {
+      await revokeAgent(supabaseAdmin, agentId, userId);
+      await supabaseAdmin.from("activity_logs").insert({
+        user_id: userId,
+        event: "agent_revoked",
+        source: "agents",
+        ip: clientIp(req),
+        details: `Agente revocado (id=${agentId}).`,
+        level: "warning",
+      });
+      ok(res, { revoked: true });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error revocando agente";
+      fail(res, 500, msg);
+    }
+  },
+);
+
+/* ──────────────────────────────────────────────
    PULSE (Fase 1 - per-device latency)
    ────────────────────────────────────────────── */
 
@@ -1087,9 +1233,57 @@ app.post(
     });
 
     try {
-      const result = await streamScan(resolved, send, abortController.signal);
-      rawOutput = result.rawOutput;
-      durationMs = result.durationMs;
+      // ── NUEVO FLUJO (vía relay → agente del cliente) ─────────────
+      // En vez de correr nmap aquí en el servidor, mandamos el job al agente local
+      // del cliente. El backend nunca toca nmap directamente — solo el cliente puede
+      // escanear su propia red. Esto es lo que hace al producto multi-tenant.
+
+      send({ event: "progress", data: { message: "Buscando un escáner conectado…" } });
+
+      const dispatched = await dispatchScanJob(
+        supabaseAdmin,
+        userId,
+        input.target,
+        resolved.args,
+        input.profileId ?? null,
+      );
+
+      send({
+        event: "progress",
+        data: { message: `Trabajo enviado a "${dispatched.agentName}". Esperando resultados…` },
+      });
+
+      const finalUpdate = await waitForJobCompletion(
+        supabaseAdmin,
+        dispatched.jobId,
+        (update) => {
+          if (update.status === "running") {
+            send({ event: "progress", data: { message: "Escaneo en curso en el agente…" } });
+          }
+        },
+        abortController.signal,
+      );
+
+      if (finalUpdate.status === "failed") {
+        throw new Error(finalUpdate.error_message ?? "El escaneo falló en el agente");
+      }
+      if (finalUpdate.status === "canceled") {
+        throw new Error("Escaneo cancelado");
+      }
+      if (finalUpdate.status === "expired") {
+        throw new Error(
+          finalUpdate.error_message ??
+            "El agente no respondió a tiempo. Verifica que esté online en Configuración → Escáneres.",
+        );
+      }
+
+      rawOutput = finalUpdate.raw_output ?? "";
+      durationMs = finalUpdate.duration_ms ?? 0;
+
+      // El relay solo guarda raw_output. Aquí lo parseamos al formato que esperan
+      // las funciones de auto-acciones (upsertDevicesFromScan, createThreatsFromScan).
+      const parsedDevices = parseNmapOutput(rawOutput);
+      const result = { devices: parsedDevices, rawOutput, durationMs };
       summary = buildSummary(result.devices, result.durationMs);
 
       // First persist scan_results to get an id, then upsert devices with that id

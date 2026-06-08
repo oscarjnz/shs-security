@@ -28,6 +28,7 @@ import { AIAnalysisPage } from "@/pages/AIAnalysisPage";
 import { ReportsPage } from "@/pages/ReportsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { UsersPage } from "@/pages/settings/UsersPage";
+import { ScannerAgentsPage } from "@/pages/ScannerAgentsPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
 import { ScanPage } from "@/pages/ScanPage";
 import { ScanHistoryPage } from "@/pages/ScanHistoryPage";
@@ -80,6 +81,7 @@ const App = () => (
                   <Route path="/pulse" element={<PulsePage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/settings/users" element={<UsersPage />} />
+                  <Route path="/settings/scanners" element={<ScannerAgentsPage />} />
                   <Route path="/notifications" element={<NotificationsPage />} />
                 </Route>
               </Route>
