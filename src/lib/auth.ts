@@ -16,7 +16,7 @@ const NORMAL_PERMISSIONS: Permissions = {
   threats: "none",
   vulnerabilities: "none",
   logs: "view",
-  ai_analysis: "none",
+  ai_analysis: "view",
   reports: "full",
   settings: "none",
 };

@@ -43,7 +43,7 @@ export function LandingPage() {
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="gap-2 border-cyber-border">
-              <Link to="/signup">Crear cuenta gratis</Link>
+              <Link to="/signup">Crear cuenta</Link>
             </Button>
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
@@ -97,7 +97,7 @@ export function LandingPage() {
             <Step
               n={3}
               title="Recibe alertas"
-              desc="Con cuenta gratis: te llegan alertas por email cuando aparece un dispositivo nuevo o un puerto peligroso."
+              desc="Recibe alertas por email cuando aparece un dispositivo nuevo o un puerto peligroso en tu red."
             />
           </div>
           <div className="mt-10 flex justify-center">

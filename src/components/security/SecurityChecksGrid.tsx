@@ -43,7 +43,7 @@ export function SecurityChecksGrid() {
           Auditoría de seguridad
         </CardTitle>
         <p className="text-xs text-muted-foreground">
-          Estos checks se ejecutan en tu navegador o en nuestra nube. Ninguno necesita el agente local.
+          Estos análisis se ejecutan en tu navegador o en nuestros servidores. Ninguno requiere el agente local.
         </p>
       </CardHeader>
       <CardContent>
