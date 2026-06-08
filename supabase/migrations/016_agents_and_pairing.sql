@@ -13,7 +13,7 @@
 
 CREATE TABLE agents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  user_id TEXT NOT NULL,  -- ID de Clerk (text), NO uuid. No FK a auth.users (Clerk no vive ahí).
 
   -- Nombre legible mostrado en el dashboard. Por defecto el hostname del cliente.
   name TEXT NOT NULL DEFAULT 'Agente sin nombre',
@@ -44,7 +44,7 @@ CREATE INDEX idx_agents_token_hash ON agents(token_hash);
 
 ALTER TABLE agents ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users see own agents" ON agents
-  FOR SELECT USING (auth.uid() = user_id);
+  FOR SELECT USING (auth.uid()::text = user_id);
 CREATE POLICY "Service role manages agents" ON agents
   FOR ALL WITH CHECK (TRUE);
 
@@ -54,7 +54,7 @@ CREATE TABLE pairing_codes (
   -- Código corto que el cliente teclea, ej "K7P-9XQ". 6-16 chars, mayúsculas + dígitos + guión.
   code TEXT PRIMARY KEY,
 
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  user_id TEXT NOT NULL,  -- ID de Clerk (text), NO uuid. No FK a auth.users (Clerk no vive ahí).
 
   -- Nombre opcional pre-asignado al agente desde el dashboard ("Servidor casa")
   preassigned_name TEXT,
@@ -75,7 +75,7 @@ CREATE INDEX idx_pairing_codes_expires ON pairing_codes(expires_at);
 
 ALTER TABLE pairing_codes ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users see own pairing codes" ON pairing_codes
-  FOR SELECT USING (auth.uid() = user_id);
+  FOR SELECT USING (auth.uid()::text = user_id);
 CREATE POLICY "Service role manages pairing codes" ON pairing_codes
   FOR ALL WITH CHECK (TRUE);
 
@@ -85,7 +85,7 @@ CREATE TABLE scan_jobs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
   agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  user_id TEXT NOT NULL,  -- ID de Clerk (text), NO uuid. No FK a auth.users (Clerk no vive ahí).
 
   target TEXT NOT NULL,
   nmap_args TEXT[] NOT NULL DEFAULT '{}',
@@ -117,7 +117,7 @@ CREATE INDEX idx_scan_jobs_requested ON scan_jobs(requested_at DESC);
 
 ALTER TABLE scan_jobs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users see own scan jobs" ON scan_jobs
-  FOR SELECT USING (auth.uid() = user_id);
+  FOR SELECT USING (auth.uid()::text = user_id);
 CREATE POLICY "Service role manages scan jobs" ON scan_jobs
   FOR ALL WITH CHECK (TRUE);
 
