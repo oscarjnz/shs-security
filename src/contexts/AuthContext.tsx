@@ -47,12 +47,18 @@ async function fetchProfileAndPermissions(userId: string) {
   return { profile, permissions };
 }
 
-async function upsertProfile(userId: string, fullName: string, avatarUrl: string | null) {
+async function upsertProfile(
+  userId: string,
+  fullName: string,
+  avatarUrl: string | null,
+  email: string | null,
+) {
   await supabase.from("profiles").upsert(
     {
       id: userId,
       full_name: fullName || "Usuario",
       avatar_url: avatarUrl,
+      email: email || null,
       role: "normal" as const,
       is_active: true,
     },
@@ -71,13 +77,19 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     isAdmin: false,
   });
 
-  const loadProfile = useCallback(async (userId: string, fullName: string, avatarUrl: string | null) => {
+  const loadProfile = useCallback(
+    async (userId: string, fullName: string, avatarUrl: string | null, email: string | null) => {
     try {
       let { profile, permissions } = await fetchProfileAndPermissions(userId);
 
       if (!profile) {
-        await upsertProfile(userId, fullName, avatarUrl);
+        await upsertProfile(userId, fullName, avatarUrl, email);
         ({ profile, permissions } = await fetchProfileAndPermissions(userId));
+      } else if (email && !profile.email) {
+        // Perfil existente sin email (creado antes de este fix): lo rellenamos
+        // para que aparezca en la pantalla de gestión de usuarios.
+        await supabase.from("profiles").update({ email }).eq("id", userId);
+        profile = { ...profile, email };
       }
 
       setState({
@@ -110,7 +122,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
 
     setState((s) => ({ ...s, isLoading: true }));
-    loadProfile(user.id, user.fullName ?? user.firstName ?? "", user.imageUrl ?? null);
+    loadProfile(
+      user.id,
+      user.fullName ?? user.firstName ?? "",
+      user.imageUrl ?? null,
+      user.primaryEmailAddress?.emailAddress ?? null,
+    );
   }, [isUserLoaded, isSignedIn, user?.id, loadProfile]);
 
   const refreshProfile = useCallback(async () => {

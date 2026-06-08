@@ -8,6 +8,7 @@ export type Database = {
           id: string;
           full_name: string;
           avatar_url: string | null;
+          email: string | null;
           role: "admin" | "normal" | "guest";
           is_active: boolean;
           created_at: string;
@@ -17,6 +18,7 @@ export type Database = {
           id: string;
           full_name?: string;
           avatar_url?: string | null;
+          email?: string | null;
           role?: "admin" | "normal" | "guest";
           is_active?: boolean;
           created_at?: string;
@@ -26,6 +28,7 @@ export type Database = {
           id?: string;
           full_name?: string;
           avatar_url?: string | null;
+          email?: string | null;
           role?: "admin" | "normal" | "guest";
           is_active?: boolean;
           updated_at?: string;
