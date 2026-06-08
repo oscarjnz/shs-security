@@ -85,21 +85,41 @@ export function SignUpPage() {
     setIsSubmitting(true);
     try {
       const result = await signUp.attemptEmailAddressVerification({
-        code: verificationCode,
+        code: verificationCode.trim(),
       });
+
+      console.log("[SignUp] verify result:", result);
 
       if (result.status === "complete" && result.createdSessionId) {
         await setActive({ session: result.createdSessionId });
         navigate("/dashboard", { replace: true });
+        return;
       }
+
+      // status missing_requirements / abandoned / etc.
+      const missing = (result as { missingFields?: string[] }).missingFields ?? [];
+      const unverified = (result as { unverifiedFields?: string[] }).unverifiedFields ?? [];
+      toast({
+        title: "Sign-up incompleto",
+        description: `status=${result.status}${
+          missing.length ? `, missing=${missing.join(",")}` : ""
+        }${unverified.length ? `, unverified=${unverified.join(",")}` : ""}`,
+        variant: "destructive",
+      });
     } catch (err: unknown) {
-      const message =
+      console.error("[SignUp] verify error:", err);
+      const errors =
         err && typeof err === "object" && "errors" in err
-          ? (err as { errors: { message: string }[] }).errors[0]?.message ?? "Codigo incorrecto"
+          ? (err as { errors: { message: string; code?: string; longMessage?: string }[] }).errors
+          : [];
+      const description = errors.length
+        ? errors.map((e) => `[${e.code ?? "?"}] ${e.longMessage ?? e.message}`).join(" · ")
+        : err instanceof Error
+          ? err.message
           : "Codigo incorrecto";
       toast({
         title: "Verificacion fallida",
-        description: message,
+        description,
         variant: "destructive",
       });
     } finally {
@@ -273,6 +293,9 @@ export function SignUpPage() {
                     </p>
                   )}
                 </div>
+
+                {/* Clerk CAPTCHA mount point — required for bot protection */}
+                <div id="clerk-captcha" />
 
                 <Button
                   type="submit"
