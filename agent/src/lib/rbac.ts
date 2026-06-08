@@ -24,7 +24,7 @@ const ROLE_DEFAULTS: Record<string, Record<string, Level>> = {
   },
   normal: {
     dashboard: "full", network: "full", devices: "view", threats: "none",
-    vulnerabilities: "none", logs: "view", ai_analysis: "view", reports: "full", settings: "none",
+    vulnerabilities: "none", logs: "view", ai_analysis: "view", reports: "full", settings: "view",
   },
   guest: {
     dashboard: "view", network: "view", devices: "none", threats: "none",

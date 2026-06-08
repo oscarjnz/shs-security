@@ -18,7 +18,7 @@ const NORMAL_PERMISSIONS: Permissions = {
   logs: "view",
   ai_analysis: "view",
   reports: "full",
-  settings: "none",
+  settings: "view",
 };
 
 const GUEST_PERMISSIONS: Permissions = {
