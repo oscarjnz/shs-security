@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { supabase, AGENT_URL } from "@/lib/supabase";
 import { useUser, useAuth as useClerkAuth } from "@clerk/react";
+import { useProfile } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,10 +22,22 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Eye, Trash2 } from "lucide-react";
+import { ReportDetailDialog } from "@/components/reports/ReportDetailDialog";
 import type { ReportRow } from "@/lib/database.types";
 
 type ReportSectionKey = "threats" | "devices" | "vulnerabilities" | "network" | "scans" | "pulse" | "ai_summary";
@@ -80,7 +93,14 @@ function formatDate(iso: string): string {
 export function ReportsPage() {
   const { user } = useUser();
   const { getToken } = useClerkAuth();
+  const { isAdmin } = useProfile();
   const qc = useQueryClient();
+
+  // Detail + delete state
+  const [detailReport, setDetailReport] = useState<ReportRow | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<ReportRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const [generating, setGenerating] = useState(false);
   const [generatingSteps, setGeneratingSteps] = useState<string[]>([]);
@@ -105,14 +125,18 @@ export function ReportsPage() {
   const noneSelected = selectedSections.size === 0;
 
   const reportsQuery = useQuery({
-    queryKey: ["reports", user?.id],
+    queryKey: ["reports", user?.id, isAdmin],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("reports")
         .select("*")
         .order("generated_at", { ascending: false })
         .limit(50);
+      // Un usuario normal solo ve sus propios reportes; el admin ve todos
+      // (incluidos los antiguos generados antes de migrar a Clerk).
+      if (!isAdmin && user) q = q.eq("generated_by", user.id);
+      const { data, error } = await q;
       if (error) throw error;
       return (data ?? []) as ReportRow[];
     },
@@ -206,6 +230,39 @@ export function ReportsPage() {
     setSendingReportId(reportId);
     setRecipientEmails("");
     setSendDialogOpen(true);
+  };
+
+  const openDetail = (report: ReportRow) => {
+    setDetailReport(report);
+    setDetailOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Sin sesion activa");
+      const res = await fetch(`${AGENT_URL}/api/reports/${deleteTarget.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = (await res.json().catch(() => ({}))) as { success?: boolean; error?: string };
+      if (!res.ok || json.success === false) {
+        throw new Error(json.error ?? `Error: ${res.status}`);
+      }
+      toast({ title: "Reporte eliminado" });
+      setDeleteTarget(null);
+      qc.invalidateQueries({ queryKey: ["reports"] });
+    } catch (err) {
+      toast({
+        title: "No se pudo eliminar",
+        description: err instanceof Error ? err.message : "Error desconocido",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const handleSendReport = async () => {
@@ -350,26 +407,49 @@ export function ReportsPage() {
                   {formatDate(report.generated_at)}
                 </div>
 
-                {/* Summary */}
-                {report.summary && (
-                  <p
-                    className="line-clamp-2 text-xs text-muted-foreground"
-                    title={report.summary}
-                  >
-                    {report.summary}
-                  </p>
-                )}
+                {/* Summary (de la columna o del resumen IA dentro de sections) */}
+                {(() => {
+                  const s = report.summary || (report.sections as { aiSummary?: string } | null)?.aiSummary || "";
+                  return s ? (
+                    <p className="line-clamp-2 text-xs text-muted-foreground" title={s}>
+                      {s}
+                    </p>
+                  ) : (
+                    <p className="text-xs italic text-muted-foreground">
+                      Sin resumen. Abre "Ver" para el detalle completo.
+                    </p>
+                  );
+                })()}
 
-                {/* Send button */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => openSendDialog(report.id)}
-                >
-                  <Send className="mr-2 h-3.5 w-3.5" />
-                  Enviar
-                </Button>
+                {/* Actions */}
+                <div className="flex gap-2">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => openDetail(report)}
+                  >
+                    <Eye className="mr-1.5 h-3.5 w-3.5" />
+                    Ver
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openSendDialog(report.id)}
+                    title="Enviar por correo"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDeleteTarget(report)}
+                    title="Eliminar"
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -471,6 +551,40 @@ export function ReportsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Detail dialog */}
+      <ReportDetailDialog
+        report={detailReport}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        onSend={(reportId) => {
+          setDetailOpen(false);
+          openSendDialog(reportId);
+        }}
+      />
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar este reporte?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <strong>{deleteTarget?.title}</strong> se borrará de forma permanente. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Sí, eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
