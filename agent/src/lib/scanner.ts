@@ -616,7 +616,32 @@ export function parseNmapOutput(output: string): ParsedDevice[] {
     devices.push(device);
   }
 
-  return devices;
+  // Deduplicar por IP (la salida verbosa de nmap a veces repite el reporte) y
+  // descartar hosts "fantasma": con -Pn nmap marca TODA la subred como "up"
+  // aunque no haya nada. Un host es real solo si dio una señal concreta:
+  // puerto abierto, MAC (respondió ARP en la LAN), latencia medida, o hostname.
+  const openPortStates = new Set(["open"]);
+  const hasSignal = (d: ParsedDevice): boolean =>
+    (d.ports?.some((p) => openPortStates.has(p.state)) ?? false) ||
+    !!d.mac ||
+    d.latencyMs !== undefined ||
+    !!d.hostname;
+
+  const byIp = new Map<string, ParsedDevice>();
+  for (const d of devices) {
+    if (!hasSignal(d)) continue; // descarta fantasmas de -Pn
+    const prior = byIp.get(d.ip);
+    if (!prior) {
+      byIp.set(d.ip, d);
+    } else {
+      // Conserva el más informativo (más puertos / con MAC / con OS)
+      const score = (x: ParsedDevice) =>
+        (x.ports?.length ?? 0) * 10 + (x.mac ? 5 : 0) + (x.os ? 3 : 0) + (x.hostname ? 1 : 0);
+      if (score(d) > score(prior)) byIp.set(d.ip, d);
+    }
+  }
+
+  return [...byIp.values()];
 }
 
 /* ─── summary helper ─── */
