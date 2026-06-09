@@ -195,14 +195,10 @@ export function CurrentNetworkCard() {
         <div className="grid grid-cols-2 gap-2 text-xs">
           <InfoRow label="Tu IP en esta red" value={primary.ip} mono />
           <InfoRow label="Subred" value={primary.cidr} mono />
-          <InfoRow label="Interfaz" value={primary.interfaceName} />
-          <InfoRow
-            label="Veces conectado"
-            value={primary.seenCount ? String(primary.seenCount) : "1"}
-          />
+          <InfoRow label="Detectada por" value={primary.interfaceName} />
           {primary.firstSeen && (
             <InfoRow
-              label="Primera vez"
+              label="Vista por primera vez"
               value={format(parseISO(primary.firstSeen), "dd MMM yyyy HH:mm", { locale: es })}
               span={2}
             />
