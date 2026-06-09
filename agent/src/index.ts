@@ -533,6 +533,7 @@ app.post(
           title: `Reporte ${type} - ${new Date().toLocaleDateString("es-ES")}`,
           type: validType,
           status: "draft",
+          summary: aiSummary || null,
           sections,
           security_score: score,
         })
@@ -580,11 +581,23 @@ app.post(
       .from("reports")
       .select("*")
       .eq("id", report_id)
-      .eq("generated_by", userId)
       .single();
 
     if (error || !report) {
       fail(res, 404, "Reporte no encontrado");
+      return;
+    }
+
+    // Permite enviar si eres el dueño O si eres admin (cubre reportes viejos
+    // generados antes de migrar a Clerk, cuyo generated_by es un ID antiguo).
+    const { data: callerProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .single();
+    const callerIsAdmin = callerProfile?.role === "admin";
+    if (report.generated_by !== userId && !callerIsAdmin) {
+      fail(res, 403, "No tienes permiso para enviar este reporte");
       return;
     }
 
@@ -654,6 +667,57 @@ app.post(
       const msg = err instanceof Error ? err.message : "Error enviando email";
       fail(res, 500, msg);
     }
+  },
+);
+
+/* ─── delete report (owner o admin) ─── */
+
+app.delete(
+  "/api/reports/:id",
+  requireAuth,
+  requirePerm("reports", "full"),
+  async (req: AuthenticatedRequest, res) => {
+    const userId = req.callerUserId!;
+    const reportId = req.params.id;
+
+    const { data: report } = await supabaseAdmin
+      .from("reports")
+      .select("id, title, generated_by")
+      .eq("id", reportId)
+      .single();
+
+    if (!report) {
+      fail(res, 404, "Reporte no encontrado");
+      return;
+    }
+
+    const { data: callerProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .single();
+    const callerIsAdmin = callerProfile?.role === "admin";
+    if (report.generated_by !== userId && !callerIsAdmin) {
+      fail(res, 403, "No tienes permiso para eliminar este reporte");
+      return;
+    }
+
+    const { error: delErr } = await supabaseAdmin.from("reports").delete().eq("id", reportId);
+    if (delErr) {
+      fail(res, 500, delErr.message);
+      return;
+    }
+
+    await supabaseAdmin.from("activity_logs").insert({
+      user_id: userId,
+      event: "report_deleted",
+      source: "reports",
+      ip: clientIp(req),
+      details: `Reporte "${report.title}" eliminado.`,
+      level: "warning",
+    });
+
+    ok(res, { deleted: true });
   },
 );
 
