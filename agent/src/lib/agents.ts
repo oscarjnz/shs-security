@@ -16,8 +16,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 /** Caracteres usados en códigos de emparejamiento (sin 0/O ni 1/I/L). */
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
-/** URL del relay WebSocket. Se sobreescribe en producción. */
-const RELAY_WS_URL = process.env["RELAY_WS_URL"] ?? "wss://shs-relay.fly.dev/ws";
+/** URL del relay WebSocket. Se sobreescribe con RELAY_WS_URL en producción. */
+const RELAY_WS_URL = process.env["RELAY_WS_URL"] ?? "wss://relay.osnarci.online/ws";
 
 /** Duración del código de emparejamiento. */
 const PAIRING_CODE_TTL_MINUTES = 10;
