@@ -876,15 +876,13 @@ app.post("/api/agents/pair", express.json(), async (req, res) => {
       level: "info",
     });
 
+    // El agente (binario) espera estos campos PLANOS en la raíz, no envueltos
+    // en {success, data}. No cambiar la forma sin actualizar también el agente.
     res.status(200).json({
-      success: true,
-      data: {
-        agentId: result.agentId,
-        token: result.token,
-        relayUrl: result.relayUrl,
-        orgId: result.orgId,
-      },
-      error: null,
+      agentId: result.agentId,
+      token: result.token,
+      relayUrl: result.relayUrl,
+      orgId: result.orgId,
     });
   } catch (err) {
     const statusCode = (err as Error & { statusCode?: number }).statusCode ?? 500;
