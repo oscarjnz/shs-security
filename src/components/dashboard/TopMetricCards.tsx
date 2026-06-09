@@ -90,7 +90,7 @@ export function TopMetricCards({
       format: (v: number) => String(v),
     },
     {
-      label: "Puntuacion de Seguridad",
+      label: "Puntuación de Seguridad",
       value: displayScore,
       icon: ShieldCheck,
       iconColor: hasScore ? scoreColor(displayScore) : "text-muted-foreground",
