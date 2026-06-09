@@ -52,7 +52,6 @@ import {
   type SSEEvent,
 } from "./lib/scanner.js";
 import { upsertDevicesFromScan, createThreatsFromScan, loadKnownDevices } from "./lib/auto-actions.js";
-import { listLocalPrivateSubnets } from "./lib/local-net.js";
 import { startPulse, getLastPulseStats } from "./lib/pulse.js";
 import { TEMPLATES, type EmailTemplate } from "./lib/email-templates.js";
 import { startKeepAliveCron, pingSupabase, getLastPingResult } from "./lib/keep-alive.js";
@@ -982,78 +981,119 @@ app.get(
   },
 );
 
+/**
+ * Devuelve las redes locales del usuario.
+ *
+ * IMPORTANTE: la fuente de verdad son los AGENTES conectados del usuario, no el
+ * servidor. El backend corre en la nube (Render) y no puede ver la red real del
+ * usuario; antes leía sus propias interfaces (red fantasma del servidor) e
+ * incrementaba un contador en cada carga de página. Ahora:
+ *   - Sin agente online → lista vacía → el dashboard muestra el estado "sin agente".
+ *   - Con agente online → derivamos la subred /24 de las IPs locales que el agente
+ *     reporta en su system_info.
+ *   - NO se incrementa ningún contador al leer. Solo se crea una fila de etiqueta
+ *     la primera vez que aparece una subred (para poder nombrarla).
+ */
 app.get(
   "/api/network/local-subnets",
   requireAuth,
   requirePerm("network", "view"),
   async (req: AuthenticatedRequest, res) => {
     const userId = req.callerUserId!;
-    const detected = listLocalPrivateSubnets();
 
-    if (detected.length === 0) {
-      ok(res, []);
-      return;
+    // Subredes derivadas de los agentes ONLINE del usuario
+    const { data: agentRows } = await supabaseAdmin
+      .from("agents")
+      .select("name, system_info, last_seen")
+      .eq("user_id", userId)
+      .eq("status", "online")
+      .order("last_seen", { ascending: false });
+
+    const PRIVATE = [/^192\.168\./, /^10\./, /^172\.(1[6-9]|2\d|3[01])\./];
+    const isPrivateV4 = (ip: string) => /^\d{1,3}(\.\d{1,3}){3}$/.test(ip) && PRIVATE.some((re) => re.test(ip));
+    const slash24 = (ip: string) => ip.split(".").slice(0, 3).join(".") + ".0";
+
+    interface DerivedSubnet {
+      interfaceName: string;
+      ip: string;
+      netmask: string;
+      cidr: string;
+      prefix: number;
+      suggestedCidr: string;
     }
 
-    // Load already-known networks for this user
-    const { data: known } = await supabaseAdmin
-      .from("user_networks")
-      .select("id,subnet,label,first_seen,last_seen,seen_count")
-      .eq("user_id", userId)
-      .in("subnet", detected.map((d) => d.cidr));
-
-    const byCidr = new Map<string, NonNullable<typeof known>[number]>();
-    for (const k of known ?? []) byCidr.set(k.subnet as string, k);
-
-    const nowIso = new Date().toISOString();
-
-    // Upsert one row per detected subnet (increments seen_count, refreshes last_seen)
-    for (const d of detected) {
-      const prior = byCidr.get(d.cidr);
-      if (prior) {
-        await supabaseAdmin
-          .from("user_networks")
-          .update({
-            last_seen: nowIso,
-            seen_count: ((prior.seen_count as number) ?? 0) + 1,
-            interface_name: d.interfaceName,
-            last_local_ip: d.ip,
-          })
-          .eq("id", prior.id);
-      } else {
-        const { data: inserted } = await supabaseAdmin
-          .from("user_networks")
-          .insert({
-            user_id: userId,
-            subnet: d.cidr,
-            interface_name: d.interfaceName,
-            last_local_ip: d.ip,
-          })
-          .select("id,first_seen,last_seen,seen_count")
-          .single();
-        if (inserted) {
-          byCidr.set(d.cidr, {
-            id: inserted.id,
-            subnet: d.cidr,
-            label: null,
-            first_seen: inserted.first_seen,
-            last_seen: inserted.last_seen,
-            seen_count: inserted.seen_count,
-          } as unknown as NonNullable<typeof known>[number]);
+    const byCidrDerived = new Map<string, DerivedSubnet>();
+    for (const a of agentRows ?? []) {
+      const sys = (a.system_info ?? {}) as { localIps?: unknown; hostname?: unknown };
+      const ips = Array.isArray(sys.localIps) ? (sys.localIps as string[]) : [];
+      const agentLabel = (a.name as string) || (sys.hostname as string) || "Red local";
+      for (const ip of ips) {
+        if (!isPrivateV4(ip)) continue;
+        const network = slash24(ip);
+        const cidr = `${network}/24`;
+        if (!byCidrDerived.has(cidr)) {
+          byCidrDerived.set(cidr, {
+            interfaceName: agentLabel,
+            ip,
+            netmask: "255.255.255.0",
+            cidr,
+            prefix: 24,
+            suggestedCidr: cidr,
+          });
         }
       }
     }
 
-    // Enrich response with known/new status
-    const enriched = detected.map((d) => {
+    const derived = [...byCidrDerived.values()];
+    if (derived.length === 0) {
+      ok(res, []);
+      return;
+    }
+
+    // Cargar etiquetas existentes (solo lectura, sin tocar contadores)
+    const { data: known } = await supabaseAdmin
+      .from("user_networks")
+      .select("id,subnet,label,first_seen")
+      .eq("user_id", userId)
+      .in("subnet", derived.map((d) => d.cidr));
+
+    const byCidr = new Map<string, { id: string; label: string | null; first_seen: string | null }>();
+    for (const k of known ?? []) {
+      byCidr.set(k.subnet as string, {
+        id: k.id as string,
+        label: (k.label as string | null) ?? null,
+        first_seen: (k.first_seen as string | null) ?? null,
+      });
+    }
+
+    // Crear fila de etiqueta UNA sola vez para subredes nuevas (sin incrementar nada)
+    const newlyCreated = new Set<string>();
+    for (const d of derived) {
+      if (byCidr.has(d.cidr)) continue;
+      const { data: inserted } = await supabaseAdmin
+        .from("user_networks")
+        .insert({
+          user_id: userId,
+          subnet: d.cidr,
+          interface_name: d.interfaceName,
+          last_local_ip: d.ip,
+        })
+        .select("id,first_seen")
+        .single();
+      if (inserted) {
+        byCidr.set(d.cidr, { id: inserted.id as string, label: null, first_seen: inserted.first_seen as string });
+        newlyCreated.add(d.cidr);
+      }
+    }
+
+    const enriched = derived.map((d) => {
       const k = byCidr.get(d.cidr);
       return {
         ...d,
-        knownId: (k?.id as string | undefined) ?? null,
-        label: (k?.label as string | null | undefined) ?? null,
-        firstSeen: (k?.first_seen as string | undefined) ?? null,
-        seenCount: (k?.seen_count as number | undefined) ?? 1,
-        isNew: !k || (k.seen_count as number) <= 1,
+        knownId: k?.id ?? null,
+        label: k?.label ?? null,
+        firstSeen: k?.first_seen ?? null,
+        isNew: newlyCreated.has(d.cidr),
       };
     });
 
