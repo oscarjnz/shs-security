@@ -94,7 +94,7 @@ export function WeeklyReport({
         <div className="space-y-2">
           <div className="flex items-end justify-between">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">
-              Puntuacion de Seguridad
+              Puntuación de Seguridad
             </p>
             {hasScore ? (
               <span className={cn("text-3xl font-bold", scoreColor(score))}>

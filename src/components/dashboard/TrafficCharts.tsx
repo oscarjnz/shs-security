@@ -73,7 +73,7 @@ export function TrafficCharts({ metrics }: TrafficChartsProps) {
     <Card className="border-cyber-border bg-cyber-card/80 backdrop-blur-sm">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-semibold text-foreground">
-          Trafico de Red
+          Tráfico de Red
         </CardTitle>
       </CardHeader>
 

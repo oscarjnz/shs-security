@@ -392,7 +392,7 @@ export function ReportsPage() {
                 <div className="flex items-center gap-2">
                   <Shield className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm text-muted-foreground">
-                    Puntuacion:
+                    Puntuación:
                   </span>
                   <span
                     className={`text-lg font-bold ${scoreColor(report.security_score)}`}
