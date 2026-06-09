@@ -5,6 +5,8 @@
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "rewrites": [
+    { "source": "/api/agents/:path*", "destination": "https://sss-agent.onrender.com/api/agents/:path*" },
+    { "source": "/api/health", "destination": "https://sss-agent.onrender.com/api/health" },
     { "source": "/((?!assets/|api/|install\\.sh|install\\.ps1|uninstall\\.sh|uninstall\\.ps1).*)", "destination": "/index.html" }
   ],
   "headers": [
