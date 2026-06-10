@@ -14,6 +14,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { LocalAgentDetector } from "@/components/scanner/LocalAgentDetector";
 
 interface NavItem {
   label: string;
@@ -203,6 +204,10 @@ export function MainLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Detector silencioso: si hay un agente local de otra cuenta, ofrece importarlo.
+          Si no hay agente o ya es de esta cuenta, no muestra nada. Una sola vez por userId. */}
+      <LocalAgentDetector />
     </div>
   );
 }
