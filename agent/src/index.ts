@@ -830,9 +830,12 @@ app.post(
         expiresAt: record.expires_at,
         ttlSeconds: Math.max(0, Math.round((new Date(record.expires_at).getTime() - Date.now()) / 1000)),
         installCommands: {
-          windows: `iwr https://securitysmartservices.site/install.ps1 | iex; shs-scanner pair ${record.code}`,
-          macos: `curl -fsSL https://securitysmartservices.site/install.sh | sh && shs-scanner pair ${record.code}`,
-          linux: `curl -fsSL https://securitysmartservices.site/install.sh | sh && shs-scanner pair ${record.code}`,
+          // -UseBasicParsing evita la advertencia de seguridad de PowerShell.
+          windows: `iwr https://securitysmartservices.site/install.ps1 -UseBasicParsing | iex; shs-scanner pair ${record.code}`,
+          // 'sudo sh' porque se instala en /usr/local/bin; el pair va sin sudo (la
+          // identidad se guarda en la carpeta del usuario).
+          macos: `curl -fsSL https://securitysmartservices.site/install.sh | sudo sh && shs-scanner pair ${record.code}`,
+          linux: `curl -fsSL https://securitysmartservices.site/install.sh | sudo sh && shs-scanner pair ${record.code}`,
         },
       });
     } catch (err) {

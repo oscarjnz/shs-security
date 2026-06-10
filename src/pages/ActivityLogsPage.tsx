@@ -11,7 +11,6 @@ import {
   AlertCircle,
   ChevronDown,
   Copy,
-  X,
 } from "lucide-react";
 import {
   Table,
@@ -293,30 +292,22 @@ export function ActivityLogsPage() {
           {selected && (
             <>
               <DialogHeader>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <DialogTitle className="flex items-center gap-2 text-lg">
-                      {prettyEvent(selected.event)}
-                      <Badge
-                        variant="outline"
-                        className={`gap-1 ${LEVEL_STYLES[selected.level] ?? LEVEL_STYLES.info}`}
-                      >
-                        {LEVEL_ICON[selected.level] ?? LEVEL_ICON.info}
-                        {selected.level}
-                      </Badge>
-                    </DialogTitle>
-                    <p className="mt-1 font-mono text-xs text-muted-foreground">
-                      {selected.event}
-                    </p>
-                  </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => setSelected(null)}
-                    aria-label="Cerrar"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                {/* La 'X' de cerrar la pone el propio DialogContent; no duplicar aqui.
+                    pr-8 deja espacio para que el titulo no choque con esa X. */}
+                <div className="pr-8">
+                  <DialogTitle className="flex flex-wrap items-center gap-2 text-lg">
+                    {prettyEvent(selected.event)}
+                    <Badge
+                      variant="outline"
+                      className={`gap-1 ${LEVEL_STYLES[selected.level] ?? LEVEL_STYLES.info}`}
+                    >
+                      {LEVEL_ICON[selected.level] ?? LEVEL_ICON.info}
+                      {selected.level}
+                    </Badge>
+                  </DialogTitle>
+                  <p className="mt-1 break-all font-mono text-xs text-muted-foreground">
+                    {selected.event}
+                  </p>
                 </div>
               </DialogHeader>
 
