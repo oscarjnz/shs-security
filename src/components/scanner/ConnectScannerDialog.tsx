@@ -204,7 +204,14 @@ export function ConnectScannerDialog({ open, onOpenChange }: Props) {
                 placeholder="Ej. Servidor casa, PC oficina…"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !generating) {
+                    e.preventDefault();
+                    handleGenerate();
+                  }
+                }}
                 maxLength={80}
+                autoFocus
               />
               <p className="text-xs text-muted-foreground">
                 Sirve solo para que tú lo reconozcas en la lista. Si lo dejas vacío, usaremos el
@@ -273,21 +280,23 @@ export function ConnectScannerDialog({ open, onOpenChange }: Props) {
     );
   }
 
-  // ── Vista 3: mostrar comando con código embebido ───────────────
+  // ── Vista 3: pasos completos con el código embebido ────────────
+  const osLabel = selectedOs === "windows" ? "Windows" : selectedOs === "macos" ? "macOS" : "Linux";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Pega esto en tu computadora</DialogTitle>
+          <DialogTitle>Conecta tu escáner — sigue estos pasos</DialogTitle>
           <DialogDescription>
-            Detectamos que estás en <strong>{selectedOs === "windows" ? "Windows" : selectedOs === "macos" ? "macOS" : "Linux"}</strong>.
-            Si vas a instalar el escáner en otra máquina, cambia la pestaña.
+            Detectamos que estás en <strong>{osLabel}</strong>. Si vas a instalarlo en otra
+            máquina, cambia la pestaña.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           {/* Código + countdown */}
-          <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
             <div>
               <div className="text-xs text-muted-foreground">Tu código de emparejamiento</div>
               <div className="text-2xl font-mono font-bold tracking-wider">{pairing.code}</div>
@@ -308,39 +317,52 @@ export function ConnectScannerDialog({ open, onOpenChange }: Props) {
               <TabsTrigger value="linux">Linux</TabsTrigger>
             </TabsList>
 
-            {(["windows", "macos", "linux"] as OsKey[]).map((os) => (
-              <TabsContent key={os} value={os} className="space-y-3 mt-4">
-                <div>
-                  <Label className="text-sm">
-                    {os === "windows"
-                      ? "Abre PowerShell como Administrador y pega:"
-                      : "Abre Terminal y pega:"}
-                  </Label>
-                  <div className="mt-2 relative">
-                    <pre className="bg-zinc-950 text-zinc-100 rounded-lg p-3 pr-12 text-xs overflow-x-auto font-mono">
-                      {pairing.installCommands[os]}
-                    </pre>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="absolute top-2 right-2 h-7 w-7 text-zinc-100 hover:text-white hover:bg-zinc-800"
-                      onClick={handleCopy}
-                      title="Copiar"
-                    >
-                      {copied && selectedOs === os ? (
-                        <Check className="h-3.5 w-3.5 text-green-400" />
-                      ) : (
-                        <Copy className="h-3.5 w-3.5" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </TabsContent>
-            ))}
+            {(["windows", "macos", "linux"] as OsKey[]).map((os) => {
+              const s = OS_STEPS[os];
+              return (
+                <TabsContent key={os} value={os} className="mt-4">
+                  <ol className="space-y-3 text-sm">
+                    <Step n={1} title={s.terminal} />
+                    <Step n={2} title="Asegúrate de tener nmap instalado">
+                      <code className="mt-1 block rounded bg-muted px-2 py-1 font-mono text-xs">{s.nmap}</code>
+                    </Step>
+                    <Step n={3} title="Pega este comando (instala y empareja de una vez):">
+                      <div className="relative mt-1">
+                        <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded-lg bg-zinc-950 p-3 pr-11 font-mono text-xs text-zinc-100">
+                          {pairing.installCommands[os]}
+                        </pre>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="absolute right-2 top-2 h-7 w-7 text-zinc-100 hover:bg-zinc-800 hover:text-white"
+                          onClick={handleCopy}
+                          aria-label="Copiar comando"
+                          title="Copiar"
+                        >
+                          {copied && selectedOs === os ? (
+                            <Check className="h-3.5 w-3.5 text-green-400" />
+                          ) : (
+                            <Copy className="h-3.5 w-3.5" />
+                          )}
+                        </Button>
+                      </div>
+                    </Step>
+                    <Step n={4} title="Déjalo corriendo siempre (arranca solo al encender):">
+                      <code className="mt-1 block rounded bg-muted px-2 py-1 font-mono text-xs">{s.permanent}</code>
+                    </Step>
+                  </ol>
+                  {s.note && (
+                    <p className="mt-3 rounded-md border border-yellow-500/30 bg-yellow-500/5 px-3 py-2 text-xs text-yellow-700 dark:text-yellow-400">
+                      {s.note}
+                    </p>
+                  )}
+                </TabsContent>
+              );
+            })}
           </Tabs>
 
           {/* Estado del polling */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground border-t pt-3">
+          <div className="flex items-center gap-2 border-t pt-3 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
             <span>Esperando a que el escáner se conecte… (esta ventana se actualiza sola)</span>
           </div>
@@ -355,7 +377,7 @@ export function ConnectScannerDialog({ open, onOpenChange }: Props) {
             }}
             disabled={generating}
           >
-            <RefreshCw className="h-4 w-4 mr-2" /> Generar código nuevo
+            <RefreshCw className="mr-2 h-4 w-4" /> Generar código nuevo
           </Button>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Cerrar
@@ -365,3 +387,38 @@ export function ConnectScannerDialog({ open, onOpenChange }: Props) {
     </Dialog>
   );
 }
+
+/** Un paso numerado de la guía de instalación. */
+function Step({ n, title, children }: { n: number; title: string; children?: React.ReactNode }) {
+  return (
+    <li className="flex gap-3">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+        {n}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="font-medium leading-tight">{title}</p>
+        {children}
+      </div>
+    </li>
+  );
+}
+
+/** Pasos específicos por sistema operativo. */
+const OS_STEPS: Record<OsKey, { terminal: string; nmap: string; permanent: string; note?: string }> = {
+  windows: {
+    terminal: "Abre PowerShell como Administrador (clic derecho → Ejecutar como administrador).",
+    nmap: "winget install Insecure.Nmap   (o descárgalo de nmap.org)",
+    permanent: "Start-ScheduledTask -TaskName SHSScanner",
+  },
+  macos: {
+    terminal: "Abre la Terminal (Cmd+Espacio → escribe 'Terminal').",
+    nmap: "brew install nmap",
+    permanent: "launchctl load -w ~/Library/LaunchAgents/com.shs.scanner.plist",
+  },
+  linux: {
+    terminal: "Abre una terminal.",
+    nmap: "sudo apt install -y nmap   (o el gestor de tu distro: dnf, pacman, apk…)",
+    permanent: "sudo systemctl enable --now shs-scanner",
+    note: "El comando lleva 'sudo' porque se instala en una carpeta del sistema. Si te pide contraseña, escríbela (no se ve al teclear) y dale Enter.",
+  },
+};
