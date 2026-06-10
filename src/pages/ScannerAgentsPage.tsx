@@ -72,23 +72,20 @@ export function ScannerAgentsPage() {
 
   const [agents, setAgents] = useState<AgentRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState("");
 
   const [connectOpen, setConnectOpen] = useState(false);
 
   const [revokeTarget, setRevokeTarget] = useState<AgentRow | null>(null);
   const [revoking, setRevoking] = useState(false);
 
-  useEffect(() => {
-    getToken().then((t) => {
-      if (t) setToken(t);
-    });
-  }, [getToken]);
-
   const fetchAgents = useCallback(async () => {
-    if (!token) return;
     setLoading(true);
     try {
+      // Token FRESCO en cada petición: los de Clerk expiran a los 60s, así que
+      // cachearlo causaba "Token expirado" en cada auto-refresh. getToken() lo
+      // refresca solo.
+      const token = await getToken();
+      if (!token) return;
       const res = await fetch(`${AGENT_URL}/api/agents`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -106,24 +103,24 @@ export function ScannerAgentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [getToken]);
 
   useEffect(() => {
-    if (token) fetchAgents();
-  }, [token, fetchAgents]);
+    fetchAgents();
+  }, [fetchAgents]);
 
   // Auto-refresh cada 15s mientras la página esté abierta, así el estado online/offline
   // se actualiza casi en tiempo real sin tener que recargar manualmente.
   useEffect(() => {
-    if (!token) return;
     const interval = setInterval(fetchAgents, 15_000);
     return () => clearInterval(interval);
-  }, [token, fetchAgents]);
+  }, [fetchAgents]);
 
   const handleRevoke = async () => {
-    if (!revokeTarget || !token) return;
+    if (!revokeTarget) return;
     setRevoking(true);
     try {
+      const token = await getToken();
       const res = await fetch(`${AGENT_URL}/api/agents/${revokeTarget.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
@@ -295,7 +292,6 @@ export function ScannerAgentsPage() {
           setConnectOpen(open);
           if (!open) fetchAgents(); // Refrescar la lista cuando se cierre
         }}
-        token={token}
       />
 
       {/* Confirmación de revocar */}

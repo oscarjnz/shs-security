@@ -8,18 +8,19 @@ import { PermissionsGrid } from "@/components/PermissionsGrid";
 import { SECTION_KEYS, defaultPermissionsForRole } from "@/lib/auth";
 import type { Permissions, UserRole, ProfileRow } from "@/lib/database.types";
 import { AGENT_URL } from "@/lib/supabase";
+import { useAuth } from "@clerk/react";
 import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
 interface UserModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  token: string;
   editingUser?: { id: string; email: string; profile: ProfileRow; permissions: Permissions } | null;
   onSuccess: () => void;
 }
 
-export function UserModal({ open, onOpenChange, token, editingUser, onSuccess }: UserModalProps) {
+export function UserModal({ open, onOpenChange, editingUser, onSuccess }: UserModalProps) {
+  const { getToken } = useAuth();
   const isEditing = !!editingUser;
   const [email, setEmail] = useState(editingUser?.email ?? "");
   const [fullName, setFullName] = useState(editingUser?.profile.full_name ?? "");
@@ -43,6 +44,7 @@ export function UserModal({ open, onOpenChange, token, editingUser, onSuccess }:
 
     setSaving(true);
     try {
+      const token = await getToken();
       const url = isEditing
         ? `${AGENT_URL}/api/admin/users/update`
         : `${AGENT_URL}/api/admin/users/create`;

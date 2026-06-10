@@ -58,7 +58,6 @@ export function UsersPage() {
 
   const [users, setUsers] = useState<UserEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState("");
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -79,21 +78,13 @@ export function UsersPage() {
     }
   }, [isAdmin, navigate]);
 
-  // Get auth token
-  useEffect(() => {
-    getToken().then((t) => {
-      if (t) {
-        setToken(t);
-      }
-    });
-  }, []);
-
   // Fetch users
   const fetchUsers = useCallback(async () => {
-    if (!token) return;
     setLoading(true);
 
     try {
+      const token = await getToken(); // fresco cada vez (los de Clerk expiran a 60s)
+      if (!token) return;
       const res = await fetch(`${AGENT_URL}/api/admin/users`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -156,11 +147,11 @@ export function UsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [getToken]);
 
   useEffect(() => {
-    if (token) fetchUsers();
-  }, [token, fetchUsers]);
+    if (isAdmin) fetchUsers();
+  }, [isAdmin, fetchUsers]);
 
   // Open modal for create
   const handleCreate = () => {
@@ -179,6 +170,7 @@ export function UsersPage() {
     setTogglingId(u.id);
 
     try {
+      const token = await getToken();
       const res = await fetch(`${AGENT_URL}/api/admin/user-status`, {
         method: "POST",
         headers: {
@@ -227,6 +219,7 @@ export function UsersPage() {
     setDeleting(true);
 
     try {
+      const token = await getToken();
       const res = await fetch(`${AGENT_URL}/api/admin/user`, {
         method: "DELETE",
         headers: {
@@ -409,7 +402,6 @@ export function UsersPage() {
       <UserModal
         open={modalOpen}
         onOpenChange={setModalOpen}
-        token={token}
         editingUser={editingUser}
         onSuccess={fetchUsers}
       />

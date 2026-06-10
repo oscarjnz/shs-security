@@ -14,6 +14,7 @@
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Copy, Check, Loader2, ExternalLink, RefreshCw } from "lucide-react";
+import { useAuth } from "@clerk/react";
 import { AGENT_URL } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -41,7 +42,6 @@ interface PairingCodeResponse {
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  token: string;
 }
 
 /** Detecta el OS del navegador para sugerir el correcto por defecto. */
@@ -64,7 +64,8 @@ function formatTtl(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function ConnectScannerDialog({ open, onOpenChange, token }: Props) {
+export function ConnectScannerDialog({ open, onOpenChange }: Props) {
+  const { getToken } = useAuth();
   const [name, setName] = useState("");
   const [generating, setGenerating] = useState(false);
   const [pairing, setPairing] = useState<PairingCodeResponse | null>(null);
@@ -102,9 +103,11 @@ export function ConnectScannerDialog({ open, onOpenChange, token }: Props) {
 
   // Polling para detectar emparejamiento
   useEffect(() => {
-    if (!pairing || paired || !token) return;
+    if (!pairing || paired) return;
     const interval = setInterval(async () => {
       try {
+        const token = await getToken(); // fresco cada vez (expiran a los 60s)
+        if (!token) return;
         const res = await fetch(`${AGENT_URL}/api/agents`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -125,7 +128,7 @@ export function ConnectScannerDialog({ open, onOpenChange, token }: Props) {
       }
     }, 3000);
     return () => clearInterval(interval);
-  }, [pairing, paired, token]);
+  }, [pairing, paired, getToken]);
 
   const command = useMemo(() => {
     if (!pairing) return "";
@@ -133,9 +136,10 @@ export function ConnectScannerDialog({ open, onOpenChange, token }: Props) {
   }, [pairing, selectedOs]);
 
   const handleGenerate = useCallback(async () => {
-    if (!token) return;
     setGenerating(true);
     try {
+      const token = await getToken();
+      if (!token) throw new Error("Sesión no válida. Recarga la página.");
       const res = await fetch(`${AGENT_URL}/api/agents/pairing-code`, {
         method: "POST",
         headers: {
@@ -162,7 +166,7 @@ export function ConnectScannerDialog({ open, onOpenChange, token }: Props) {
     } finally {
       setGenerating(false);
     }
-  }, [token, name]);
+  }, [getToken, name]);
 
   const handleCopy = useCallback(async () => {
     if (!command) return;
@@ -234,7 +238,7 @@ export function ConnectScannerDialog({ open, onOpenChange, token }: Props) {
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={generating}>
               Cancelar
             </Button>
-            <Button onClick={handleGenerate} disabled={generating || !token}>
+            <Button onClick={handleGenerate} disabled={generating}>
               {generating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Generar código y continuar
             </Button>
