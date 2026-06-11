@@ -43,10 +43,21 @@ if [ "$OS" = "linux" ] && command -v systemctl >/dev/null 2>&1; then
     success "Servicio systemd eliminado"
   fi
 elif [ "$OS" = "darwin" ]; then
-  PLIST="$HOME/Library/LaunchAgents/com.shs.scanner.plist"
+  # Si el uninstall corre con sudo, $HOME es /var/root: usamos el home del usuario real.
+  if [ -n "${SUDO_USER:-}" ]; then
+    USER_HOME=$(eval echo "~${SUDO_USER}")
+    REAL_USER="$SUDO_USER"
+  else
+    USER_HOME="$HOME"
+    REAL_USER="$USER"
+  fi
+  PLIST="$USER_HOME/Library/LaunchAgents/com.shs.scanner.plist"
   if [ -f "$PLIST" ]; then
     step "Descargando servicio launchd..."
-    launchctl unload "$PLIST" 2>/dev/null || true
+    UID_REAL=$(id -u "$REAL_USER")
+    # bootout es lo moderno; load/unload sigue funcionando como fallback.
+    sudo -u "$REAL_USER" launchctl bootout "gui/$UID_REAL/com.shs.scanner" 2>/dev/null || \
+      sudo -u "$REAL_USER" launchctl unload "$PLIST" 2>/dev/null || true
     rm -f "$PLIST"
     success "Servicio launchd eliminado"
   fi
@@ -72,7 +83,8 @@ else
 fi
 
 if [ "$OS" = "darwin" ]; then
-  rm -f "$HOME/Library/Logs/shs-scanner.log" "$HOME/Library/Logs/shs-scanner.error.log" 2>/dev/null || true
+  rm -f "${USER_HOME:-$HOME}/Library/Logs/shs-scanner.log" \
+        "${USER_HOME:-$HOME}/Library/Logs/shs-scanner.error.log" 2>/dev/null || true
 fi
 
 echo

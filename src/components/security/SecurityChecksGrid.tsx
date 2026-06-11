@@ -8,6 +8,7 @@ import {
   EyeOff,
   Loader2,
   ShieldCheck,
+  RefreshCw,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,7 +28,9 @@ import {
  * un Vercel function pueden hacer.
  */
 export function SecurityChecksGrid() {
-  const network = useNetworkCheck();
+  // El hook de red devuelve los campos de CheckResult MAS un `recheck`.
+  // Separamos el recheck para pasarle a la card un CheckResult limpio.
+  const { recheck: recheckNetwork, ...network } = useNetworkCheck();
   const webrtc = useWebRtcLeakCheck();
   const connection = useConnectionCheck();
   const pwned = usePwnedPasswordCheck();
@@ -56,7 +59,20 @@ export function SecurityChecksGrid() {
                 ? `Explícame qué significa estar conectado vía ${network.data.verdict} (${network.data.isp ?? network.data.asnName ?? "?"}) desde ${network.data.city ?? "?"}, ${network.data.country ?? "?"}. ¿Es seguro? ¿Qué riesgos tengo?`
                 : "Explícame qué información revela mi IP pública y qué puede hacer un atacante con ella."
             }
-          />
+          >
+            {/* Boton de re-comprobar: el check inicial corre una sola vez al
+                montar; si el usuario enciende/apaga la VPN despues, necesita
+                forzar otro fetch para ver el cambio. */}
+            <button
+              type="button"
+              onClick={recheckNetwork}
+              disabled={network.status === "loading"}
+              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:hover:text-muted-foreground"
+            >
+              <RefreshCw className={`h-3 w-3 ${network.status === "loading" ? "animate-spin" : ""}`} />
+              Re-comprobar (tras encender/apagar VPN)
+            </button>
+          </SecurityCheckCard>
 
           <SecurityCheckCard
             result={webrtc}

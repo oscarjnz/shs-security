@@ -18,10 +18,32 @@ import { webHandler } from "../_lib/adapter.js";
 
 export const config = { runtime: "nodejs" };
 
-/* ASNs que sugieren fuertemente VPN/proxy. Heurística, no definitivo. */
+/* ASNs que sugieren fuertemente VPN/proxy. Heurística, no definitivo.
+ * Lista ampliada para cubrir Mullvad, ProtonVPN, NordVPN, ExpressVPN,
+ * Surfshark, Private Internet Access, IPVanish, CyberGhost, TunnelBear,
+ * Windscribe, M247 (revendedor que aloja a media VPN del mercado), DataCamp
+ * (NordVPN), Datacamp Limited, etc. Si tu VPN aparece como "datacenter" en
+ * vez de "vpn", probablemente le falta su ASN aqui. */
 const VPN_ASN_HINTS = new Set([
-  "AS9009", "AS60068", "AS210278", "AS62041", "AS131199",
-  "AS22363", "AS20473", "AS14061", "AS16276", "AS24940",
+  "AS9009",   // M247 (NordVPN, ExpressVPN, otros)
+  "AS60068",  // Datacamp/CDN77 (NordVPN)
+  "AS210278", // Datacamp Limited (NordVPN)
+  "AS62041",  // Quasi Networks (varias VPN)
+  "AS131199", // Nexeon Technologies (Mullvad)
+  "AS22363",  // PIA (Private Internet Access)
+  "AS20473",  // Choopa/Vultr (revendedor comun para VPN)
+  "AS14061",  // DigitalOcean (frecuente en VPN auto-hosted)
+  "AS16276",  // OVH (idem)
+  "AS24940",  // Hetzner (idem)
+  "AS62240",  // Clouvider (Mullvad, otros)
+  "AS25369",  // Hydra Communications (Mullvad)
+  "AS39351",  // 31173 Services (Mullvad)
+  "AS9009",   // M247 (duplicado intencional, no rompe)
+  "AS212238", // Datacamp Limited (ExpressVPN backbone)
+  "AS136787", // TEFINCOM (NordVPN)
+  "AS197207", // MCI Communications (a veces ProtonVPN)
+  "AS62567",  // DataCamp (Surfshark)
+  "AS208101", // Mullvad
 ]);
 
 // User-Agent de navegador real: algunos servicios devuelven 403 a UAs custom.
@@ -158,13 +180,35 @@ async function handler(req: Request): Promise<Response> {
   const asnIsp = (e.isp ?? "").toLowerCase();
   const combined = `${asnOrg} ${asnIsp}`;
 
-  const vpnKeywords = ["vpn", "proxy", "tor exit", "private internet access", "nord", "expressvpn", "surfshark", "mullvad", "protonvpn"];
-  const datacenterKeywords = ["digitalocean", "linode", "vultr", "ovh", "hetzner", "amazon", "aws", "google cloud", "microsoft azure", "oracle cloud", "datacamp", "leaseweb", "choopa", "m247"];
+  const vpnKeywords = [
+    "vpn", "proxy", "tor exit", "private internet access", "nord", "expressvpn",
+    "surfshark", "mullvad", "protonvpn", "proton ag", "ipvanish", "cyberghost",
+    "tunnelbear", "windscribe", "perfect privacy", "ovpn", "torguard", "vyprvpn",
+    "hide.me", "hidemyass", "purevpn", "pia ", "kape technologies", "tefincom",
+    "31173", "m247", "datacamp", // m247/datacamp casi siempre alojan VPN
+  ];
+  const datacenterKeywords = [
+    "digitalocean", "linode", "vultr", "ovh", "hetzner", "amazon", "aws",
+    "google cloud", "microsoft azure", "oracle cloud", "leaseweb", "choopa",
+    "contabo", "scaleway", "alibaba cloud", "tencent cloud", "ibm cloud",
+  ];
   const mobileKeywords = ["mobile", "wireless", "cellular", "lte", "4g", "5g", "celular", "móvil", "movil"];
 
-  const looksLikeVpn = e.isProxy === true || VPN_ASN_HINTS.has(e.asn) || vpnKeywords.some((k) => combined.includes(k));
+  // Orden importante:
+  //   - Mobile primero (algunas operadoras tambien aparecen como "hosting").
+  //   - VPN despues. Si org/isp menciona "vpn" o el ASN esta en la lista,
+  //     pesa MAS que el flag de "hosting" del proveedor: muchas VPN se
+  //     alojan en datacenters y el proveedor solo ve la IP como datacenter.
   const looksLikeMobile = e.isMobile === true || mobileKeywords.some((k) => combined.includes(k));
-  const looksLikeDatacenter = !looksLikeVpn && (e.isHosting === true || datacenterKeywords.some((k) => combined.includes(k)));
+  const looksLikeVpn = !looksLikeMobile && (
+    e.isProxy === true
+    || VPN_ASN_HINTS.has(e.asn)
+    || vpnKeywords.some((k) => combined.includes(k))
+  );
+  const looksLikeDatacenter = !looksLikeVpn && !looksLikeMobile && (
+    e.isHosting === true
+    || datacenterKeywords.some((k) => combined.includes(k))
+  );
 
   const verdict: "residential" | "vpn" | "datacenter" | "mobile" | "unknown" =
     looksLikeVpn ? "vpn"
