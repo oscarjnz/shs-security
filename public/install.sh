@@ -194,15 +194,69 @@ download_binary() {
 
   chmod +x "$TMP_DIR/$BIN_NAME"
 
-  # Verificacion: chequea que el binario se ejecuta y reporta su version
-  if ! "$TMP_DIR/$BIN_NAME" version >/dev/null 2>&1; then
-    err "El binario descargado no se ejecuta correctamente."
-    err "Puede ser un problema de arquitectura o un binario corrupto."
+  # ─── Sanity check del archivo descargado ──────────────────────
+  # Si el servidor devolvio un HTML de error (404 disfrazado, captive portal,
+  # proxy corporativo) o un asset incompleto, el "binario" no es ejecutable.
+  # Antes de pedirle que corra, miramos su tamano y tipo.
+  bin_size=$(wc -c < "$TMP_DIR/$BIN_NAME" 2>/dev/null | tr -d ' ')
+  if [ -z "$bin_size" ] || [ "$bin_size" -lt 1000000 ]; then
+    err "El archivo descargado es demasiado pequeno (${bin_size:-0} bytes)."
+    err "Probablemente el servidor devolvio una pagina de error en vez del binario."
+    err "Primeras lineas de lo que llego:"
+    head -c 400 "$TMP_DIR/$BIN_NAME" 2>/dev/null | sed 's/^/    /' >&2 || true
+    echo >&2
+    exit 1
+  fi
+
+  # ─── macOS: firma ad-hoc obligatoria en Apple Silicon ─────────
+  # En arm64 (y cada vez mas en Intel) el kernel exige al menos una firma
+  # ad-hoc para ejecutar un binario. Sin ella, el proceso muere al instante
+  # con "Killed: 9" antes de imprimir nada. Los binarios producidos por pkg
+  # salen sin firma, asi que la aplicamos aqui.
+  if [ "$OS" = "macos" ]; then
+    if command -v codesign >/dev/null 2>&1; then
+      step "Aplicando firma ad-hoc (necesaria en Apple Silicon)..."
+      if ! codesign --sign - --force --preserve-metadata=entitlements,requirements,flags,runtime "$TMP_DIR/$BIN_NAME" 2>/dev/null; then
+        # Reintento sin --preserve-metadata por si el binario no tenia firma previa.
+        codesign --sign - --force "$TMP_DIR/$BIN_NAME" 2>/dev/null || true
+      fi
+    else
+      warn "No encuentro 'codesign'. Si el binario no arranca, instala las Command Line Tools de Xcode:"
+      warn "  xcode-select --install"
+    fi
+    # Quita el atributo de cuarentena por si curl/algun proxy lo seto.
+    xattr -d com.apple.quarantine "$TMP_DIR/$BIN_NAME" 2>/dev/null || true
+  fi
+
+  # ─── Verificacion: corremos `version` y capturamos toda la salida ──
+  # Antes solo mirabamos el codigo de salida. Eso era inutil cuando el kernel
+  # mataba el proceso: el usuario solo veia "no se ejecuta correctamente".
+  # Ahora mostramos stderr+stdout y, en macOS, el codigo de senal (137 = SIGKILL,
+  # casi siempre por firma; 9 mostrado por el shell es lo mismo).
+  verify_output=$("$TMP_DIR/$BIN_NAME" version 2>&1) || verify_rc=$?
+  verify_rc=${verify_rc:-0}
+  if [ "$verify_rc" -ne 0 ]; then
+    err "El binario descargado no arranco (codigo $verify_rc)."
+    if [ -n "$verify_output" ]; then
+      err "Salida:"
+      printf '%s\n' "$verify_output" | sed 's/^/    /' >&2
+    fi
+    case "$verify_rc" in
+      137|9)
+        err "Codigo 137/9 = SIGKILL. En macOS esto suele ser firma de codigo invalida."
+        err "Reinstala las Command Line Tools y vuelve a intentar:"
+        err "  xcode-select --install"
+        ;;
+      126|127)
+        err "Codigo $verify_rc = el archivo no es ejecutable o falta una libreria."
+        err "Asegurate de que tu sistema es ${OS}/${ARCH}."
+        ;;
+    esac
     exit 1
   fi
 
   $SUDO mv "$TMP_DIR/$BIN_NAME" "$INSTALL_DIR/$BIN_NAME"
-  success "Instalado en $INSTALL_DIR/$BIN_NAME"
+  success "Instalado en $INSTALL_DIR/$BIN_NAME (version $(printf '%s' "$verify_output" | head -1))"
 }
 
 # ─── Servicio del sistema (systemd / launchd) ────────────────────
@@ -250,9 +304,33 @@ EOF
 }
 
 install_launchd_service() {
-  local plist="$HOME/Library/LaunchAgents/com.shs.scanner.plist"
-  step "Registrando servicio launchd (usuario)..."
-  mkdir -p "$HOME/Library/LaunchAgents"
+  # NOTE: el plist es para el USUARIO actual ($HOME/Library/LaunchAgents/...),
+  # NUNCA para LaunchDaemons (que requeriria root y romperia el contexto del
+  # usuario). Por eso este paso no se hace con sudo, aunque la copia del binario
+  # si lo haya necesitado.
+  local user_home target_user plist uid
+  target_user="${SUDO_USER:-$USER}"
+  # Cuando el script corre con sudo, $HOME apunta a /var/root. Necesitamos el
+  # home del usuario real para que LaunchAgents/Logs queden en su sitio.
+  if [ -n "${SUDO_USER:-}" ]; then
+    user_home=$(eval echo "~${SUDO_USER}")
+  else
+    user_home="$HOME"
+  fi
+  plist="$user_home/Library/LaunchAgents/com.shs.scanner.plist"
+
+  step "Registrando servicio launchd (usuario: $target_user)..."
+  mkdir -p "$user_home/Library/LaunchAgents" "$user_home/Library/Logs"
+
+  # Si habia un plist viejo cargado, lo descargamos primero para evitar el
+  # famoso "Load failed: 5: Input/output error" (que ocurre cuando intentas
+  # cargar un plist con el mismo Label que uno ya activo, o cuando el plist
+  # apunta a un binario que no existe).
+  uid=$(id -u "$target_user")
+  if [ -f "$plist" ]; then
+    sudo -u "$target_user" launchctl bootout "gui/$uid/com.shs.scanner" 2>/dev/null || \
+      sudo -u "$target_user" launchctl unload "$plist" 2>/dev/null || true
+  fi
 
   cat > "$plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -271,19 +349,34 @@ install_launchd_service() {
     <key>Crashed</key><true/>
     <key>SuccessfulExit</key><false/>
   </dict>
-  <key>StandardOutPath</key><string>${HOME}/Library/Logs/shs-scanner.log</string>
-  <key>StandardErrorPath</key><string>${HOME}/Library/Logs/shs-scanner.error.log</string>
+  <key>StandardOutPath</key><string>${user_home}/Library/Logs/shs-scanner.log</string>
+  <key>StandardErrorPath</key><string>${user_home}/Library/Logs/shs-scanner.error.log</string>
 </dict>
 </plist>
 EOF
 
-  success "Servicio creado en $plist"
+  # Asegura que el plist pertenezca al usuario, no a root (si corrimos con sudo).
+  if [ -n "${SUDO_USER:-}" ]; then
+    chown "$SUDO_USER" "$plist" 2>/dev/null || true
+  fi
+
+  # Auto-arranque: bootstrap es lo moderno; `load -w` esta deprecado en
+  # Tahoe y suele fallar con "Input/output error".
+  step "Arrancando el servicio..."
+  if sudo -u "$target_user" launchctl bootstrap "gui/$uid" "$plist" 2>/dev/null; then
+    success "Servicio arrancado (com.shs.scanner)"
+  elif sudo -u "$target_user" launchctl load -w "$plist" 2>/dev/null; then
+    success "Servicio arrancado (con 'load' clasico)"
+  else
+    warn "No pude arrancar el servicio automaticamente. Pruebalo a mano:"
+    warn "  launchctl bootstrap gui/\$(id -u) $plist"
+    warn "  # o si tu macOS es viejo:"
+    warn "  launchctl load -w $plist"
+  fi
+
   echo
-  echo "  ${BOLD}Para activarlo:${RESET}"
-  echo "    launchctl load -w $plist"
-  echo
-  echo "  ${BOLD}Para ver logs:${RESET}"
-  echo "    tail -f ~/Library/Logs/shs-scanner.log"
+  echo "  ${BOLD}Logs:${RESET}"
+  echo "    tail -f $user_home/Library/Logs/shs-scanner.log"
 }
 
 install_service() {

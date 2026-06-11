@@ -42,10 +42,20 @@ export function useNetworkCheck() {
     title: "Tu conexión a internet",
     summary: "Consultando…",
   });
+  const [tick, setTick] = useState(0);
+
+  // Re-disparamos el check cada vez que `tick` cambia. El usuario puede
+  // encender/apagar su VPN despues de cargar la pagina; sin esto el check
+  // queda congelado en el resultado de la primera carga.
+  const recheck = useCallback(() => setTick((t) => t + 1), []);
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/security-checks/network")
+    setResult((r) => ({ ...r, status: "loading", summary: tick === 0 ? "Consultando…" : "Re-comprobando…" }));
+
+    // Cache-buster: algunos navegadores cachean la /api/ por unos segundos.
+    // Si el usuario acaba de encender la VPN, queremos forzar una respuesta nueva.
+    fetch(`/api/security-checks/network?_=${Date.now()}`, { cache: "no-store" })
       .then((r) => r.json())
       .then((json) => {
         if (cancelled) return;
@@ -67,7 +77,7 @@ export function useNetworkCheck() {
           summary = `Datos móviles (${d.isp ?? d.asnName}, ${d.country}). NAT del operador protege bastante.`;
         } else if (d.verdict === "residential") {
           status = "warn";
-          summary = `Conexión residencial directa (${d.isp ?? d.asnName}, ${d.city ?? d.country}). Sin VPN.`;
+          summary = `Conexión residencial directa (${d.isp ?? d.asnName}, ${d.city ?? d.country}). Sin VPN detectada.`;
         }
 
         setResult({
@@ -90,9 +100,9 @@ export function useNetworkCheck() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [tick]);
 
-  return result;
+  return { ...result, recheck };
 }
 
 /* ─── WebRTC IP leak (browser-only) ─── */
