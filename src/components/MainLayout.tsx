@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { LocalAgentDetector } from "@/components/scanner/LocalAgentDetector";
+import { OnboardingWizard } from "@/components/scanner/OnboardingWizard";
 
 interface NavItem {
   label: string;
@@ -208,6 +209,10 @@ export function MainLayout() {
       {/* Detector silencioso: si hay un agente local de otra cuenta, ofrece importarlo.
           Si no hay agente o ya es de esta cuenta, no muestra nada. Una sola vez por userId. */}
       <LocalAgentDetector />
+
+      {/* Asistente de bienvenida: si el usuario no tiene ningun escaner, lo guia
+          a instalar su agente. Reaparece hasta que tenga uno; no molesta si ya lo tiene. */}
+      <OnboardingWizard />
     </div>
   );
 }
