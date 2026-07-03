@@ -169,14 +169,45 @@ function Get-Binary {
 
   $finalPath = Join-Path $InstallDir $BinName
 
-  # Si ya existe (reinstalacion), detener servicio si lo hay y reemplazar
+  # Si ya existe (reinstalacion), detener TODO lo que pueda estar usando el
+  # binario antes de reemplazarlo. Un .exe en ejecucion queda bloqueado por
+  # Windows y Remove-Item falla con "Access denied" aunque seas Administrador.
+  # El agente puede estar corriendo de tres formas:
+  #   - Tarea Programada 'SHSScanner' (metodo ACTUAL desde v0.1.x)
+  #   - Windows Service 'SHSScanner' (metodo legacy, por si quedo de una version vieja)
+  #   - Proceso suelto (el usuario lanzo 'shs-scanner start' a mano)
   if (Test-Path $finalPath) {
+    $task = Get-ScheduledTask -TaskName $ServiceName -ErrorAction SilentlyContinue
+    if ($task) {
+      Write-Step "Deteniendo tarea de arranque existente para reemplazar el binario..."
+      Stop-ScheduledTask -TaskName $ServiceName -ErrorAction SilentlyContinue
+    }
     $svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
     if ($svc -and $svc.Status -eq "Running") {
-      Write-Step "Deteniendo servicio existente para reemplazar el binario..."
+      Write-Step "Deteniendo servicio existente (legacy) para reemplazar el binario..."
       Stop-Service -Name $ServiceName -Force -ErrorAction SilentlyContinue
     }
-    Remove-Item $finalPath -Force
+    # Matar cualquier proceso del agente que siga vivo y tenga el .exe abierto.
+    $procName = [System.IO.Path]::GetFileNameWithoutExtension($BinName)
+    Get-Process -Name $procName -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+    # Reintentar el borrado: Windows tarda un instante en liberar el lock tras
+    # detener la tarea / matar el proceso.
+    $removed = $false
+    for ($i = 0; $i -lt 10; $i++) {
+      try { Remove-Item $finalPath -Force -ErrorAction Stop; $removed = $true; break }
+      catch { Start-Sleep -Milliseconds 300 }
+    }
+    if (-not $removed) {
+      Write-Err "No se pudo reemplazar el binario: sigue en uso en $finalPath."
+      Write-Host ""
+      Write-Host "  Cierra el agente y reintenta:" -ForegroundColor White
+      Write-Host "    Stop-ScheduledTask -TaskName $ServiceName" -ForegroundColor White
+      Write-Host "    Get-Process $procName | Stop-Process -Force" -ForegroundColor White
+      Write-Host ""
+      Remove-Item $tmp -ErrorAction SilentlyContinue
+      exit 1
+    }
   }
 
   Move-Item $tmp $finalPath -Force
