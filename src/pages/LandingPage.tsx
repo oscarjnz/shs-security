@@ -35,7 +35,7 @@ export function LandingPage() {
           {/* Eyebrow */}
           <Reveal immediate>
             <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-cyber-green">
-              Seguridad para gente normal
+              Plataforma de auditoría de seguridad de red
             </p>
           </Reveal>
 
@@ -47,11 +47,11 @@ export function LandingPage() {
               </span>
               <div>
                 <p className="text-[18px] font-semibold leading-snug text-foreground">
-                  Nivel{" "}
-                  <span className="font-accent text-cyber-green">profesional</span>
+                  Análisis{" "}
+                  <span className="font-accent text-cyber-green">local</span>
                 </p>
                 <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
-                  Tu red revisada como lo haria un experto, en lenguaje que si entiendes.
+                  El agente se ejecuta dentro de tu red. El tráfico real nunca sale de ella.
                 </p>
               </div>
             </div>
@@ -60,9 +60,9 @@ export function LandingPage() {
           {/* Titular */}
           <Reveal immediate delay={170} className="mt-8">
             <h1 className="text-[2.5rem] font-extrabold uppercase leading-[1.04] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
-              Tu red Wi-Fi,
+              Auditoría de seguridad
               <br />
-              sin secretos
+              para tu red
               <span className="text-cyber-green">.</span>
             </h1>
           </Reveal>
@@ -70,8 +70,9 @@ export function LandingPage() {
           {/* Descripcion */}
           <Reveal immediate delay={240}>
             <p className="mx-auto mt-6 max-w-[512px] text-sm leading-relaxed text-foreground/70 sm:text-base">
-              S.S.S descubre todos los dispositivos en tu red domestica, detecta puertos
-              peligrosos y te avisa de amenazas. Pensado para gente normal, no para hackers.
+              S.S.S inventaría los dispositivos conectados a tu red, identifica los puertos
+              y servicios expuestos y te notifica ante cambios o amenazas. Todo el análisis se
+              ejecuta mediante un agente local, sin exponer tu red a internet.
             </p>
           </Reveal>
 
@@ -83,7 +84,7 @@ export function LandingPage() {
               className="pressable gap-2 rounded-full bg-cyber-green px-7 font-bold uppercase tracking-wide text-cyber-dark brand-glow-sm hover:bg-cyber-green/90"
             >
               <Link to="/demo">
-                Probar scan ahora
+                Iniciar análisis
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
@@ -99,7 +100,7 @@ export function LandingPage() {
 
           <Reveal immediate delay={380}>
             <p className="mt-4 text-xs text-muted-foreground">
-              Sin cuenta: 5 escaneos demo por hora · Con cuenta: ilimitado + historial + reportes
+              Sin registro: 5 análisis de demostración por hora. Con cuenta: análisis ilimitados, historial y reportes.
             </p>
           </Reveal>
         </div>
@@ -109,29 +110,29 @@ export function LandingPage() {
       <section className="border-t border-border/60 py-16">
         <div className="mx-auto max-w-5xl px-4">
           <Reveal>
-            <h2 className="text-center text-2xl font-bold text-foreground">Que hace por ti</h2>
+            <h2 className="text-center text-2xl font-bold text-foreground">Qué hace</h2>
             <p className="mx-auto mt-2 max-w-md text-center text-sm text-muted-foreground">
-              Tres cosas, hechas bien.
+              Tres funciones centrales para entender y proteger tu red.
             </p>
           </Reveal>
           <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
             <Feature
               delay={0}
               icon={<ScanSearch className="h-6 w-6 text-cyber-green" />}
-              title="Descubre quien esta en tu red"
-              desc="Identifica cada telefono, TV, camara, consola o vecino-colado conectado a tu Wi-Fi. IP, fabricante, sistema operativo."
+              title="Inventario de dispositivos"
+              desc="Identifica cada equipo conectado a tu red (teléfono, televisor, cámara, consola o dispositivo desconocido) junto con su IP, fabricante y sistema operativo."
             />
             <Feature
               delay={80}
               icon={<ShieldAlert className="h-6 w-6 text-cyber-green" />}
-              title="Detecta puertos peligrosos"
-              desc="Si tu camara, NAS o IoT esta exponiendo Telnet, RDP, SMB o bases de datos, te avisamos antes de que lo descubran."
+              title="Puertos y servicios expuestos"
+              desc="Detecta servicios accesibles desde tu red, como Telnet, RDP, SMB o bases de datos, antes de que se conviertan en un vector de riesgo."
             />
             <Feature
               delay={160}
               icon={<Bot className="h-6 w-6 text-cyber-green" />}
-              title="Preguntale a ACi"
-              desc="Asistente de ciberseguridad integrado. Te explica que encontro, que significa cada puerto, y que pasos tomar."
+              title="Asistente de análisis (ACi)"
+              desc="Interpreta los resultados de cada análisis, explica el significado de los puertos detectados y sugiere los pasos a seguir."
             />
           </div>
         </div>
@@ -141,26 +142,26 @@ export function LandingPage() {
       <section className="py-16">
         <div className="mx-auto max-w-5xl px-4">
           <Reveal>
-            <h2 className="text-center text-2xl font-bold text-foreground">Como empieza</h2>
+            <h2 className="text-center text-2xl font-bold text-foreground">Cómo funciona</h2>
           </Reveal>
           <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3">
             <Step
               n={1}
               delay={0}
               title="Instala el agente"
-              desc="Una sola vez. Es el que escanea tu red localmente. Sin el, no podriamos ver tu Wi-Fi (ni tampoco nadie en la nube)."
+              desc="Se instala una sola vez y ejecuta los análisis dentro de tu red. Sin él, ni la plataforma ni terceros pueden acceder a tu red local."
             />
             <Step
               n={2}
               delay={80}
-              title="Escanea tu red"
-              desc="Desde cualquier dispositivo con navegador. El agente descubre dispositivos y servicios en segundos."
+              title="Ejecuta un análisis"
+              desc="Desde cualquier navegador. El agente descubre los dispositivos y servicios activos en cuestión de segundos."
             />
             <Step
               n={3}
               delay={160}
-              title="Recibe alertas"
-              desc="Recibe alertas por email cuando aparece un dispositivo nuevo o un puerto peligroso en tu red."
+              title="Recibe notificaciones"
+              desc="La plataforma te avisa por correo cuando aparece un dispositivo nuevo o un puerto expuesto en tu red."
             />
           </div>
           <Reveal className="mt-10 flex justify-center">
@@ -170,7 +171,7 @@ export function LandingPage() {
               className="pressable gap-2 rounded-full bg-cyber-green px-7 font-bold uppercase tracking-wide text-cyber-dark brand-glow-sm hover:bg-cyber-green/90"
             >
               <Link to="/demo">
-                Empezar ahora
+                Iniciar análisis
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
@@ -185,12 +186,13 @@ export function LandingPage() {
             <CardContent className="space-y-3 p-6">
               <div className="flex items-center gap-2">
                 <Lock className="h-5 w-5 text-cyber-green" />
-                <h3 className="text-lg font-bold text-foreground">Tus datos son tuyos</h3>
+                <h3 className="text-lg font-bold text-foreground">Aislamiento de datos por cuenta</h3>
               </div>
               <p className="text-sm leading-relaxed text-muted-foreground">
-                Cada cuenta tiene su propio espacio en la base de datos con RLS estricto
-                de Supabase. Otro usuario, ni nosotros, podemos leer tus escaneos. El agente
-                corre en tu PC: el trafico real nunca abandona tu red.
+                Cada cuenta dispone de su propio espacio con políticas RLS estrictas en
+                Supabase. Ningún otro usuario, ni el equipo de S.S.S, puede acceder a tus
+                resultados. El agente se ejecuta en tu equipo y el tráfico real nunca abandona
+                tu red.
               </p>
             </CardContent>
           </Card>
@@ -198,12 +200,13 @@ export function LandingPage() {
             <CardContent className="space-y-3 p-6">
               <div className="flex items-center gap-2">
                 <Wifi className="h-5 w-5 text-cyber-green" />
-                <h3 className="text-lg font-bold text-foreground">Solo redes privadas</h3>
+                <h3 className="text-lg font-bold text-foreground">Alcance limitado a redes privadas</h3>
               </div>
               <p className="text-sm leading-relaxed text-muted-foreground">
-                Por defecto solo permitimos escanear tu LAN (192.168/16, 10/8, 172.16-31/12).
-                Escanear redes publicas sin autorizacion es delito en muchos paises y violaria
-                los TOS de tu ISP - no lo hacemos.
+                Por diseño, solo se permite el análisis de rangos privados (192.168/16, 10/8,
+                172.16-31/12). Analizar redes públicas sin autorización es ilegal en numerosos
+                países e infringe los términos de servicio de tu proveedor; la plataforma no lo
+                permite.
               </p>
             </CardContent>
           </Card>
