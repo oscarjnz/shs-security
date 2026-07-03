@@ -19,6 +19,7 @@ import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { AgentStartHelp, AgentOfflineTitle } from "@/components/scanner/AgentStartHelp";
 import {
   Table,
   TableBody,
@@ -284,6 +285,20 @@ export function ScannerAgentsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Ayuda: si hay escáneres Offline, explicar cómo encenderlos */}
+      {agents.length - onlineCount > 0 && (
+        <Card className="border-yellow-500/30">
+          <CardHeader>
+            <CardTitle className="text-base">
+              <AgentOfflineTitle />
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AgentStartHelp />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Diálogo de conexión nuevo escáner */}
       <ConnectScannerDialog
