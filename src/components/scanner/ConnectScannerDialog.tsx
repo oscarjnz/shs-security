@@ -29,39 +29,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-type OsKey = "windows" | "macos" | "linux";
-
-interface PairingCodeResponse {
-  code: string;
-  expiresAt: string;
-  ttlSeconds: number;
-  installCommands: Record<OsKey, string>;
-}
+import {
+  detectOs,
+  formatTtl,
+  OS_STEPS,
+  Step,
+  type OsKey,
+  type PairingCodeResponse,
+} from "@/components/scanner/scannerPairing";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}
-
-/** Detecta el OS del navegador para sugerir el correcto por defecto. */
-function detectOs(): OsKey {
-  const ua = navigator.userAgent.toLowerCase();
-  // Intentar usar la API moderna primero
-  const platform =
-    (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform ?? "";
-  const combined = `${platform} ${ua}`.toLowerCase();
-  if (combined.includes("win")) return "windows";
-  if (combined.includes("mac")) return "macos";
-  return "linux";
-}
-
-/** Formato MM:SS para el countdown del código. */
-function formatTtl(seconds: number): string {
-  if (seconds <= 0) return "expirado";
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
 export function ConnectScannerDialog({ open, onOpenChange }: Props) {
@@ -388,37 +367,3 @@ export function ConnectScannerDialog({ open, onOpenChange }: Props) {
   );
 }
 
-/** Un paso numerado de la guía de instalación. */
-function Step({ n, title, children }: { n: number; title: string; children?: React.ReactNode }) {
-  return (
-    <li className="flex gap-3">
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-        {n}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="font-medium leading-tight">{title}</p>
-        {children}
-      </div>
-    </li>
-  );
-}
-
-/** Pasos específicos por sistema operativo. */
-const OS_STEPS: Record<OsKey, { terminal: string; nmap: string; permanent: string; note?: string }> = {
-  windows: {
-    terminal: "Abre PowerShell como Administrador (clic derecho → Ejecutar como administrador).",
-    nmap: "winget install Insecure.Nmap   (o descárgalo de nmap.org)",
-    permanent: "Start-ScheduledTask -TaskName SHSScanner",
-  },
-  macos: {
-    terminal: "Abre la Terminal (Cmd+Espacio → escribe 'Terminal').",
-    nmap: "brew install nmap",
-    permanent: "launchctl load -w ~/Library/LaunchAgents/com.shs.scanner.plist",
-  },
-  linux: {
-    terminal: "Abre una terminal.",
-    nmap: "sudo apt install -y nmap   (o el gestor de tu distro: dnf, pacman, apk…)",
-    permanent: "sudo systemctl enable --now shs-scanner",
-    note: "El comando lleva 'sudo' porque se instala en una carpeta del sistema. Si te pide contraseña, escríbela (no se ve al teclear) y dale Enter.",
-  },
-};
