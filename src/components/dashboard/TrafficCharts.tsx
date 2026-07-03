@@ -43,7 +43,7 @@ function CustomTooltip({
   if (!active || !payload?.length) return null;
 
   return (
-    <div className="rounded-lg border border-cyber-border bg-cyber-dark/95 px-3 py-2 shadow-xl backdrop-blur-sm">
+    <div className="surface-glass rounded-lg px-3 py-2">
       <p className="mb-1 text-xs text-muted-foreground">{label}</p>
       {payload.map((entry) => (
         <p
@@ -70,7 +70,7 @@ export function TrafficCharts({ metrics }: TrafficChartsProps) {
   );
 
   return (
-    <Card className="border-cyber-border bg-cyber-card/80 backdrop-blur-sm">
+    <Card className="surface-glass">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-semibold text-foreground">
           Tráfico de Red

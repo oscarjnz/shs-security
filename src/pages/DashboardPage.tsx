@@ -12,6 +12,7 @@ import { WeeklyReport } from "@/components/dashboard/WeeklyReport";
 import { AISecurityAssistant } from "@/components/dashboard/AISecurityAssistant";
 import { CurrentNetworkCard } from "@/components/dashboard/CurrentNetworkCard";
 import { SecurityChecksGrid } from "@/components/security/SecurityChecksGrid";
+import { Reveal } from "@/components/ui/Reveal";
 
 function DashboardSkeleton() {
   return (
@@ -75,12 +76,16 @@ export function DashboardPage() {
       <DashboardHeader />
 
       {/* Current network - auto-detect */}
-      <CurrentNetworkCard />
+      <Reveal>
+        <CurrentNetworkCard />
+      </Reveal>
 
       {/* Security audit grid - cloud + browser checks, no agent needed */}
-      <SecurityChecksGrid />
+      <Reveal>
+        <SecurityChecksGrid />
+      </Reveal>
 
-      {/* KPI Cards */}
+      {/* KPI Cards (se auto-escalonan internamente) */}
       <TopMetricCards
         activeThreatCount={kpiData.activeThreatCount}
         deviceCount={kpiData.deviceCount}
@@ -89,13 +94,17 @@ export function DashboardPage() {
       />
 
       {/* Traffic Charts */}
-      <TrafficCharts metrics={metricList} />
+      <Reveal>
+        <TrafficCharts metrics={metricList} />
+      </Reveal>
 
       {/* Network Status */}
-      <NetworkStatus metrics={latestMetric ? [latestMetric] : []} />
+      <Reveal>
+        <NetworkStatus metrics={latestMetric ? [latestMetric] : []} />
+      </Reveal>
 
       {/* Threats + Weekly Report side by side */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <Reveal className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ActiveNetworkMonitoring threats={threatList} />
         <WeeklyReport
           score={kpiData.securityScore ?? 0}
@@ -104,10 +113,12 @@ export function DashboardPage() {
           deviceCount={kpiData.deviceCount}
           hasScore={kpiData.securityScore !== null}
         />
-      </div>
+      </Reveal>
 
       {/* AI Assistant */}
-      <AISecurityAssistant />
+      <Reveal>
+        <AISecurityAssistant />
+      </Reveal>
     </div>
   );
 }

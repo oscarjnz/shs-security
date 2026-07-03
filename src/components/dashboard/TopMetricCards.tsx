@@ -1,6 +1,7 @@
 import { ShieldAlert, Monitor, ShieldCheck, FileBarChart } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { Reveal } from "@/components/ui/Reveal";
 import { cn } from "@/lib/utils";
 
 export interface TopMetricCardsProps {
@@ -110,10 +111,10 @@ export function TopMetricCards({
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      {cards.map((card) => (
+      {cards.map((card, i) => (
+        <Reveal key={card.label} delay={i * 70}>
         <Card
-          key={card.label}
-          className="group/metric border-cyber-border bg-cyber-card/80 backdrop-blur-sm transition-[border-color,box-shadow,transform] duration-200 ease-out-quart hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_12px_28px_-14px_hsl(142_71%_45%/0.3)]"
+          className="group/metric surface-glass hoverable-card h-full"
         >
           <CardContent className="flex items-center gap-4 p-5">
             {"gauge" in card && card.gauge ? (
@@ -166,6 +167,7 @@ export function TopMetricCards({
             </div>
           </CardContent>
         </Card>
+        </Reveal>
       ))}
     </div>
   );

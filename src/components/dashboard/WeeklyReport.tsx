@@ -81,7 +81,7 @@ export function WeeklyReport({
   const clamped = Math.max(0, Math.min(100, score));
 
   return (
-    <Card className="border-cyber-border bg-cyber-card/80 backdrop-blur-sm">
+    <Card className="surface-glass h-full">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
           <FileText className="h-5 w-5 text-cyber-green" />
@@ -121,7 +121,7 @@ export function WeeklyReport({
 
         {/* Summary stats */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-lg border border-cyber-border bg-cyber-dark/40 p-3 text-center">
+          <div className="surface-elevated rounded-lg p-3 text-center">
             <Shield className="mx-auto h-5 w-5 text-red-400" />
             <p className="mt-1 text-xl font-bold text-foreground">
               {threatCount}
@@ -131,7 +131,7 @@ export function WeeklyReport({
             </p>
           </div>
 
-          <div className="rounded-lg border border-cyber-border bg-cyber-dark/40 p-3 text-center">
+          <div className="surface-elevated rounded-lg p-3 text-center">
             <Wifi className="mx-auto h-5 w-5 text-cyber-blue" />
             <p className="mt-1 text-xl font-bold text-foreground">
               {deviceCount}

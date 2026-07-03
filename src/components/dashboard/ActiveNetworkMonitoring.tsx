@@ -57,7 +57,7 @@ export function ActiveNetworkMonitoring({
   threats,
 }: ActiveNetworkMonitoringProps) {
   return (
-    <Card className="border-cyber-border bg-cyber-card/80 backdrop-blur-sm">
+    <Card className="surface-glass h-full">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
           <ShieldAlert className="h-5 w-5 text-cyber-green" />
@@ -87,7 +87,7 @@ export function ActiveNetworkMonitoring({
               return (
                 <li
                   key={threat.id}
-                  className="flex items-start justify-between gap-3 rounded-lg border border-cyber-border bg-cyber-dark/40 p-3"
+                  className="surface-elevated flex items-start justify-between gap-3 rounded-lg p-3"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
