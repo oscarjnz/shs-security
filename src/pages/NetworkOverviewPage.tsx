@@ -69,7 +69,7 @@ export function NetworkOverviewPage() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
               <Activity className="h-5 w-5 text-cyber-green" />
-              Estado Actual de Conexion
+              Estado actual de conexión
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -121,7 +121,7 @@ export function NetworkOverviewPage() {
                   {latest.packet_loss.toFixed(2)}%
                 </span>
                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Perdida de Paquetes
+                  Pérdida de paquetes
                 </span>
               </div>
             </div>
@@ -140,7 +140,7 @@ export function NetworkOverviewPage() {
       <Card className="surface-glass">
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold text-foreground">
-            Ultimas 20 Mediciones
+            Últimas 20 mediciones
           </CardTitle>
         </CardHeader>
         <CardContent>

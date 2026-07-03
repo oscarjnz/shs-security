@@ -85,7 +85,7 @@ export function WeeklyReport({
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
           <FileText className="h-5 w-5 text-cyber-green" />
-          Reporte Semanal
+          Reporte semanal
         </CardTitle>
       </CardHeader>
 
@@ -94,7 +94,7 @@ export function WeeklyReport({
         <div className="space-y-2">
           <div className="flex items-end justify-between">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">
-              Puntuación de Seguridad
+              Puntuación de seguridad
             </p>
             {hasScore ? (
               <span className={cn("text-3xl font-bold", scoreColor(score))}>

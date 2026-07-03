@@ -111,7 +111,7 @@ export function ThreatDetectionPage() {
         <div className="flex items-center gap-2">
           <ShieldAlert className="h-6 w-6 text-cyber-green" />
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Deteccion de Amenazas
+            Detección de amenazas
           </h1>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -147,7 +147,7 @@ export function ThreatDetectionPage() {
       <Card className="surface-glass">
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold text-foreground">
-            Registro de Amenazas
+            Registro de amenazas
           </CardTitle>
         </CardHeader>
         <CardContent>

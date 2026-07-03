@@ -317,7 +317,7 @@ export function ReportsPage() {
           <div className="flex items-center gap-2">
             <FileBarChart className="h-6 w-6 text-primary" />
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Reportes de Seguridad
+              Reportes de seguridad
             </h1>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -331,7 +331,7 @@ export function ReportsPage() {
           ) : (
             <RefreshCw className="mr-2 h-4 w-4" />
           )}
-          Generar Reporte
+          Generar reporte
         </Button>
       </Reveal>
 
@@ -363,7 +363,7 @@ export function ReportsPage() {
           <CardContent className="py-12 text-center">
             <FileBarChart className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              No hay reportes generados. Haz clic en &quot;Generar Reporte&quot;
+              No hay reportes generados. Haz clic en &quot;Generar reporte&quot;
               para crear el primero.
             </p>
           </CardContent>

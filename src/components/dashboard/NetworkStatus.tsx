@@ -28,7 +28,7 @@ export function NetworkStatus({ metrics }: NetworkStatusProps) {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
           <Activity className="h-5 w-5 text-cyber-green" />
-          Estado de la Red
+          Estado de la red
         </CardTitle>
       </CardHeader>
 

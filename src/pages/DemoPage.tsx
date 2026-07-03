@@ -90,7 +90,7 @@ export function DemoPage() {
         );
         if (res.inserted > 0) {
           toast.success(
-            `Guardé ${res.inserted} hallazgo${res.inserted === 1 ? "" : "s"} en tu historial de Vulnerabilidades`,
+            `Guardé ${res.inserted} hallazgo${res.inserted === 1 ? "" : "s"} en tu historial de vulnerabilidades`,
           );
         }
       } catch (err) {

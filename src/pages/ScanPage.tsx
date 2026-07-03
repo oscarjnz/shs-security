@@ -27,7 +27,7 @@ export function ScanPage() {
       <Reveal immediate as="header">
         <div className="flex items-center gap-2">
           <ScanSearch className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Scanner de Red</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Scanner de red</h1>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
           Elige un perfil predefinido o construye tu propio comando nmap. ACi te ayudará a entender los resultados.

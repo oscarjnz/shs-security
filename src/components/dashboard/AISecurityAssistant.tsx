@@ -12,7 +12,7 @@ export function AISecurityAssistant() {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
           <Brain className="h-5 w-5 text-violet-400" />
-          ACi - Asistente de Ciberseguridad
+          ACi - Asistente de ciberseguridad
         </CardTitle>
       </CardHeader>
 

@@ -251,7 +251,7 @@ export function SettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Mail className="h-4 w-4" />
-                Configuracion de Email
+                Configuración de email
               </CardTitle>
             </CardHeader>
             <CardContent>

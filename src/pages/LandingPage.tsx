@@ -39,31 +39,12 @@ export function LandingPage() {
             </p>
           </Reveal>
 
-          {/* Tarjeta liquid glass flotante */}
-          <Reveal immediate delay={90} className="mt-9">
-            <div className="liquid-glass mx-auto flex h-[200px] w-[200px] flex-col justify-between rounded-2xl p-5 text-left">
-              <span className="text-[13px] font-medium tracking-[0.2em] text-muted-foreground">
-                [ 2026 ]
-              </span>
-              <div>
-                <p className="text-[18px] font-semibold leading-snug text-foreground">
-                  Análisis{" "}
-                  <span className="font-accent text-cyber-green">local</span>
-                </p>
-                <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
-                  El agente se ejecuta dentro de tu red. El tráfico real nunca sale de ella.
-                </p>
-              </div>
-            </div>
-          </Reveal>
-
           {/* Titular */}
-          <Reveal immediate delay={170} className="mt-8">
-            <h1 className="text-[2.5rem] font-extrabold uppercase leading-[1.04] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
+          <Reveal immediate delay={120} className="mt-10">
+            <h1 className="text-[1.9rem] font-extrabold uppercase leading-[1.3] tracking-[0.05em] text-foreground sm:text-4xl lg:text-5xl">
               Auditoría de seguridad
               <br />
-              para tu red
-              <span className="text-cyber-green">.</span>
+              para tu red.
             </h1>
           </Reveal>
 
@@ -81,7 +62,7 @@ export function LandingPage() {
             <Button
               asChild
               size="lg"
-              className="pressable gap-2 rounded-full bg-cyber-green px-7 font-bold uppercase tracking-wide text-cyber-dark brand-glow-sm hover:bg-cyber-green/90"
+              className="pressable gap-2 rounded-full bg-cyber-green px-7 font-semibold text-cyber-dark brand-glow-sm hover:bg-cyber-green/90"
             >
               <Link to="/demo">
                 Iniciar análisis
@@ -168,7 +149,7 @@ export function LandingPage() {
             <Button
               asChild
               size="lg"
-              className="pressable gap-2 rounded-full bg-cyber-green px-7 font-bold uppercase tracking-wide text-cyber-dark brand-glow-sm hover:bg-cyber-green/90"
+              className="pressable gap-2 rounded-full bg-cyber-green px-7 font-semibold text-cyber-dark brand-glow-sm hover:bg-cyber-green/90"
             >
               <Link to="/demo">
                 Iniciar análisis
