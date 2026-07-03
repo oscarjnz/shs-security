@@ -39,7 +39,7 @@ export function SecurityChecksGrid() {
   const [showPwd, setShowPwd] = useState(false);
 
   return (
-    <Card className="border-border">
+    <Card className="surface-glass">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <ShieldCheck className="h-4 w-4 text-primary" />

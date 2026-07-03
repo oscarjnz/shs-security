@@ -24,7 +24,7 @@ export function NetworkStatus({ metrics }: NetworkStatusProps) {
   };
 
   return (
-    <Card className="border-cyber-border bg-cyber-card/80 backdrop-blur-sm">
+    <Card className="surface-glass">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
           <Activity className="h-5 w-5 text-cyber-green" />
@@ -40,7 +40,7 @@ export function NetworkStatus({ metrics }: NetworkStatusProps) {
         ) : (
           <div className="grid grid-cols-3 gap-4">
             {/* Download */}
-            <div className="flex flex-col items-center gap-1 rounded-lg border border-cyber-border bg-cyber-dark/50 p-3">
+            <div className="surface-elevated flex flex-col items-center gap-1 rounded-lg p-3">
               <Download className="h-5 w-5 text-emerald-400" />
               <span className="text-lg font-bold text-foreground">
                 {latest.download_speed.toFixed(1)}
@@ -51,7 +51,7 @@ export function NetworkStatus({ metrics }: NetworkStatusProps) {
             </div>
 
             {/* Upload */}
-            <div className="flex flex-col items-center gap-1 rounded-lg border border-cyber-border bg-cyber-dark/50 p-3">
+            <div className="surface-elevated flex flex-col items-center gap-1 rounded-lg p-3">
               <Upload className="h-5 w-5 text-cyber-blue" />
               <span className="text-lg font-bold text-foreground">
                 {latest.upload_speed.toFixed(1)}
@@ -62,7 +62,7 @@ export function NetworkStatus({ metrics }: NetworkStatusProps) {
             </div>
 
             {/* Latency */}
-            <div className="flex flex-col items-center gap-1 rounded-lg border border-cyber-border bg-cyber-dark/50 p-3">
+            <div className="surface-elevated flex flex-col items-center gap-1 rounded-lg p-3">
               <Activity
                 className={cn("h-5 w-5", latencyColor(latest.latency))}
               />

@@ -73,7 +73,7 @@ export function CurrentNetworkCard() {
 
   if (isLoading) {
     return (
-      <Card>
+      <Card className="surface-glass">
         <CardContent className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           Detectando red…
@@ -109,7 +109,7 @@ export function CurrentNetworkCard() {
   const friendlyName = primary.label ?? (isNew ? "Red nueva" : "Red sin nombre");
 
   return (
-    <Card className={isNew ? "border-yellow-500/50 bg-yellow-500/5" : undefined}>
+    <Card className={isNew ? "border-yellow-500/50 bg-yellow-500/5" : "surface-glass"}>
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
           <Wifi className="h-4 w-4 text-primary" />

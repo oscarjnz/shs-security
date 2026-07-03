@@ -8,7 +8,7 @@ export function AISecurityAssistant() {
   const navigate = useNavigate();
 
   return (
-    <Card className="border-cyber-border bg-cyber-card/80 backdrop-blur-sm">
+    <Card className="surface-glass">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
           <Brain className="h-5 w-5 text-violet-400" />
@@ -41,7 +41,7 @@ export function AISecurityAssistant() {
 
         <Button
           onClick={() => navigate("/ai-analysis")}
-          className="w-full gap-2 bg-violet-600 text-white hover:bg-violet-700"
+          className="pressable w-full gap-2 bg-violet-600 text-white hover:bg-violet-700"
         >
           Hablar con ACi
           <ArrowRight className="h-4 w-4" />
