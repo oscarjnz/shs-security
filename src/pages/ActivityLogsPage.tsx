@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useActivityLogs } from "@/hooks/useRealtimeQuery";
 import { supabase } from "@/lib/supabase";
 import { useUser } from "@clerk/react";
@@ -128,24 +128,36 @@ export function ActivityLogsPage() {
   }, []);
 
   const realtimeData = realtimeQuery.data ?? [];
-  const mergedMap = new Map<string, ActivityLogRow>();
-  for (const log of extendedLogs) mergedMap.set(log.id, log);
-  for (const log of realtimeData) mergedMap.set(log.id, log);
 
-  const allLogs = Array.from(mergedMap.values()).sort(
-    (a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  // Merge + sort de hasta ~600 filas: memoizado para no re-armar el Map y
+  // re-ordenar en cada render (p.ej. al abrir el diálogo de detalle).
+  const allLogs = useMemo(() => {
+    const mergedMap = new Map<string, ActivityLogRow>();
+    for (const log of extendedLogs) mergedMap.set(log.id, log);
+    for (const log of realtimeData) mergedMap.set(log.id, log);
+    return Array.from(mergedMap.values()).sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+  }, [extendedLogs, realtimeData]);
+
+  const sources = useMemo(
+    () =>
+      Array.from(
+        new Set(allLogs.map((l) => l.source).filter(Boolean) as string[]),
+      ).sort(),
+    [allLogs],
   );
 
-  const sources = Array.from(
-    new Set(allLogs.map((l) => l.source).filter(Boolean) as string[]),
-  ).sort();
-
-  const filteredLogs = allLogs.filter((l) => {
-    if (levelFilter !== "all" && l.level !== levelFilter) return false;
-    if (sourceFilter !== "all" && l.source !== sourceFilter) return false;
-    return true;
-  });
+  const filteredLogs = useMemo(
+    () =>
+      allLogs.filter((l) => {
+        if (levelFilter !== "all" && l.level !== levelFilter) return false;
+        if (sourceFilter !== "all" && l.source !== sourceFilter) return false;
+        return true;
+      }),
+    [allLogs, levelFilter, sourceFilter],
+  );
 
   const isLoading = realtimeQuery.isLoading && loadingExtended;
 

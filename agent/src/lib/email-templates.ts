@@ -1,8 +1,9 @@
 export type EmailTemplate = "welcome" | "report" | "threat_alert" | "vuln_alert" | "weekly_digest" | "test";
 
-/** Public site URL, used for all "Visit site" / footer links. */
-const SITE_URL = "https://securitysmartservices.site";
-const SITE_DOMAIN = "securitysmartservices.site";
+/** Public site URL, used for all "Visit site" / footer links. Env-driven para
+ *  no hardcodear el dominio: si cambia, un solo env lo propaga. */
+const SITE_URL = (process.env["SITE_URL"] ?? "https://securitysmartservices.site").replace(/\/+$/, "");
+const SITE_DOMAIN = SITE_URL.replace(/^https?:\/\//, "");
 
 /** App URL (Vercel deployment), used for in-product links (dashboard, reports, etc). */
 const APP_URL = process.env["VITE_APP_URL"] || SITE_URL;

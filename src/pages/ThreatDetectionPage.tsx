@@ -88,7 +88,8 @@ export function ThreatDetectionPage() {
       const { data, error } = await supabase
         .from("threats")
         .select("*")
-        .order("detected_at", { ascending: false });
+        .order("detected_at", { ascending: false })
+        .limit(500); // acota el fetch: la tabla crece todo el cuatrimestre
       if (error) throw error;
       return (data ?? []) as ThreatRow[];
     },
