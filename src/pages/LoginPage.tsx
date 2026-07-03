@@ -74,13 +74,13 @@ export function LoginPage() {
 
   return (
     <AuthShell
-      title="Bienvenido de vuelta"
-      subtitle="Entra a tu panel para ver tus escaneos, amenazas y reportes en tiempo real."
+      title="Accede a tu panel"
+      subtitle="Consulta el estado de tu red, los análisis recientes y los reportes generados."
       aside={
         <div className="space-y-3">
-          <ValueRow icon={<ShieldCheck className="h-4 w-4 text-cyber-green" />} text="Auditoria continua de tu red" />
-          <ValueRow icon={<Bot className="h-4 w-4 text-cyber-green" />} text="ACi te explica cada hallazgo" />
-          <ValueRow icon={<Lock className="h-4 w-4 text-cyber-green" />} text="Tus datos aislados con RLS estricto" />
+          <ValueRow icon={<ShieldCheck className="h-4 w-4 text-cyber-green" />} text="Auditoría continua de tu red" />
+          <ValueRow icon={<Bot className="h-4 w-4 text-cyber-green" />} text="Interpretación de resultados con ACi" />
+          <ValueRow icon={<Lock className="h-4 w-4 text-cyber-green" />} text="Datos aislados por cuenta con RLS" />
         </div>
       }
     >

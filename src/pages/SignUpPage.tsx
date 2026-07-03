@@ -136,13 +136,13 @@ export function SignUpPage() {
 
   return (
     <AuthShell
-      title="Unete a S.S.S"
-      subtitle="Tres pasos rapidos para empezar a auditar tu red como un profesional."
+      title="Crea tu cuenta"
+      subtitle="Completa el registro para acceder al panel de auditoría de tu red."
       aside={
         <div className="space-y-3">
-          <AuthStep number={1} text="Crea tu cuenta" active={!pendingVerification} />
+          <AuthStep number={1} text="Registra tus datos" active={!pendingVerification} />
           <AuthStep number={2} text="Verifica tu correo" active={pendingVerification} />
-          <AuthStep number={3} text="Instala tu escaner" />
+          <AuthStep number={3} text="Instala tu escáner" />
         </div>
       }
     >

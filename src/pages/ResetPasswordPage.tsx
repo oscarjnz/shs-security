@@ -100,7 +100,7 @@ export function ResetPasswordPage() {
   return (
     <AuthShell
       title="Recupera tu acceso"
-      subtitle="Restablece tu contrasena en un par de pasos y vuelve a tu panel de seguridad."
+      subtitle="Restablece tu contraseña para volver al panel de auditoría de tu red."
     >
       {done ? (
         <div className="flex flex-col items-center gap-4 py-6 text-center">
