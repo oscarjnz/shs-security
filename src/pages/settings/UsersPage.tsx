@@ -25,6 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Reveal } from "@/components/ui/Reveal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -256,7 +257,7 @@ export function UsersPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <Reveal immediate as="header" className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2">
             <Users className="h-6 w-6 text-primary" />
@@ -269,14 +270,15 @@ export function UsersPage() {
           </p>
         </div>
 
-        <Button onClick={handleCreate}>
+        <Button onClick={handleCreate} className="pressable">
           <Plus className="mr-2 h-4 w-4" />
           Crear Usuario
         </Button>
-      </div>
+      </Reveal>
 
       {/* Table */}
-      <Card>
+      <Reveal as="section">
+      <Card className="surface-glass">
         <CardHeader className="pb-3">
           <CardTitle className="text-base">
             Usuarios registrados
@@ -397,6 +399,7 @@ export function UsersPage() {
           )}
         </CardContent>
       </Card>
+      </Reveal>
 
       {/* User modal */}
       <UserModal

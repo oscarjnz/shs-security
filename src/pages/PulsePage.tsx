@@ -41,6 +41,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Reveal } from "@/components/ui/Reveal";
 import { cn } from "@/lib/utils";
 
 const HOURS_OPTIONS = [
@@ -138,7 +139,7 @@ export function PulsePage() {
     return (
       <div className="space-y-4">
         <Header />
-        <Card>
+        <Card className="surface-glass">
           <CardContent className="space-y-3 py-12 text-center">
             <Info className="mx-auto h-10 w-10 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
@@ -163,7 +164,7 @@ export function PulsePage() {
       <Header />
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <Reveal className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Kpi
           label="Dispositivos vivos"
           value={`${aliveCount}/${devices.length}`}
@@ -188,10 +189,11 @@ export function PulsePage() {
           icon={<Info className="h-4 w-4" />}
           accent="neutral"
         />
-      </div>
+      </Reveal>
 
       {/* Chart */}
-      <Card>
+      <Reveal as="section">
+      <Card className="surface-glass">
         <CardHeader className="flex flex-row items-center justify-between gap-2 pb-3">
           <CardTitle className="text-base">Latencia por dispositivo</CardTitle>
           <Select value={String(hours)} onValueChange={(v) => setHours(Number(v))}>
@@ -277,9 +279,11 @@ export function PulsePage() {
           )}
         </CardContent>
       </Card>
+      </Reveal>
 
       {/* Devices table */}
-      <Card>
+      <Reveal as="section">
+      <Card className="surface-glass">
         <CardHeader className="flex flex-row items-center justify-between gap-2 pb-3">
           <CardTitle className="text-base">Dispositivos ({devices.length})</CardTitle>
           {selectedIds.size > 0 && (
@@ -330,13 +334,14 @@ export function PulsePage() {
           </div>
         </CardContent>
       </Card>
+      </Reveal>
     </div>
   );
 }
 
 function Header() {
   return (
-    <div className="flex items-center gap-3">
+    <Reveal immediate as="header" className="flex items-center gap-3">
       <Activity className="h-7 w-7 text-primary" />
       <div>
         <h1 className="text-2xl font-bold text-foreground">Pulso de la red</h1>
@@ -344,7 +349,7 @@ function Header() {
           Latencia y disponibilidad de cada dispositivo en tu red, muestreado cada ~60 segundos.
         </p>
       </div>
-    </div>
+    </Reveal>
   );
 }
 
@@ -368,7 +373,7 @@ function Kpi({
           ? "text-destructive"
           : "text-foreground";
   return (
-    <Card>
+    <Card className="surface-elevated hoverable-card">
       <CardContent className="p-3">
         <div className="flex items-center gap-2 text-muted-foreground">
           {icon}

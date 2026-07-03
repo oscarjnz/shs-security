@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Reveal } from "@/components/ui/Reveal";
 
 const CATEGORY_ICONS: Record<string, typeof Info> = {
   threat: ShieldAlert,
@@ -58,7 +59,7 @@ export function NotificationsPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <Reveal immediate as="header" className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2">
             <Bell className="h-6 w-6 text-primary" />
@@ -96,7 +97,7 @@ export function NotificationsPage() {
             Descartar leidos
           </Button>
         </div>
-      </div>
+      </Reveal>
 
       {/* Notifications list */}
       {isLoading ? (
@@ -106,7 +107,7 @@ export function NotificationsPage() {
           ))}
         </div>
       ) : notifications.length === 0 ? (
-        <Card>
+        <Card className="surface-glass">
           <CardContent className="py-16 text-center">
             <Bell className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
             <p className="text-sm font-medium text-muted-foreground">
@@ -119,13 +120,13 @@ export function NotificationsPage() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {notifications.map((n) => {
+          {notifications.map((n, i) => {
             const CategoryIcon = CATEGORY_ICONS[n.category] ?? Info;
 
             return (
+              <Reveal key={n.id} delay={Math.min(i, 8) * 50}>
               <Card
-                key={n.id}
-                className={`transition-colors ${!n.read ? "border-primary/30 bg-primary/5" : ""}`}
+                className={`surface-glass hoverable-card ${!n.read ? "border-primary/30" : ""}`}
               >
                 <CardContent className="flex items-start gap-4 py-4">
                   {/* Icon */}
@@ -205,6 +206,7 @@ export function NotificationsPage() {
                   </div>
                 </CardContent>
               </Card>
+              </Reveal>
             );
           })}
         </div>

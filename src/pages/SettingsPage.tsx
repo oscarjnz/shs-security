@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Reveal } from "@/components/ui/Reveal";
 interface EmailConfig {
   id: string;
   user_id: string;
@@ -220,7 +221,7 @@ export function SettingsPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div>
+      <Reveal immediate as="header">
         <div className="flex items-center gap-2">
           <Settings className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
@@ -230,7 +231,7 @@ export function SettingsPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           Administra tus notificaciones y preferencias de la plataforma.
         </p>
-      </div>
+      </Reveal>
 
       <Tabs defaultValue="notificaciones" className="w-full">
         <TabsList>
@@ -246,7 +247,7 @@ export function SettingsPage() {
 
         {/* Notifications Tab */}
         <TabsContent value="notificaciones">
-          <Card>
+          <Card className="surface-glass">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Mail className="h-4 w-4" />
@@ -371,7 +372,7 @@ export function SettingsPage() {
 
         {/* Preferences Tab */}
         <TabsContent value="preferencias">
-          <Card>
+          <Card className="surface-glass">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Palette className="h-4 w-4" />

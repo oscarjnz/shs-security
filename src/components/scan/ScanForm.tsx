@@ -293,7 +293,7 @@ export function ScanForm({ isRunning, onSubmit, onAbort }: ScanFormProps) {
 
       {/* Public consent */}
       {isPublic && (
-        <Card className="border-destructive/40 bg-destructive/5">
+        <Card className="surface-elevated border-destructive/40 bg-destructive/5">
           <CardContent className="space-y-3 pt-4">
             <div className="flex items-start gap-2">
               <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />

@@ -104,7 +104,7 @@ export function ResetPasswordPage() {
         <div className="absolute left-1/2 top-1/4 h-96 w-96 -translate-x-1/2 rounded-full bg-cyber-green/5 blur-3xl" />
       </div>
 
-      <Card className="relative z-10 w-full max-w-md border-cyber-border bg-cyber-card/90 backdrop-blur-sm">
+      <Card className="relative z-10 w-full max-w-md surface-glass">
         <CardHeader className="flex flex-col items-center gap-3 pb-2 pt-8">
           <div
             className={cn(

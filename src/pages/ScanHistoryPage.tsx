@@ -36,6 +36,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Reveal } from "@/components/ui/Reveal";
 import type { ScanResultRow } from "@/lib/database.types";
 
 interface ParsedDevice {
@@ -89,7 +90,7 @@ export function ScanHistoryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
+      <Reveal immediate as="header" className="flex items-center gap-3">
         <History className="h-7 w-7 text-primary" />
         <div>
           <h1 className="text-2xl font-bold text-foreground">Historial de Escaneos</h1>
@@ -97,7 +98,7 @@ export function ScanHistoryPage() {
             Todos los escaneos que has ejecutado, con detalle completo y opción de preguntarle a ACi.
           </p>
         </div>
-      </div>
+      </Reveal>
 
       <Input
         placeholder="Buscar por target, perfil o comando..."
@@ -106,7 +107,8 @@ export function ScanHistoryPage() {
         className="max-w-md"
       />
 
-      <Card>
+      <Reveal as="section">
+      <Card className="surface-glass">
         <CardHeader>
           <CardTitle className="text-base">
             {filtered.length} escaneo{filtered.length === 1 ? "" : "s"}
@@ -210,6 +212,7 @@ export function ScanHistoryPage() {
           )}
         </CardContent>
       </Card>
+      </Reveal>
 
       <ScanDetailDrawer scan={selected} onClose={() => setSelected(null)} />
     </div>
@@ -283,7 +286,7 @@ function ScanDetailDrawer({
 
           {/* Devices */}
           {devices.length > 0 && (
-            <Card>
+            <Card className="surface-glass">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm">
                   Dispositivos detectados ({devices.length}) - {openPorts} puerto(s) abierto(s)
@@ -291,7 +294,7 @@ function ScanDetailDrawer({
               </CardHeader>
               <CardContent className="space-y-2">
                 {devices.map((d, i) => (
-                  <div key={`${d.ip}-${i}`} className="rounded-md border p-2 text-xs">
+                  <div key={`${d.ip}-${i}`} className="surface-elevated rounded-md p-2 text-xs">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                       <span className="font-mono font-semibold">{d.ip}</span>
                       <Badge
@@ -334,7 +337,7 @@ function ScanDetailDrawer({
           )}
 
           {/* Raw output */}
-          <Card>
+          <Card className="surface-glass">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-sm">
                 <Terminal className="h-4 w-4" />
@@ -371,7 +374,7 @@ function Kpi({
   highlight?: boolean;
 }) {
   return (
-    <Card className={highlight ? "border-destructive/60" : undefined}>
+    <Card className={`surface-elevated hoverable-card ${highlight ? "border-destructive/60" : ""}`}>
       <CardContent className="p-2">
         <div className="flex items-center gap-1 text-muted-foreground">
           {icon}

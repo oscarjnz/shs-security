@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Reveal } from "@/components/ui/Reveal";
 import { cn } from "@/lib/utils";
 
 const severityConfig: Record<string, { label: string; className: string }> = {
@@ -106,7 +107,7 @@ export function ThreatDetectionPage() {
   return (
     <div className="space-y-6">
       {/* Page Title */}
-      <div>
+      <Reveal immediate as="header">
         <div className="flex items-center gap-2">
           <ShieldAlert className="h-6 w-6 text-cyber-green" />
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
@@ -116,10 +117,10 @@ export function ThreatDetectionPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           Visualiza todas las amenazas detectadas en tu red domestica.
         </p>
-      </div>
+      </Reveal>
 
       {/* Filter + Count */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <Reveal className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="w-full max-w-xs">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="border-cyber-border bg-cyber-dark/60 text-foreground focus:ring-cyber-green/50">
@@ -139,10 +140,11 @@ export function ThreatDetectionPage() {
         >
           {filtered.length} amenaza{filtered.length !== 1 ? "s" : ""}
         </Badge>
-      </div>
+      </Reveal>
 
       {/* Threats Table */}
-      <Card className="border-cyber-border bg-cyber-card/80 backdrop-blur-sm">
+      <Reveal as="section">
+      <Card className="surface-glass">
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold text-foreground">
             Registro de Amenazas
@@ -204,6 +206,7 @@ export function ThreatDetectionPage() {
           )}
         </CardContent>
       </Card>
+      </Reveal>
     </div>
   );
 }

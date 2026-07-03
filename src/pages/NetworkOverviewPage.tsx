@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { TrafficCharts } from "@/components/dashboard/TrafficCharts";
 import { Badge } from "@/components/ui/badge";
+import { Reveal } from "@/components/ui/Reveal";
 import { cn } from "@/lib/utils";
 
 function latencyColor(ms: number): string {
@@ -49,7 +50,7 @@ export function NetworkOverviewPage() {
   return (
     <div className="space-y-6">
       {/* Page Title */}
-      <div>
+      <Reveal immediate as="header">
         <div className="flex items-center gap-2">
           <Network className="h-6 w-6 text-cyber-green" />
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
@@ -59,11 +60,12 @@ export function NetworkOverviewPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           Monitoreo en tiempo real del estado de tu conexion de red.
         </p>
-      </div>
+      </Reveal>
 
       {/* Current Connection Status */}
       {latest && (
-        <Card className="border-cyber-border bg-cyber-card/80 backdrop-blur-sm">
+        <Reveal as="section">
+        <Card className="surface-glass">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
               <Activity className="h-5 w-5 text-cyber-green" />
@@ -73,7 +75,7 @@ export function NetworkOverviewPage() {
           <CardContent>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               {/* Download */}
-              <div className="flex flex-col items-center gap-1 rounded-lg border border-cyber-border bg-cyber-dark/50 p-4">
+              <div className="flex flex-col items-center gap-1 surface-elevated hoverable-card rounded-lg p-4">
                 <Download className="h-5 w-5 text-emerald-400" />
                 <span className="text-2xl font-bold text-foreground">
                   {latest.download_speed.toFixed(1)}
@@ -84,7 +86,7 @@ export function NetworkOverviewPage() {
               </div>
 
               {/* Upload */}
-              <div className="flex flex-col items-center gap-1 rounded-lg border border-cyber-border bg-cyber-dark/50 p-4">
+              <div className="flex flex-col items-center gap-1 surface-elevated hoverable-card rounded-lg p-4">
                 <Upload className="h-5 w-5 text-cyber-blue" />
                 <span className="text-2xl font-bold text-foreground">
                   {latest.upload_speed.toFixed(1)}
@@ -95,7 +97,7 @@ export function NetworkOverviewPage() {
               </div>
 
               {/* Latency */}
-              <div className="flex flex-col items-center gap-1 rounded-lg border border-cyber-border bg-cyber-dark/50 p-4">
+              <div className="flex flex-col items-center gap-1 surface-elevated hoverable-card rounded-lg p-4">
                 <Activity className={cn("h-5 w-5", latencyColor(latest.latency))} />
                 <span className={cn("text-2xl font-bold", latencyColor(latest.latency))}>
                   {Math.round(latest.latency)}
@@ -106,7 +108,7 @@ export function NetworkOverviewPage() {
               </div>
 
               {/* Packet Loss */}
-              <div className="flex flex-col items-center gap-1 rounded-lg border border-cyber-border bg-cyber-dark/50 p-4">
+              <div className="flex flex-col items-center gap-1 surface-elevated hoverable-card rounded-lg p-4">
                 <AlertTriangle
                   className={cn("h-5 w-5", packetLossColor(latest.packet_loss))}
                 />
@@ -125,13 +127,17 @@ export function NetworkOverviewPage() {
             </div>
           </CardContent>
         </Card>
+        </Reveal>
       )}
 
       {/* Traffic Charts */}
-      <TrafficCharts metrics={metricList} />
+      <Reveal as="section">
+        <TrafficCharts metrics={metricList} />
+      </Reveal>
 
       {/* Recent Metrics Table */}
-      <Card className="border-cyber-border bg-cyber-card/80 backdrop-blur-sm">
+      <Reveal as="section">
+      <Card className="surface-glass">
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold text-foreground">
             Ultimas 20 Mediciones
@@ -194,6 +200,7 @@ export function NetworkOverviewPage() {
           )}
         </CardContent>
       </Card>
+      </Reveal>
 
       {/* Total count */}
       <div className="flex justify-end">

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { listKev } from "@/lib/cveApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Reveal } from "@/components/ui/Reveal";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -46,7 +47,7 @@ export function KevCatalogPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-3">
+      <Reveal immediate as="header" className="flex items-start gap-3">
         <Flame className="h-8 w-8 shrink-0 text-red-500" />
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-foreground">
@@ -57,9 +58,10 @@ export function KevCatalogPage() {
             atacantes. Sincronizado diariamente desde cisa.gov.
           </p>
         </div>
-      </div>
+      </Reveal>
 
-      <Card>
+      <Reveal as="section">
+      <Card className="surface-glass">
         <CardContent className="space-y-4 p-4">
           <form
             onSubmit={(e) => {
@@ -103,8 +105,10 @@ export function KevCatalogPage() {
           </form>
         </CardContent>
       </Card>
+      </Reveal>
 
-      <Card>
+      <Reveal as="section">
+      <Card className="surface-glass">
         <CardHeader>
           <CardTitle className="text-base">
             {isFetching ? "Cargando…" : `${total} vulnerabilidad${total === 1 ? "" : "es"} en el catálogo`}
@@ -219,6 +223,7 @@ export function KevCatalogPage() {
           )}
         </CardContent>
       </Card>
+      </Reveal>
     </div>
   );
 }
