@@ -1,7 +1,7 @@
 import { useState, useMemo, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSignIn } from "@clerk/react/legacy";
-import { Shield, Loader2, Mail, ArrowLeft, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2, Mail, ArrowLeft, CheckCircle2, AlertCircle } from "lucide-react";
 import { PasswordInput } from "@/components/auth/PasswordInput";
 import {
   PasswordStrengthMeter,
@@ -14,8 +14,7 @@ import { toast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { AuthShell } from "@/components/auth/AuthShell";
 
 export function ResetPasswordPage() {
   const navigate = useNavigate();
@@ -92,49 +91,40 @@ export function ResetPasswordPage() {
     );
   }
 
-  const title = mode === "request" ? "Recuperar contrasena" : "Nueva contrasena";
-  const subtitle =
+  const heading = mode === "request" ? "Recuperar contrasena" : "Nueva contrasena";
+  const subheading =
     mode === "request"
-      ? "Te enviaremos un codigo para restablecer tu contrasena"
-      : "Introduce el codigo y tu nueva contrasena";
+      ? "Te enviaremos un codigo para restablecer tu contrasena."
+      : "Introduce el codigo y tu nueva contrasena.";
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-cyber-dark px-4">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-1/2 top-1/4 h-96 w-96 -translate-x-1/2 rounded-full bg-cyber-green/5 blur-3xl" />
-      </div>
-
-      <Card className="relative z-10 w-full max-w-md surface-glass">
-        <CardHeader className="flex flex-col items-center gap-3 pb-2 pt-8">
-          <div
-            className={cn(
-              "flex h-16 w-16 items-center justify-center rounded-2xl",
-              "bg-cyber-green/10 ring-1 ring-cyber-green/30",
-            )}
-          >
-            <Shield className="h-9 w-9 text-cyber-green" />
+    <AuthShell
+      title="Recupera tu acceso"
+      subtitle="Restablece tu contrasena en un par de pasos y vuelve a tu panel de seguridad."
+    >
+      {done ? (
+        <div className="flex flex-col items-center gap-4 py-6 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10">
+            <CheckCircle2 className="h-8 w-8 text-emerald-400" />
           </div>
-          <div className="text-center">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+          <p className="text-sm font-medium text-foreground">
+            Contrasena actualizada. Redirigiendo...
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-medium tracking-tight text-foreground">
+              {heading}
+            </h1>
+            <p className="text-sm text-muted-foreground">{subheading}</p>
           </div>
-        </CardHeader>
 
-        <CardContent className="px-6 pb-8 pt-4">
-          {done ? (
-            <div className="flex flex-col items-center gap-4 py-4 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10">
-                <CheckCircle2 className="h-8 w-8 text-emerald-400" />
-              </div>
-              <p className="text-sm font-medium text-foreground">
-                Contrasena actualizada. Redirigiendo...
-              </p>
-            </div>
-          ) : mode === "request" ? (
+          {mode === "request" ? (
             <>
               <form onSubmit={handleRequest} className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="reset-email" className="text-sm text-muted-foreground">
+                  <Label htmlFor="reset-email" className="text-sm font-medium text-foreground">
                     Correo electronico
                   </Label>
                   <div className="relative">
@@ -147,7 +137,7 @@ export function ResetPasswordPage() {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                       autoComplete="email"
-                      className="border-cyber-border bg-cyber-dark/60 pl-10 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
+                      className="h-11 border-cyber-border bg-cyber-card/60 pl-10 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
                     />
                   </div>
                 </div>
@@ -155,7 +145,7 @@ export function ResetPasswordPage() {
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full gap-2 bg-cyber-green font-semibold text-cyber-dark hover:bg-cyber-green/90"
+                  className="pressable h-12 w-full gap-2 rounded-xl bg-cyber-green font-semibold text-cyber-dark hover:bg-cyber-green/90"
                 >
                   {isSubmitting ? (
                     <>
@@ -168,7 +158,7 @@ export function ResetPasswordPage() {
                 </Button>
               </form>
 
-              <div className="mt-5 text-center">
+              <div className="text-center">
                 <Link
                   to="/login"
                   className="inline-flex items-center gap-2 text-sm text-cyber-green/80 underline-offset-4 hover:text-cyber-green hover:underline"
@@ -181,7 +171,7 @@ export function ResetPasswordPage() {
           ) : (
             <form onSubmit={handleReset} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="reset-code" className="text-sm text-muted-foreground">
+                <Label htmlFor="reset-code" className="text-sm font-medium text-foreground">
                   Codigo de verificacion
                 </Label>
                 <Input
@@ -193,7 +183,7 @@ export function ResetPasswordPage() {
                   onChange={(e) => setCode(e.target.value)}
                   required
                   autoComplete="one-time-code"
-                  className="border-cyber-border bg-cyber-dark/60 text-center text-lg tracking-widest text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
+                  className="h-11 border-cyber-border bg-cyber-card/60 text-center text-lg tracking-widest text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
                 />
                 <p className="text-xs text-muted-foreground">
                   Enviamos un codigo a{" "}
@@ -202,7 +192,7 @@ export function ResetPasswordPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="new-pwd" className="text-sm text-muted-foreground">
+                <Label htmlFor="new-pwd" className="text-sm font-medium text-foreground">
                   Nueva contrasena
                 </Label>
                 <PasswordInput
@@ -213,13 +203,13 @@ export function ResetPasswordPage() {
                   required
                   minLength={8}
                   autoComplete="new-password"
-                  className="border-cyber-border bg-cyber-dark/60 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
+                  className="h-11 border-cyber-border bg-cyber-card/60 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
                 />
                 <PasswordStrengthMeter password={password} />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirm-pwd" className="text-sm text-muted-foreground">
+                <Label htmlFor="confirm-pwd" className="text-sm font-medium text-foreground">
                   Confirma la contrasena
                 </Label>
                 <PasswordInput
@@ -230,7 +220,7 @@ export function ResetPasswordPage() {
                   required
                   minLength={8}
                   autoComplete="new-password"
-                  className="border-cyber-border bg-cyber-dark/60 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
+                  className="h-11 border-cyber-border bg-cyber-card/60 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
                 />
                 {confirmPassword.length > 0 && (
                   <p
@@ -251,7 +241,7 @@ export function ResetPasswordPage() {
               <Button
                 type="submit"
                 disabled={isSubmitting || !validNewPassword || code.length < 4}
-                className="w-full gap-2 bg-cyber-green font-semibold text-cyber-dark hover:bg-cyber-green/90"
+                className="pressable h-12 w-full gap-2 rounded-xl bg-cyber-green font-semibold text-cyber-dark hover:bg-cyber-green/90"
               >
                 {isSubmitting ? (
                   <>
@@ -264,8 +254,8 @@ export function ResetPasswordPage() {
               </Button>
             </form>
           )}
-        </CardContent>
-      </Card>
-    </div>
+        </>
+      )}
+    </AuthShell>
   );
 }
