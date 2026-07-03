@@ -344,6 +344,32 @@ export function checkRateLimit(userId: string, isPublic: boolean): { ok: boolean
   return { ok: true };
 }
 
+/**
+ * Barrido periódico de los mapas de rate-limit. checkRateLimit filtra en cada
+ * lectura, pero un usuario que escanea una vez y no vuelve deja su llave con
+ * timestamps viejos para siempre (leak lento en el proceso de Render). Este
+ * sweep elimina las llaves cuyos timestamps ya expiraron todos. Se arranca una
+ * sola vez desde el backend.
+ */
+function sweepRateMap(map: Map<string, number[]>, windowMs: number): void {
+  const now = Date.now();
+  for (const [key, timestamps] of map) {
+    const fresh = timestamps.filter((t) => now - t < windowMs);
+    if (fresh.length === 0) map.delete(key);
+    else if (fresh.length !== timestamps.length) map.set(key, fresh);
+  }
+}
+
+let rateSweepHandle: NodeJS.Timeout | null = null;
+export function startRateLimitSweep(): void {
+  if (rateSweepHandle) return;
+  rateSweepHandle = setInterval(() => {
+    sweepRateMap(privateRateMap, PRIVATE_RATE_WINDOW_MS);
+    sweepRateMap(publicRateMap, PUBLIC_RATE_WINDOW_MS);
+  }, 5 * 60_000);
+  rateSweepHandle.unref();
+}
+
 /* ─── execution ─── */
 
 export interface ResolvedScan {
@@ -467,7 +493,8 @@ export async function streamScan(
       if (totalBytes > MAX_OUTPUT_BYTES) {
         if (!truncated) {
           truncated = true;
-          onEvent({ event: "line", data: { line: "[salida truncada: límite de 1MB alcanzado]" } });
+          const limitMb = (MAX_OUTPUT_BYTES / (1024 * 1024)).toFixed(1);
+          onEvent({ event: "line", data: { line: `[salida truncada: límite de ${limitMb}MB alcanzado]` } });
           child.kill("SIGTERM");
         }
         return;

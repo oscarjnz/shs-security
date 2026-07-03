@@ -70,7 +70,8 @@ export function ConnectedDevicesPage() {
       const { data, error } = await supabase
         .from("devices")
         .select("*")
-        .order("last_seen", { ascending: false });
+        .order("last_seen", { ascending: false })
+        .limit(500); // acota el fetch a los 500 dispositivos más recientes
       if (error) throw error;
       return (data ?? []) as DeviceRow[];
     },

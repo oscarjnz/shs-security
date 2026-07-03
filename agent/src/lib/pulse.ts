@@ -150,25 +150,35 @@ async function runPulseTick(supabase: SupabaseClient): Promise<void> {
       await supabase.from("device_pings").insert(pingRows);
     }
 
-    // Update device.status only when it CHANGED, to avoid noise
+    // Update device.status only when it CHANGED, to avoid noise.
+    // Agrupamos en 3 queries por lotes (antes era 1 update por dispositivo:
+    // N round-trips a Supabase cada 60s, que escalaba mal con muchos equipos).
+    const now = new Date().toISOString();
+    const toOnline: string[] = [];   // pasó a online -> status + last_seen
+    const toOffline: string[] = [];  // pasó a offline -> solo status
+    const bumpSeen: string[] = [];    // seguía online y vivo -> solo last_seen
+
     for (const { dev, r } of results) {
       const newStatus = r.alive ? "online" : "offline";
       if (dev.status !== newStatus) {
-        await supabase
-          .from("devices")
-          .update({
-            status: newStatus,
-            ...(r.alive ? { last_seen: new Date().toISOString() } : {}),
-          })
-          .eq("id", dev.id);
+        if (r.alive) toOnline.push(dev.id);
+        else toOffline.push(dev.id);
       } else if (r.alive) {
-        // alive AND already online -> just bump last_seen
-        await supabase
-          .from("devices")
-          .update({ last_seen: new Date().toISOString() })
-          .eq("id", dev.id);
+        bumpSeen.push(dev.id);
       }
     }
+
+    await Promise.all([
+      toOnline.length
+        ? supabase.from("devices").update({ status: "online", last_seen: now }).in("id", toOnline)
+        : Promise.resolve(),
+      toOffline.length
+        ? supabase.from("devices").update({ status: "offline" }).in("id", toOffline)
+        : Promise.resolve(),
+      bumpSeen.length
+        ? supabase.from("devices").update({ last_seen: now }).in("id", bumpSeen)
+        : Promise.resolve(),
+    ]);
 
     lastTickStats = {
       startedAt: new Date(tickStart).toISOString(),

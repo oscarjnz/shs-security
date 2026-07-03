@@ -49,10 +49,12 @@ import {
   validateFlags,
   buildSummary,
   parseNmapOutput,
+  startRateLimitSweep,
   type SSEEvent,
 } from "./lib/scanner.js";
 import { upsertDevicesFromScan, createThreatsFromScan, loadKnownDevices } from "./lib/auto-actions.js";
 import { startPulse, getLastPulseStats } from "./lib/pulse.js";
+import { listLocalPrivateSubnets } from "./lib/local-net.js";
 import { TEMPLATES, type EmailTemplate } from "./lib/email-templates.js";
 import { startKeepAliveCron, pingSupabase, getLastPingResult } from "./lib/keep-alive.js";
 import { createPairingCode, redeemPairingCode, revokeAgent } from "./lib/agents.js";
@@ -82,6 +84,10 @@ const INTERNAL_SECRET = process.env["AGENT_INTERNAL_SECRET"] ?? "";
 const GROQ_API_KEY = process.env["GROQ_API_KEY"] ?? "";
 const RESEND_API_KEY = process.env["RESEND_API_KEY"] ?? "";
 const RESEND_FROM = process.env["RESEND_FROM_EMAIL"] ?? "S.S.S <noreply@securitysmartservices.site>";
+// URL publica del sitio. Configurable via env para no hardcodear el dominio en
+// los comandos de instalacion ni en los emails (si cambia el dominio, un solo
+// cambio de env lo propaga). El default es el dominio de produccion actual.
+const SITE_URL = (process.env["SITE_URL"] ?? "https://securitysmartservices.site").replace(/\/+$/, "");
 
 /* ─── clients ─── */
 
@@ -203,7 +209,19 @@ const requirePerm = (section: string, level: "view" | "full") =>
 
 const DEMO_ALLOWED_PROFILES = new Set(["discovery", "quick_top100"]);
 const DEMO_RATE_LIMIT_PER_IP_PER_HOUR = 5;
+const DEMO_RATE_WINDOW_MS = 60 * 60_000;
 const demoRateMap = new Map<string, number[]>();
+
+// El endpoint /api/demo/scan es público y sin auth: un bot con IPs rotativas
+// haría crecer demoRateMap sin límite. Barremos las llaves expiradas cada 10 min.
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, ts] of demoRateMap) {
+    const fresh = ts.filter((t) => now - t < DEMO_RATE_WINDOW_MS);
+    if (fresh.length === 0) demoRateMap.delete(ip);
+    else if (fresh.length !== ts.length) demoRateMap.set(ip, fresh);
+  }
+}, 10 * 60_000).unref();
 
 function clientIp(req: express.Request): string {
   const fwd = req.headers["x-forwarded-for"];
@@ -218,12 +236,28 @@ app.get("/api/demo/profiles", (_req, res) => {
   ok(res, profiles);
 });
 
+// Subredes privadas detectadas en ESTA máquina (donde corre el backend).
+// La usa la demo LAN para escanear la subred real del visitante en vez de
+// asumir 192.168.1.0/24. Público y sin secretos: solo expone CIDRs RFC1918
+// de las interfaces locales. Solo es útil cuando el backend corre en localhost
+// (modo "lan" de la demo); en producción devuelve la subred del contenedor,
+// que la demo cloud no consulta.
+app.get("/api/demo/local-subnets", (_req, res) => {
+  const subnets = listLocalPrivateSubnets().map((s) => ({
+    cidr: s.cidr,
+    suggestedCidr: s.suggestedCidr,
+    ip: s.ip,
+    interfaceName: s.interfaceName,
+  }));
+  ok(res, subnets);
+});
+
 app.post("/api/demo/scan", express.json(), async (req, res) => {
   const ip = clientIp(req);
 
   // Rate-limit by IP (independent from authenticated rate-limit buckets)
   const now = Date.now();
-  const recent = (demoRateMap.get(ip) ?? []).filter((t) => now - t < 60 * 60_000);
+  const recent = (demoRateMap.get(ip) ?? []).filter((t) => now - t < DEMO_RATE_WINDOW_MS);
   if (recent.length >= DEMO_RATE_LIMIT_PER_IP_PER_HOUR) {
     fail(res, 429, `Has agotado los ${DEMO_RATE_LIMIT_PER_IP_PER_HOUR} escaneos de prueba esta hora. Crea una cuenta para escanear sin límite.`);
     return;
@@ -233,12 +267,19 @@ app.post("/api/demo/scan", express.json(), async (req, res) => {
 
   // Validate body
   const body = req.body as { target?: unknown; profileId?: unknown };
-  const target = String(body.target ?? "").trim();
+  let target = String(body.target ?? "").trim();
   const profileId = String(body.profileId ?? "");
 
   if (!DEMO_ALLOWED_PROFILES.has(profileId)) {
     fail(res, 400, "Perfil no permitido en demo. Usa 'discovery' o 'quick_top100'.");
     return;
+  }
+
+  // Si el cliente no manda target, lo resuelve la maquina que SI conoce la red:
+  // este backend, con las subredes privadas de sus interfaces. Cero hardcode.
+  if (!target) {
+    const local = listLocalPrivateSubnets();
+    if (local.length > 0) target = local[0]!.suggestedCidr;
   }
 
   const targetError = (() => {
@@ -831,11 +872,11 @@ app.post(
         ttlSeconds: Math.max(0, Math.round((new Date(record.expires_at).getTime() - Date.now()) / 1000)),
         installCommands: {
           // -UseBasicParsing evita la advertencia de seguridad de PowerShell.
-          windows: `iwr https://securitysmartservices.site/install.ps1 -UseBasicParsing | iex; shs-scanner pair ${record.code}`,
+          windows: `iwr ${SITE_URL}/install.ps1 -UseBasicParsing | iex; shs-scanner pair ${record.code}`,
           // 'sudo sh' porque se instala en /usr/local/bin; el pair va sin sudo (la
           // identidad se guarda en la carpeta del usuario).
-          macos: `curl -fsSL https://securitysmartservices.site/install.sh | sudo sh && shs-scanner pair ${record.code}`,
-          linux: `curl -fsSL https://securitysmartservices.site/install.sh | sudo sh && shs-scanner pair ${record.code}`,
+          macos: `curl -fsSL ${SITE_URL}/install.sh | sudo sh && shs-scanner pair ${record.code}`,
+          linux: `curl -fsSL ${SITE_URL}/install.sh | sudo sh && shs-scanner pair ${record.code}`,
         },
       });
     } catch (err) {
@@ -2184,6 +2225,9 @@ startKeepAliveCron(supabaseAdmin, cron);
 
 /* ─── pulse: ping every known LAN device every minute ─── */
 startPulse(supabaseAdmin);
+
+/* ─── sweep periódico de los mapas de rate-limit en memoria ─── */
+startRateLimitSweep();
 
 // Daily 4am UTC: prune device_pings older than 7 days
 cron.schedule("0 4 * * *", async () => {

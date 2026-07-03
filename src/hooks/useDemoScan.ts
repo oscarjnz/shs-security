@@ -120,6 +120,9 @@ export interface StoredScan extends DemoScanResult {
 
 export interface DemoState {
   mode: DemoMode;
+  /** Subred privada detectada para el scan LAN. Nunca hardcodeada: viene del
+   *  backend local. Si no hay, el modo NO es "lan" y no se usa. */
+  lanTarget: string | null;
   isRunning: boolean;
   error: string | null;
   progress: string | null;
@@ -130,6 +133,7 @@ export interface DemoState {
 export function useDemoScan() {
   const [state, setState] = useState<DemoState>({
     mode: "detecting",
+    lanTarget: null,
     isRunning: false,
     error: null,
     progress: null,
@@ -140,8 +144,8 @@ export function useDemoScan() {
   /* Detect the mode once on mount. */
   useEffect(() => {
     let cancelled = false;
-    detectMode().then((mode) => {
-      if (!cancelled) setState((s) => ({ ...s, mode }));
+    detectMode().then(({ mode, lanTarget }) => {
+      if (!cancelled) setState((s) => ({ ...s, mode, lanTarget }));
     });
     return () => {
       cancelled = true;
@@ -171,8 +175,8 @@ export function useDemoScan() {
 
       try {
         const result =
-          state.mode === "lan"
-            ? await runLanScan(profileId, (p) => setState((s) => ({ ...s, progress: p })))
+          state.mode === "lan" && state.lanTarget
+            ? await runLanScan(profileId, state.lanTarget, (p) => setState((s) => ({ ...s, progress: p })))
             : await runCloudScan(profileId);
 
         const stored: StoredScan = { ...result, id: crypto.randomUUID() };
@@ -190,7 +194,7 @@ export function useDemoScan() {
         setState((s) => ({ ...s, isRunning: false, progress: null, error: msg }));
       }
     },
-    [state.mode],
+    [state.mode, state.lanTarget],
   );
 
   const clearHistory = useCallback(() => {
@@ -203,42 +207,40 @@ export function useDemoScan() {
 
 /* ─── mode detection ─── */
 
-async function detectMode(): Promise<DemoMode> {
+async function detectMode(): Promise<{ mode: DemoMode; lanTarget: string | null }> {
+  // El modo LAN solo se ofrece si el backend local responde Y detecta una
+  // subred privada real. Asi el scan LAN SIEMPRE apunta a la red correcta del
+  // visitante; nunca hay una IP hardcodeada ni un scan de la red equivocada.
+  // Si no hay backend local o no hay subred privada, usamos modo cloud, que
+  // funciona para cualquiera. El usuario nunca ve un error por esto.
   try {
     const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 1200);
-    const res = await fetch(`${AGENT_URL}/api/health`, { signal: ctrl.signal });
+    const t = setTimeout(() => ctrl.abort(), 1500);
+    const res = await fetch(`${AGENT_URL}/api/demo/local-subnets`, { signal: ctrl.signal });
     clearTimeout(t);
-    if (res.ok) return "lan";
+    if (res.ok) {
+      const payload = (await res.json()) as {
+        data?: Array<{ suggestedCidr?: string; cidr?: string }>;
+      };
+      const first = payload.data?.[0];
+      const detected = first?.suggestedCidr ?? first?.cidr ?? null;
+      if (detected) return { mode: "lan", lanTarget: detected };
+    }
   } catch {
-    /* agent not reachable */
+    /* backend local no alcanzable → modo cloud */
   }
-  return "cloud";
+  return { mode: "cloud", lanTarget: null };
 }
 
 /* ─── LAN mode: stream from local agent ─── */
 
 async function runLanScan(
   profileId: string,
+  target: string,
   onProgress: (msg: string) => void,
 ): Promise<DemoScanResult> {
-  // 1. Get the auto-detected subnet via the agent (anonymous endpoint).
-  //    This is the same logic /api/network/local-subnets uses, but the agent
-  //    requires auth for that one. Instead we do a discovery against a sensible
-  //    default and let nmap itself report the hosts.
-  //    Simpler: ask the public /api/demo/profiles and have the user pick a
-  //    subnet from a default. We don't have an anonymous subnet endpoint, so we
-  //    fall back to a heuristic: 192.168.1.0/24.
-  //
-  //    NOTE: a future improvement is exposing /api/network/local-subnets
-  //    publicly so the demo gets the exact subnet too. For now the discovery
-  //    profile is good enough because it sweeps the whole /24 quickly.
-
-  // Use the user's primary interface guess. The agent will reject if the
-  // CIDR isn't private, so we try a few common ones.
-  // For simplicity in MVP: hardcode /24 and let the user adjust later.
-  const target = "192.168.1.0/24";
-
+  // El target ya viene detectado por detectMode() (la subred real del backend
+  // local). No hay hardcode: si no hubiera subred, el modo no seria "lan".
   onProgress(`Sondeando ${target}…`);
 
   const res = await fetch(`${AGENT_URL}/api/demo/scan`, {
