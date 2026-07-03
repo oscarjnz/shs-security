@@ -2,17 +2,16 @@ import { useState, useEffect, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useUser } from "@clerk/react";
 import { useSignIn } from "@clerk/react/legacy";
-import { Loader2, Mail } from "lucide-react";
+import { Loader2, Mail, ShieldCheck, Bot, Lock } from "lucide-react";
 import { PasswordInput } from "@/components/auth/PasswordInput";
 
 import { toast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { OAuthButtons } from "@/components/auth/OAuthButtons";
-import { Logo } from "@/components/Logo";
+import { AuthShell } from "@/components/auth/AuthShell";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -74,109 +73,115 @@ export function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-cyber-dark px-4">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-1/2 top-1/4 h-96 w-96 -translate-x-1/2 rounded-full bg-cyber-green/5 blur-3xl" />
+    <AuthShell
+      title="Bienvenido de vuelta"
+      subtitle="Entra a tu panel para ver tus escaneos, amenazas y reportes en tiempo real."
+      aside={
+        <div className="space-y-3">
+          <ValueRow icon={<ShieldCheck className="h-4 w-4 text-cyber-green" />} text="Auditoria continua de tu red" />
+          <ValueRow icon={<Bot className="h-4 w-4 text-cyber-green" />} text="ACi te explica cada hallazgo" />
+          <ValueRow icon={<Lock className="h-4 w-4 text-cyber-green" />} text="Tus datos aislados con RLS estricto" />
+        </div>
+      }
+    >
+      <div className="space-y-2">
+        <h1 className="text-3xl font-medium tracking-tight text-foreground">
+          Iniciar sesion
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Entra con tu correo o un proveedor para continuar.
+        </p>
       </div>
 
-      <Card className="relative z-10 w-full max-w-md surface-glass">
-        <CardHeader className="flex flex-col items-center gap-3 pb-2 pt-8">
-          <Logo className="h-16 w-16" />
-          <div className="text-center">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              S.S.S
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Security Smart Services
-            </p>
+      <OAuthButtons disabled={isSubmitting} />
+
+      <div className="flex items-center gap-3">
+        <Separator className="flex-1 bg-cyber-border" />
+        <span className="text-xs uppercase tracking-widest text-muted-foreground">
+          o
+        </span>
+        <Separator className="flex-1 bg-cyber-border" />
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-sm font-medium text-foreground">
+            Correo electronico
+          </Label>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              id="email"
+              type="email"
+              placeholder="tu@correo.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+              className="h-11 border-cyber-border bg-cyber-card/60 pl-10 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
+            />
           </div>
-        </CardHeader>
+        </div>
 
-        <CardContent className="px-6 pb-8 pt-4">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm text-muted-foreground">
-                Correo electronico
-              </Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="tu@correo.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                  className="border-cyber-border bg-cyber-dark/60 pl-10 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label
-                htmlFor="password"
-                className="text-sm text-muted-foreground"
-              >
-                Contrasena
-              </Label>
-              <PasswordInput
-                id="password"
-                placeholder="********"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-                className="border-cyber-border bg-cyber-dark/60 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full gap-2 bg-cyber-green font-semibold text-cyber-dark hover:bg-cyber-green/90"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Iniciando sesion...
-                </>
-              ) : (
-                "Iniciar Sesion"
-              )}
-            </Button>
-          </form>
-
-          <div className="mt-4 text-center">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password" className="text-sm font-medium text-foreground">
+              Contrasena
+            </Label>
             <Link
               to="/reset-password"
-              className="text-sm text-cyber-green/80 underline-offset-4 hover:text-cyber-green hover:underline"
+              className="text-xs text-cyber-green/80 underline-offset-4 hover:text-cyber-green hover:underline"
             >
-              ¿Olvidaste tu contrasena?
+              ¿La olvidaste?
             </Link>
           </div>
+          <PasswordInput
+            id="password"
+            placeholder="********"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoComplete="current-password"
+            className="h-11 border-cyber-border bg-cyber-card/60 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
+          />
+        </div>
 
-          <div className="my-5 flex items-center gap-3">
-            <Separator className="flex-1 bg-cyber-border" />
-            <span className="text-xs uppercase tracking-wider text-muted-foreground">
-              o continua con
-            </span>
-            <Separator className="flex-1 bg-cyber-border" />
-          </div>
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="pressable h-12 w-full gap-2 rounded-xl bg-cyber-green font-semibold text-cyber-dark hover:bg-cyber-green/90"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Iniciando sesion...
+            </>
+          ) : (
+            "Iniciar sesion"
+          )}
+        </Button>
+      </form>
 
-          <OAuthButtons disabled={isSubmitting} />
+      <p className="text-center text-sm text-muted-foreground">
+        ¿No tienes cuenta?{" "}
+        <Link
+          to="/signup"
+          className="font-medium text-cyber-green/90 underline-offset-4 hover:text-cyber-green hover:underline"
+        >
+          Crear una
+        </Link>
+      </p>
+    </AuthShell>
+  );
+}
 
-          <p className="mt-5 text-center text-sm text-muted-foreground">
-            ¿No tienes cuenta?{" "}
-            <Link
-              to="/signup"
-              className="text-cyber-green/80 underline-offset-4 hover:text-cyber-green hover:underline"
-            >
-              Crear una
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
+function ValueRow({ icon, text }: { icon: React.ReactNode; text: string }) {
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-cyber-border bg-cyber-card/40 px-4 py-3">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cyber-green/10">
+        {icon}
+      </span>
+      <span className="text-sm text-muted-foreground">{text}</span>
     </div>
   );
 }

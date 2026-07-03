@@ -194,6 +194,67 @@
     -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 0%, black 30%, transparent 80%);
   }
 
+  /* Liquid glass — tarjeta flotante high-end con borde nitido via mask-composite.
+     Usada como firma visual del hero de la landing (adaptado de CodeNest). */
+  .liquid-glass {
+    position: relative;
+    background: hsl(210 40% 98% / 0.02);
+    background-blend-mode: luminosity;
+    backdrop-filter: blur(6px) saturate(150%);
+    -webkit-backdrop-filter: blur(6px) saturate(150%);
+    box-shadow:
+      inset 0 1px 1px hsl(210 40% 98% / 0.12),
+      0 24px 60px -24px hsl(0 0% 0% / 0.7);
+  }
+  .liquid-glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.4px;
+    background: linear-gradient(
+      180deg,
+      hsl(210 40% 98% / 0.55),
+      hsl(210 40% 98% / 0.04)
+    );
+    -webkit-mask:
+      linear-gradient(hsl(0 0% 0%) 0 0) content-box,
+      linear-gradient(hsl(0 0% 0%) 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(hsl(0 0% 0%) 0 0) content-box,
+      linear-gradient(hsl(0 0% 0%) 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Glow central del hero: elipse horizontal cyan/verde muy difuminada. */
+  .hero-glow {
+    background: radial-gradient(
+      ellipse 50% 100% at 50% 0%,
+      hsl(142 71% 45% / 0.28),
+      hsl(199 89% 48% / 0.1) 45%,
+      transparent 70%
+    );
+    filter: blur(25px);
+  }
+
+  /* Lineas verticales finas del hero (25/50/75%). */
+  .hero-grid-lines {
+    background-image: linear-gradient(
+      to right,
+      transparent calc(25% - 0.5px),
+      hsl(210 40% 98% / 0.06) calc(25%),
+      transparent calc(25% + 0.5px),
+      transparent calc(50% - 0.5px),
+      hsl(210 40% 98% / 0.06) calc(50%),
+      transparent calc(50% + 0.5px),
+      transparent calc(75% - 0.5px),
+      hsl(210 40% 98% / 0.06) calc(75%),
+      transparent calc(75% + 0.5px)
+    );
+  }
+
   /* Pressable — adds the satisfying scale-on-press feedback */
   .pressable {
     transition: transform 160ms var(--ease-out-quart);

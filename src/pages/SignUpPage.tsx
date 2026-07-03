@@ -8,7 +8,6 @@ import { toast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { OAuthButtons } from "@/components/auth/OAuthButtons";
 import { PasswordInput } from "@/components/auth/PasswordInput";
@@ -18,7 +17,7 @@ import {
   passwordScore,
   MIN_PASSWORD_SCORE,
 } from "@/components/auth/PasswordStrengthMeter";
-import { Logo } from "@/components/Logo";
+import { AuthShell, AuthStep } from "@/components/auth/AuthShell";
 
 export function SignUpPage() {
   const navigate = useNavigate();
@@ -136,206 +135,205 @@ export function SignUpPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-cyber-dark px-4 py-8">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-1/2 top-1/4 h-96 w-96 -translate-x-1/2 rounded-full bg-cyber-green/5 blur-3xl" />
-      </div>
-
-      <Card className="relative z-10 w-full max-w-md surface-glass">
-        <CardHeader className="flex flex-col items-center gap-3 pb-2 pt-8">
-          <Logo className="h-16 w-16" />
-          <div className="text-center">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Crear cuenta
+    <AuthShell
+      title="Unete a S.S.S"
+      subtitle="Tres pasos rapidos para empezar a auditar tu red como un profesional."
+      aside={
+        <div className="space-y-3">
+          <AuthStep number={1} text="Crea tu cuenta" active={!pendingVerification} />
+          <AuthStep number={2} text="Verifica tu correo" active={pendingVerification} />
+          <AuthStep number={3} text="Instala tu escaner" />
+        </div>
+      }
+    >
+      {pendingVerification ? (
+        <form onSubmit={handleVerify} className="space-y-6">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-medium tracking-tight text-foreground">
+              Verifica tu correo
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Unete a S.S.S y protege tu red sin complicaciones
+            <p className="text-sm text-muted-foreground">
+              Enviamos un codigo a{" "}
+              <span className="font-medium text-cyber-green">{email}</span>. Introducelo abajo.
             </p>
           </div>
-        </CardHeader>
 
-        <CardContent className="px-6 pb-8 pt-4">
-          {pendingVerification ? (
-            <form onSubmit={handleVerify} className="space-y-5">
-              <div className="flex flex-col items-center gap-4 py-2 text-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10">
-                  <CheckCircle2 className="h-8 w-8 text-emerald-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    Verifica tu correo
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Enviamos un codigo a{" "}
-                    <span className="font-medium text-cyber-green">{email}</span>.
-                    Introdúcelo abajo.
-                  </p>
-                </div>
-              </div>
+          <div className="flex justify-center py-2">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10">
+              <CheckCircle2 className="h-8 w-8 text-emerald-400" />
+            </div>
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="code" className="text-sm text-muted-foreground">
-                  Codigo de verificacion
-                </Label>
+          <div className="space-y-2">
+            <Label htmlFor="code" className="text-sm font-medium text-foreground">
+              Codigo de verificacion
+            </Label>
+            <Input
+              id="code"
+              type="text"
+              inputMode="numeric"
+              placeholder="123456"
+              value={verificationCode}
+              onChange={(e) => setVerificationCode(e.target.value)}
+              required
+              autoComplete="one-time-code"
+              className="h-11 border-cyber-border bg-cyber-card/60 text-center text-lg tracking-widest text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
+            />
+          </div>
+
+          <Button
+            type="submit"
+            disabled={isSubmitting || verificationCode.length < 4}
+            className="pressable h-12 w-full gap-2 rounded-xl bg-cyber-green font-semibold text-cyber-dark hover:bg-cyber-green/90"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Verificando...
+              </>
+            ) : (
+              "Verificar cuenta"
+            )}
+          </Button>
+        </form>
+      ) : (
+        <>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-medium tracking-tight text-foreground">
+              Crear nuevo perfil
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Ingresa tus datos basicos para empezar.
+            </p>
+          </div>
+
+          <OAuthButtons disabled={isSubmitting} />
+
+          <div className="flex items-center gap-3">
+            <Separator className="flex-1 bg-cyber-border" />
+            <span className="text-xs uppercase tracking-widest text-muted-foreground">
+              o
+            </span>
+            <Separator className="flex-1 bg-cyber-border" />
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="full-name" className="text-sm font-medium text-foreground">
+                Nombre completo
+              </Label>
+              <div className="relative">
+                <UserIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  id="code"
+                  id="full-name"
                   type="text"
-                  inputMode="numeric"
-                  placeholder="123456"
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value)}
+                  placeholder="Tu nombre"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
                   required
-                  autoComplete="one-time-code"
-                  className="border-cyber-border bg-cyber-dark/60 text-center text-lg tracking-widest text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
+                  autoComplete="name"
+                  className="h-11 border-cyber-border bg-cyber-card/60 pl-10 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
                 />
               </div>
+            </div>
 
-              <Button
-                type="submit"
-                disabled={isSubmitting || verificationCode.length < 4}
-                className="w-full gap-2 bg-cyber-green font-semibold text-cyber-dark hover:bg-cyber-green/90"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Verificando...
-                  </>
-                ) : (
-                  "Verificar cuenta"
-                )}
-              </Button>
-            </form>
-          ) : (
-            <>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="full-name" className="text-sm text-muted-foreground">
-                    Nombre completo
-                  </Label>
-                  <div className="relative">
-                    <UserIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="full-name"
-                      type="text"
-                      placeholder="Tu nombre"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      required
-                      autoComplete="name"
-                      className="border-cyber-border bg-cyber-dark/60 pl-10 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm text-muted-foreground">
-                    Correo electronico
-                  </Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="tu@correo.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      autoComplete="email"
-                      className="border-cyber-border bg-cyber-dark/60 pl-10 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm text-muted-foreground">
-                    Contrasena
-                  </Label>
-                  <PasswordInput
-                    id="password"
-                    placeholder="Minimo 8 caracteres"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={8}
-                    autoComplete="new-password"
-                    className="border-cyber-border bg-cyber-dark/60 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
-                  />
-                  <PasswordStrengthMeter password={password} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password" className="text-sm text-muted-foreground">
-                    Confirma tu contrasena
-                  </Label>
-                  <PasswordInput
-                    id="confirm-password"
-                    placeholder="Repite la contrasena"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    autoComplete="new-password"
-                    className="border-cyber-border bg-cyber-dark/60 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
-                  />
-                  {confirmPassword.length > 0 && (
-                    <p
-                      className={`flex items-center gap-1 text-xs ${
-                        passwordsMatch ? "text-emerald-400" : "text-red-400"
-                      }`}
-                    >
-                      {passwordsMatch ? (
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                      ) : (
-                        <AlertCircle className="h-3.5 w-3.5" />
-                      )}
-                      {passwordsMatch
-                        ? "Las contrasenas coinciden"
-                        : "Las contrasenas no coinciden"}
-                    </p>
-                  )}
-                </div>
-
-                {/* Clerk CAPTCHA mount point — required for bot protection */}
-                <div id="clerk-captcha" />
-
-                <Button
-                  type="submit"
-                  disabled={isSubmitting || !formValid}
-                  className="w-full gap-2 bg-cyber-green font-semibold text-cyber-dark hover:bg-cyber-green/90"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Creando cuenta...
-                    </>
-                  ) : (
-                    "Crear cuenta"
-                  )}
-                </Button>
-              </form>
-
-              <div className="my-5 flex items-center gap-3">
-                <Separator className="flex-1 bg-cyber-border" />
-                <span className="text-xs uppercase tracking-wider text-muted-foreground">
-                  o registrate con
-                </span>
-                <Separator className="flex-1 bg-cyber-border" />
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm font-medium text-foreground">
+                Correo electronico
+              </Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="tu@correo.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                  className="h-11 border-cyber-border bg-cyber-card/60 pl-10 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
+                />
               </div>
+            </div>
 
-              <OAuthButtons disabled={isSubmitting} />
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-sm font-medium text-foreground">
+                Contrasena
+              </Label>
+              <PasswordInput
+                id="password"
+                placeholder="Minimo 8 caracteres"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={8}
+                autoComplete="new-password"
+                className="h-11 border-cyber-border bg-cyber-card/60 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
+              />
+              <PasswordStrengthMeter password={password} />
+            </div>
 
-              <p className="mt-5 text-center text-sm text-muted-foreground">
-                ¿Ya tienes cuenta?{" "}
-                <Link
-                  to="/login"
-                  className="text-cyber-green/80 underline-offset-4 hover:text-cyber-green hover:underline"
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password" className="text-sm font-medium text-foreground">
+                Confirma tu contrasena
+              </Label>
+              <PasswordInput
+                id="confirm-password"
+                placeholder="Repite la contrasena"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                autoComplete="new-password"
+                className="h-11 border-cyber-border bg-cyber-card/60 text-foreground placeholder:text-muted-foreground focus-visible:ring-cyber-green/50"
+              />
+              {confirmPassword.length > 0 && (
+                <p
+                  className={`flex items-center gap-1 text-xs ${
+                    passwordsMatch ? "text-emerald-400" : "text-red-400"
+                  }`}
                 >
-                  Inicia sesion
-                </Link>
-              </p>
-            </>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+                  {passwordsMatch ? (
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                  ) : (
+                    <AlertCircle className="h-3.5 w-3.5" />
+                  )}
+                  {passwordsMatch
+                    ? "Las contrasenas coinciden"
+                    : "Las contrasenas no coinciden"}
+                </p>
+              )}
+            </div>
+
+            {/* Clerk CAPTCHA mount point — required for bot protection */}
+            <div id="clerk-captcha" />
+
+            <Button
+              type="submit"
+              disabled={isSubmitting || !formValid}
+              className="pressable h-12 w-full gap-2 rounded-xl bg-cyber-green font-semibold text-cyber-dark hover:bg-cyber-green/90"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Creando cuenta...
+                </>
+              ) : (
+                "Crear cuenta"
+              )}
+            </Button>
+          </form>
+
+          <p className="text-center text-sm text-muted-foreground">
+            ¿Ya tienes cuenta?{" "}
+            <Link
+              to="/login"
+              className="font-medium text-cyber-green/90 underline-offset-4 hover:text-cyber-green hover:underline"
+            >
+              Inicia sesion
+            </Link>
+          </p>
+        </>
+      )}
+    </AuthShell>
   );
 }
