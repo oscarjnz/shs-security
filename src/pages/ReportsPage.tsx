@@ -36,6 +36,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Reveal } from "@/components/ui/Reveal";
 import { Eye, Trash2 } from "lucide-react";
 import { ReportDetailDialog } from "@/components/reports/ReportDetailDialog";
 import type { ReportRow } from "@/lib/database.types";
@@ -311,7 +312,7 @@ export function ReportsPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <Reveal immediate as="header" className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2">
             <FileBarChart className="h-6 w-6 text-primary" />
@@ -324,7 +325,7 @@ export function ReportsPage() {
           </p>
         </div>
 
-        <Button onClick={() => setGenerateDialogOpen(true)} disabled={generating}>
+        <Button onClick={() => setGenerateDialogOpen(true)} disabled={generating} className="pressable">
           {generating ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
@@ -332,11 +333,11 @@ export function ReportsPage() {
           )}
           Generar Reporte
         </Button>
-      </div>
+      </Reveal>
 
       {/* Generation progress */}
       {generating && generatingSteps.length > 0 && (
-        <Card>
+        <Card className="surface-glass">
           <CardContent className="py-4">
             <p className="mb-2 text-sm font-medium">Generando reporte...</p>
             <div className="space-y-1">
@@ -358,7 +359,7 @@ export function ReportsPage() {
           ))}
         </div>
       ) : reports.length === 0 ? (
-        <Card>
+        <Card className="surface-glass">
           <CardContent className="py-12 text-center">
             <FileBarChart className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
@@ -369,8 +370,9 @@ export function ReportsPage() {
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {reports.map((report) => (
-            <Card key={report.id} className="flex flex-col justify-between">
+          {reports.map((report, i) => (
+            <Reveal key={report.id} delay={i * 60} className="flex">
+            <Card className="surface-glass hoverable-card flex w-full flex-col justify-between">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <CardTitle className="text-base leading-tight">
@@ -452,6 +454,7 @@ export function ReportsPage() {
                 </div>
               </CardContent>
             </Card>
+            </Reveal>
           ))}
         </div>
       )}

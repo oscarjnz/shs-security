@@ -51,7 +51,7 @@ export function ScanOutput({ state, knownIps, knownMacs }: ScanOutputProps) {
 
   if (!hasContent && !state.isRunning) {
     return (
-      <Card>
+      <Card className="surface-glass">
         <CardContent className="py-12 text-center text-sm text-muted-foreground">
           Configura el escaneo a la izquierda y pulsa <strong>Ejecutar</strong>. Los resultados aparecerán aquí en vivo.
         </CardContent>
@@ -146,7 +146,7 @@ export function ScanOutput({ state, knownIps, knownMacs }: ScanOutputProps) {
       )}
 
       {/* Live terminal */}
-      <Card>
+      <Card className="surface-glass">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <Terminal className="h-4 w-4" />
@@ -181,7 +181,7 @@ export function ScanOutput({ state, knownIps, knownMacs }: ScanOutputProps) {
         const hiddenCount = state.devices.length - filtered.length;
         if (filtered.length === 0 && hiddenCount === 0) return null;
         return (
-          <Card>
+          <Card className="surface-glass">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between gap-2">
                 <CardTitle className="text-base">
@@ -205,7 +205,7 @@ export function ScanOutput({ state, knownIps, knownMacs }: ScanOutputProps) {
                 </p>
               ) : (
                 filtered.map((d, idx) => (
-              <Card key={`${d.ip}-${idx}`} className="border-border/40 bg-muted/30">
+              <Card key={`${d.ip}-${idx}`} className="surface-elevated hoverable-card border-border/40">
                 <CardContent className="space-y-2 p-3 min-w-0">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
                     <StatusIcon status={d.status} />
@@ -310,8 +310,9 @@ function KpiCard({
   const inner = (
     <Card
       className={cn(
+        "surface-elevated hoverable-card",
         highlight ? "border-destructive/60" : undefined,
-        to ? "transition-colors hover:bg-accent cursor-pointer" : undefined,
+        to ? "cursor-pointer" : undefined,
       )}
     >
       <CardContent className="p-3">

@@ -176,7 +176,7 @@ export function AssistantPanel({ scanState, target, command }: AssistantPanelPro
     : GENERAL_PROMPTS;
 
   return (
-    <Card className="flex h-full flex-col">
+    <Card className="surface-glass flex h-full flex-col">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <Bot className="h-4 w-4 text-primary" />

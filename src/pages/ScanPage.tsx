@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ScanSearch, Plus } from "lucide-react";
 import { AgentStartHelp, AgentOfflineTitle, useAgentStatus } from "@/components/scanner/AgentStartHelp";
+import { Reveal } from "@/components/ui/Reveal";
 
 export function ScanPage() {
   const { state, known, runScan, abort, lastTarget, lastCommand } = useScanContext();
@@ -23,7 +24,7 @@ export function ScanPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
+      <Reveal immediate as="header">
         <div className="flex items-center gap-2">
           <ScanSearch className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Scanner de Red</h1>
@@ -31,11 +32,11 @@ export function ScanPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           Elige un perfil predefinido o construye tu propio comando nmap. ACi te ayudará a entender los resultados.
         </p>
-      </div>
+      </Reveal>
 
       {/* Sin escáner instalado: no se puede escanear la red */}
       {showNoAgent && (
-        <Card className="border-primary/30">
+        <Card className="surface-glass border-primary/30">
           <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
             <p className="text-sm text-muted-foreground">
               Necesitas un escáner instalado en tu red para poder auditarla. Aún no tienes ninguno.
@@ -51,7 +52,7 @@ export function ScanPage() {
 
       {/* Tiene escáner pero está apagado (Offline): cómo encenderlo */}
       {showOfflineHelp && (
-        <Card className="border-yellow-500/30">
+        <Card className="surface-glass border-yellow-500/30">
           <CardHeader>
             <CardTitle className="text-base">
               <AgentOfflineTitle />
@@ -63,9 +64,9 @@ export function ScanPage() {
         </Card>
       )}
 
-      <div className="hidden lg:grid lg:grid-cols-12 lg:gap-4">
+      <Reveal className="hidden lg:grid lg:grid-cols-12 lg:gap-4">
         <div className="lg:col-span-4 min-w-0">
-          <Card>
+          <Card className="surface-glass">
             <CardContent className="pt-5">
               <ScanForm isRunning={state.isRunning} onSubmit={runScan} onAbort={abort} />
             </CardContent>
@@ -79,7 +80,7 @@ export function ScanPage() {
         <div className="lg:col-span-3 lg:sticky lg:top-4 lg:h-[calc(100vh-8rem)] min-w-0">
           <AssistantPanel scanState={state} target={lastTarget} command={lastCommand} />
         </div>
-      </div>
+      </Reveal>
 
       <Tabs defaultValue="scanner" className="lg:hidden">
         <TabsList className="grid w-full grid-cols-3">
@@ -89,7 +90,7 @@ export function ScanPage() {
         </TabsList>
 
         <TabsContent value="scanner" className="mt-3">
-          <Card>
+          <Card className="surface-glass">
             <CardContent className="pt-5">
               <ScanForm isRunning={state.isRunning} onSubmit={runScan} onAbort={abort} />
             </CardContent>

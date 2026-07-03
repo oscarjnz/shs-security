@@ -19,6 +19,7 @@ import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Reveal } from "@/components/ui/Reveal";
 import { AgentStartHelp, AgentOfflineTitle } from "@/components/scanner/AgentStartHelp";
 import {
   Table,
@@ -152,7 +153,7 @@ export function ScannerAgentsPage() {
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      <Reveal immediate as="header" className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Escáneres conectados</h1>
           <p className="text-muted-foreground mt-1">
@@ -165,15 +166,15 @@ export function ScannerAgentsPage() {
           <Button variant="outline" size="icon" onClick={fetchAgents} disabled={loading} title="Actualizar">
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
-          <Button onClick={() => setConnectOpen(true)}>
+          <Button onClick={() => setConnectOpen(true)} className="pressable">
             <Plus className="h-4 w-4 mr-2" /> Conectar nuevo escáner
           </Button>
         </div>
-      </div>
+      </Reveal>
 
       {/* Resumen rápido */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+      <Reveal className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="surface-elevated hoverable-card">
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-2">
               <Server className="h-4 w-4" /> Escáneres totales
@@ -181,7 +182,7 @@ export function ScannerAgentsPage() {
             <CardTitle className="text-3xl">{agents.length}</CardTitle>
           </CardHeader>
         </Card>
-        <Card>
+        <Card className="surface-elevated hoverable-card">
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-2">
               <Wifi className="h-4 w-4 text-green-600" /> Online ahora
@@ -189,7 +190,7 @@ export function ScannerAgentsPage() {
             <CardTitle className="text-3xl text-green-600">{onlineCount}</CardTitle>
           </CardHeader>
         </Card>
-        <Card>
+        <Card className="surface-elevated hoverable-card">
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-2">
               <WifiOff className="h-4 w-4 text-muted-foreground" /> Offline
@@ -199,10 +200,11 @@ export function ScannerAgentsPage() {
             </CardTitle>
           </CardHeader>
         </Card>
-      </div>
+      </Reveal>
 
       {/* Tabla */}
-      <Card>
+      <Reveal as="section">
+      <Card className="surface-glass">
         <CardHeader>
           <CardTitle>Tus escáneres</CardTitle>
         </CardHeader>
@@ -285,10 +287,11 @@ export function ScannerAgentsPage() {
           )}
         </CardContent>
       </Card>
+      </Reveal>
 
       {/* Ayuda: si hay escáneres Offline, explicar cómo encenderlos */}
       {agents.length - onlineCount > 0 && (
-        <Card className="border-yellow-500/30">
+        <Card className="surface-glass border-yellow-500/30">
           <CardHeader>
             <CardTitle className="text-base">
               <AgentOfflineTitle />

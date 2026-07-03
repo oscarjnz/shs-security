@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Reveal } from "@/components/ui/Reveal";
 import { toast } from "@/hooks/use-toast";
 import type { ActivityLogRow } from "@/lib/database.types";
 
@@ -169,7 +170,7 @@ export function ActivityLogsPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div>
+      <Reveal immediate as="header">
         <div className="flex items-center gap-2">
           <ScrollText className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
@@ -180,7 +181,7 @@ export function ActivityLogsPage() {
           Registro completo de eventos del sistema en tiempo real. Haz clic en cualquier
           fila para ver el detalle.
         </p>
-      </div>
+      </Reveal>
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
@@ -221,7 +222,8 @@ export function ActivityLogsPage() {
       </div>
 
       {/* Table */}
-      <Card>
+      <Reveal as="section">
+      <Card className="surface-glass">
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Registros</CardTitle>
         </CardHeader>
@@ -297,6 +299,7 @@ export function ActivityLogsPage() {
           )}
         </CardContent>
       </Card>
+      </Reveal>
 
       {/* Detail dialog */}
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>

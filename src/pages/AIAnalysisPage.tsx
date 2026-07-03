@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Reveal } from "@/components/ui/Reveal";
 import { useAuth } from "@clerk/react";
 
 interface ChatMessage {
@@ -253,7 +254,7 @@ export function AIAnalysisPage() {
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col gap-4">
       {/* Header */}
-      <div>
+      <Reveal immediate as="header">
         <div className="flex items-center gap-2">
           <Brain className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
@@ -269,10 +270,10 @@ export function AIAnalysisPage() {
             Quita el parámetro <code>?scan=</code> de la URL para volver al chat general.
           </div>
         )}
-      </div>
+      </Reveal>
 
       {/* Chat area */}
-      <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <Card className="surface-glass flex min-h-0 flex-1 flex-col overflow-hidden">
         <ScrollArea className="flex-1 p-4" ref={scrollRef}>
           <div className="space-y-4">
             {messages.map((msg) => (

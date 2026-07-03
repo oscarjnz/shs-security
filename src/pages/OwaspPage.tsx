@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getOwaspTop10, streamOwaspChat, type OwaspItem } from "@/lib/cveApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Reveal } from "@/components/ui/Reveal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +38,7 @@ export function OwaspPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-3">
+      <Reveal immediate as="header" className="flex items-start gap-3">
         <BookOpen className="h-8 w-8 shrink-0 text-primary" />
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-foreground">OWASP Top 10 & ACi</h1>
@@ -46,17 +47,17 @@ export function OwaspPage() {
             Pregúntale a ACi lo que quieras sobre el tema.
           </p>
         </div>
-        <Button variant="ghost" size="sm" asChild>
+        <Button variant="ghost" size="sm" asChild className="pressable">
           <a href="https://owasp.org/Top10/" target="_blank" rel="noreferrer noopener">
             owasp.org
             <ExternalLink className="ml-2 h-3 w-3" />
           </a>
         </Button>
-      </div>
+      </Reveal>
 
-      <div className="grid gap-6 lg:grid-cols-5">
+      <Reveal className="grid gap-6 lg:grid-cols-5">
         <div className="lg:col-span-3">
-          <Card className="h-full">
+          <Card className="surface-glass h-full">
             <CardHeader>
               <CardTitle className="text-base">Los 10 riesgos (edición 2021)</CardTitle>
             </CardHeader>
@@ -79,7 +80,7 @@ export function OwaspPage() {
         <div className="lg:col-span-2">
           <ChatPanel />
         </div>
-      </div>
+      </Reveal>
     </div>
   );
 }
@@ -164,7 +165,7 @@ function ChatPanel() {
   };
 
   return (
-    <Card className="flex h-full flex-col">
+    <Card className="surface-glass flex h-full flex-col">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <Sparkles className="h-4 w-4 text-primary" />

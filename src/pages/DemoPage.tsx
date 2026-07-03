@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Reveal } from "@/components/ui/Reveal";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -110,7 +111,7 @@ export function DemoPage() {
 
       <div className="mx-auto max-w-4xl space-y-6 px-4 py-8">
         {/* Header */}
-        <div className="flex items-center gap-3">
+        <Reveal immediate as="header" className="flex items-center gap-3">
           <ScanSearch className="h-7 w-7 text-primary" />
           <div>
             <h1 className="text-2xl font-bold text-foreground">Demo del scanner</h1>
@@ -118,14 +119,14 @@ export function DemoPage() {
               Escanea tu red sin crear cuenta. Los resultados quedan sólo en tu navegador.
             </p>
           </div>
-        </div>
+        </Reveal>
 
         {/* Mode indicator */}
         <ModeBanner mode={state.mode} />
 
         {/* Profile picker */}
         {state.mode !== "detecting" && (
-          <Card>
+          <Card className="surface-glass">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Tipo de escaneo</CardTitle>
             </CardHeader>
@@ -191,7 +192,7 @@ export function DemoPage() {
 
         {/* CTA after a scan */}
         {state.result && (
-          <Card className="border-cyber-green/40 bg-cyber-green/5">
+          <Card className="surface-glass border-cyber-green/40">
             <CardContent className="space-y-3 p-5">
               <h3 className="text-base font-bold text-foreground">
                 {state.result.mode === "lan"
@@ -227,7 +228,7 @@ export function DemoPage() {
 
         {/* History */}
         {state.history.length > 0 && (
-          <Card>
+          <Card className="surface-glass">
             <CardHeader className="flex flex-row items-center justify-between gap-2 pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
                 <History className="h-4 w-4" />
@@ -385,7 +386,7 @@ function ResultBlock({ result }: { result: DemoScanResult }) {
 
       {/* Devices */}
       {result.devices.length > 0 && (
-        <Card>
+        <Card className="surface-glass">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">
               {result.mode === "lan" ? "Dispositivos detectados" : "Resultado del sondeo"}
@@ -429,7 +430,7 @@ function CveSuggestionsBlock({ devices }: { devices: DemoDevice[] }) {
   const groups = (data ?? []).filter((g) => g.suggestions.length > 0);
   if (groups.length === 0) {
     return (
-      <Card>
+      <Card className="surface-glass">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <BookOpen className="h-4 w-4 text-primary" />
@@ -446,7 +447,7 @@ function CveSuggestionsBlock({ devices }: { devices: DemoDevice[] }) {
     );
   }
   return (
-    <Card>
+    <Card className="surface-glass">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <BookOpen className="h-4 w-4 text-primary" />
@@ -537,7 +538,7 @@ function Kpi({
   const color =
     accent === "ok" ? "text-emerald-500" : accent === "warn" ? "text-yellow-500" : "text-foreground";
   return (
-    <Card>
+    <Card className="surface-glass">
       <CardContent className="p-3">
         <div className="flex items-center gap-2 text-muted-foreground">
           {icon}

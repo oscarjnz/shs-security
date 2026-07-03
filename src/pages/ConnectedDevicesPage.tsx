@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Reveal } from "@/components/ui/Reveal";
 import { cn } from "@/lib/utils";
 
 function statusBadge(status: string) {
@@ -95,7 +96,7 @@ export function ConnectedDevicesPage() {
   return (
     <div className="space-y-6">
       {/* Page Title */}
-      <div>
+      <Reveal immediate as="header">
         <div className="flex items-center gap-2">
           <Monitor className="h-6 w-6 text-cyber-green" />
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
@@ -105,10 +106,10 @@ export function ConnectedDevicesPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           Administra y visualiza todos los dispositivos detectados en tu red.
         </p>
-      </div>
+      </Reveal>
 
       {/* Search + Count */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <Reveal className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative max-w-sm flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -124,10 +125,11 @@ export function ConnectedDevicesPage() {
         >
           {filtered.length} de {devices?.length ?? 0} dispositivos
         </Badge>
-      </div>
+      </Reveal>
 
       {/* Devices Table */}
-      <Card className="border-cyber-border bg-cyber-card/80 backdrop-blur-sm">
+      <Reveal as="section">
+      <Card className="surface-glass">
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold text-foreground">
             Lista de Dispositivos
@@ -197,6 +199,7 @@ export function ConnectedDevicesPage() {
           )}
         </CardContent>
       </Card>
+      </Reveal>
     </div>
   );
 }
