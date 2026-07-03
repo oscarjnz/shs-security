@@ -29,21 +29,24 @@ const HOSTNAME = /^[a-zA-Z0-9.-]{1,253}$/;
 const FLAG_WHITELIST = /^-{1,2}[A-Za-z][A-Za-z0-9_-]*([0-9,.:\/+-]*)?(=.+)?$/;
 const VALUE_WHITELIST = /^[A-Za-z0-9_,.:\/+-]+$/;
 
+// case-SENSITIVE a proposito: nmap distingue mayus/minus y varios flags
+// peligrosos colisionan con legitimos si se ignora el case (-O deteccion de SO
+// vs -oN salida a archivo; -D decoys vs -d debug). Con /i se rechazaba -O.
 const FLAG_BLACKLIST = [
-  /^-o[NXGAS]?$/i,
-  /^--output/i,
-  /^-iL$/i,
-  /^-iR$/i,
-  /^--datadir/i,
-  /^--resume/i,
-  /^--send-eth$/i,
-  /^--script-args-file/i,
-  /^--script-help/i,
-  /^--privileged$/i,
-  /^--unprivileged$/i,
-  /^-D$/i,
-  /^-S$/i,
-  /^-e$/i,
+  /^-o[NXSGAJ]$/,   // salida a archivo. NO bloquea -O (deteccion de SO)
+  /^--output/,
+  /^-iL$/,
+  /^-iR$/,
+  /^--datadir/,
+  /^--resume/,
+  /^--send-eth$/,
+  /^--script-args-file/,
+  /^--script-help/,
+  /^--privileged$/,
+  /^--unprivileged$/,
+  /^-D$/,           // decoys. NO bloquea -d (debug)
+  /^-S$/,
+  /^-e$/,
 ];
 
 const ALLOWED_SCRIPT_CATEGORIES = new Set([
