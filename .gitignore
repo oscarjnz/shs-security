@@ -38,3 +38,6 @@ agent/agent.log
 *.doc
 ~$*
 PROMPT_CLAUDECODE.md
+
+# Cerebro/memoria de trabajo interno (expone interacciones, decisiones y datos sensibles) - NUNCA en GitHub
+CLAUDE.md
