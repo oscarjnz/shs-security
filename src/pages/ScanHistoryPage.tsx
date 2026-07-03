@@ -93,7 +93,7 @@ export function ScanHistoryPage() {
       <Reveal immediate as="header" className="flex items-center gap-3">
         <History className="h-7 w-7 text-primary" />
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Historial de Escaneos</h1>
+          <h1 className="text-2xl font-bold text-foreground">Historial de escaneos</h1>
           <p className="text-sm text-muted-foreground">
             Todos los escaneos que has ejecutado, con detalle completo y opción de preguntarle a ACi.
           </p>

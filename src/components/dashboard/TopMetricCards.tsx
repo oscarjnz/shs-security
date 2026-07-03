@@ -73,7 +73,7 @@ export function TopMetricCards({
   const displayScore = securityScore ?? 0;
   const cards = [
     {
-      label: "Amenazas Activas",
+      label: "Amenazas activas",
       value: activeThreatCount,
       icon: ShieldAlert,
       iconColor:
@@ -83,7 +83,7 @@ export function TopMetricCards({
       format: (v: number) => String(v),
     },
     {
-      label: "Dispositivos Conectados",
+      label: "Dispositivos conectados",
       value: deviceCount,
       icon: Monitor,
       iconColor: "text-cyber-blue",
@@ -91,7 +91,7 @@ export function TopMetricCards({
       format: (v: number) => String(v),
     },
     {
-      label: "Puntuación de Seguridad",
+      label: "Puntuación de seguridad",
       value: displayScore,
       icon: ShieldCheck,
       iconColor: hasScore ? scoreColor(displayScore) : "text-muted-foreground",
@@ -100,7 +100,7 @@ export function TopMetricCards({
       gauge: true,
     },
     {
-      label: "Reportes del Mes",
+      label: "Reportes del mes",
       value: reportsThisMonth,
       icon: FileBarChart,
       iconColor: "text-violet-400",

@@ -174,7 +174,7 @@ export function ActivityLogsPage() {
         <div className="flex items-center gap-2">
           <ScrollText className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Logs de Actividad
+            Logs de actividad
           </h1>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">

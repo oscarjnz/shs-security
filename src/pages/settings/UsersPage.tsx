@@ -262,7 +262,7 @@ export function UsersPage() {
           <div className="flex items-center gap-2">
             <Users className="h-6 w-6 text-primary" />
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Gestion de Usuarios
+              Gestión de usuarios
             </h1>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -272,7 +272,7 @@ export function UsersPage() {
 
         <Button onClick={handleCreate} className="pressable">
           <Plus className="mr-2 h-4 w-4" />
-          Crear Usuario
+          Crear usuario
         </Button>
       </Reveal>
 

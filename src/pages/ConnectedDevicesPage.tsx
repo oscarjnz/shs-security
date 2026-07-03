@@ -100,7 +100,7 @@ export function ConnectedDevicesPage() {
         <div className="flex items-center gap-2">
           <Monitor className="h-6 w-6 text-cyber-green" />
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Dispositivos Conectados
+            Dispositivos conectados
           </h1>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -132,7 +132,7 @@ export function ConnectedDevicesPage() {
       <Card className="surface-glass">
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold text-foreground">
-            Lista de Dispositivos
+            Lista de dispositivos
           </CardTitle>
         </CardHeader>
         <CardContent>

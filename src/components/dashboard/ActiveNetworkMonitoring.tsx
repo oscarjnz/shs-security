@@ -61,7 +61,7 @@ export function ActiveNetworkMonitoring({
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
           <ShieldAlert className="h-5 w-5 text-cyber-green" />
-          Monitoreo Activo de Red
+          Monitoreo activo de red
         </CardTitle>
       </CardHeader>
 
