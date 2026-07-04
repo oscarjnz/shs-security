@@ -184,6 +184,36 @@
     color: transparent;
   }
 
+  /* Nombre destacado del saludo (Dashboard). Sin italica: verde de marca,
+     extrabold, con un subrayado que se dibuja al entrar. Mas divertido y
+     legible que la serif italica anterior, sin ser recargado. */
+  .name-flourish {
+    position: relative;
+    display: inline-block;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: hsl(142 71% 52%);
+    white-space: nowrap;
+  }
+  .name-flourish::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -0.08em;
+    height: 0.14em;
+    border-radius: 999px;
+    background: linear-gradient(90deg, hsl(142 90% 55%), hsl(170 80% 52%));
+    transform: scaleX(0);
+    transform-origin: left center;
+    animation: name-underline 0.7s var(--ease-out-quart) 0.2s forwards;
+  }
+  @keyframes name-underline {
+    to {
+      transform: scaleX(1);
+    }
+  }
+
   /* Subtle grid background — for hero / empty states */
   .bg-grid-fade {
     background-image:

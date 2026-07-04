@@ -12,6 +12,7 @@ import {
   Wifi,
   WifiOff,
   Server,
+  ArrowUpCircle,
 } from "lucide-react";
 import { AGENT_URL } from "@/lib/supabase";
 import { useAuth as useClerkAuth } from "@clerk/react";
@@ -21,6 +22,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Reveal } from "@/components/ui/Reveal";
 import { AgentStartHelp, AgentOfflineTitle } from "@/components/scanner/AgentStartHelp";
+import { AgentUpdateHelp, AgentUpdateTitle } from "@/components/scanner/AgentUpdateHelp";
+import { useLatestScannerVersion, isOutdated } from "@/lib/scannerRelease";
 import {
   Table,
   TableBody,
@@ -71,6 +74,7 @@ function timeAgo(iso: string | null): string {
 
 export function ScannerAgentsPage() {
   const { getToken } = useClerkAuth();
+  const latestVersion = useLatestScannerVersion();
 
   const [agents, setAgents] = useState<AgentRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -149,6 +153,7 @@ export function ScannerAgentsPage() {
   };
 
   const onlineCount = agents.filter((a) => a.status === "online").length;
+  const hasOutdated = agents.some((a) => isOutdated(a.agent_version, latestVersion));
 
   return (
     <div className="space-y-6 p-6">
@@ -262,7 +267,18 @@ export function ScannerAgentsPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {agent.agent_version ?? "—"}
+                      <div className="flex items-center gap-2">
+                        <span>{agent.agent_version ?? "—"}</span>
+                        {isOutdated(agent.agent_version, latestVersion) && (
+                          <Badge
+                            variant="outline"
+                            className="gap-1 border-primary/40 text-[10px] text-primary"
+                            title={`Última versión disponible: ${latestVersion}`}
+                          >
+                            <ArrowUpCircle className="h-3 w-3" /> Actualizar
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {timeAgo(agent.last_seen)}
@@ -288,6 +304,25 @@ export function ScannerAgentsPage() {
         </CardContent>
       </Card>
       </Reveal>
+
+      {/* Aviso: si algún escáner está desactualizado, cómo actualizarlo */}
+      {hasOutdated && (
+        <Card className="surface-glass border-primary/30">
+          <CardHeader>
+            <CardTitle className="text-base">
+              <AgentUpdateTitle />
+            </CardTitle>
+            <CardDescription>
+              Uno o más de tus escáneres usan una versión anterior
+              {latestVersion ? ` a la ${latestVersion}` : ""}. Actualizar trae mejoras y
+              correcciones (por ejemplo, arreglos en la validación de comandos de escaneo).
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AgentUpdateHelp />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Ayuda: si hay escáneres Offline, explicar cómo encenderlos */}
       {agents.length - onlineCount > 0 && (

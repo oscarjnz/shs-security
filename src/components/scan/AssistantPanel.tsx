@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, type KeyboardEvent } from "react";
-import { Bot, Send, Loader2, User, Sparkles } from "lucide-react";
+import { Bot, Send, Loader2, User, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -12,6 +12,8 @@ interface AssistantPanelProps {
   scanState: ScanState;
   target: string;
   command?: string;
+  /** Si se pasa, muestra un boton para cerrar/ocultar el panel (solo desktop). */
+  onClose?: () => void;
 }
 
 interface AssistantMessage {
@@ -27,7 +29,7 @@ const GENERAL_PROMPTS = [
   "¿Qué es defensa en profundidad?",
 ];
 
-export function AssistantPanel({ scanState, target, command }: AssistantPanelProps) {
+export function AssistantPanel({ scanState, target, command, onClose }: AssistantPanelProps) {
   const { getToken } = useAuth();
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [input, setInput] = useState("");
@@ -178,10 +180,25 @@ export function AssistantPanel({ scanState, target, command }: AssistantPanelPro
   return (
     <Card className="surface-glass flex h-full flex-col">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Bot className="h-4 w-4 text-primary" />
-          ACi
-        </CardTitle>
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Bot className="h-4 w-4 text-primary" />
+            ACi
+          </CardTitle>
+          {onClose && (
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              onClick={onClose}
+              className="h-7 w-7 shrink-0 text-muted-foreground"
+              aria-label="Cerrar asistente"
+              title="Cerrar asistente"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
         <p className="text-xs text-muted-foreground">
           {hasScanContext
             ? "Te explico este escaneo y los próximos pasos."

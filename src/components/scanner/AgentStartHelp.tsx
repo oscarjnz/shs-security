@@ -45,7 +45,7 @@ const START_STEPS: Record<
   },
 };
 
-function CopyableCommand({ command }: { command: string }) {
+export function CopyableCommand({ command }: { command: string }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
