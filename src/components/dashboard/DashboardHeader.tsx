@@ -33,7 +33,7 @@ export function DashboardHeader() {
       <div className="min-w-0">
         <h1 className="text-xl font-semibold tracking-[-0.02em] text-foreground sm:text-2xl">
           {greeting},{" "}
-          <span className="font-accent text-cyber-green">{displayName}</span>
+          <span className="name-flourish">{displayName}</span>
         </h1>
         <p className="text-sm capitalize text-muted-foreground">
           {formattedDate}
