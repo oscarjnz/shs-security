@@ -9,6 +9,7 @@
 
 import { getSupabaseAdmin } from "../_lib/supabaseAdmin.js";
 import { groqComplete } from "../_lib/groq.js";
+import { suggestCvesForPorts } from "../_lib/portCves.js";
 import { webHandler } from "../_lib/adapter.js";
 
 export const config = { runtime: "nodejs" };
@@ -201,24 +202,58 @@ function parseExplanationResponse(raw: string): { description: string; mitigatio
 
 /* ─── handler ─── */
 
+/**
+ * POST /api/cve/by-ports  — folded into this dynamic route to stay under the
+ * Vercel Hobby limit of 12 serverless functions. A request to /api/cve/by-ports
+ * lands here with the last path segment == "by-ports".
+ * Body: { ports: number[] } -> suggested CVEs per open port (static mapping).
+ */
+async function handleByPorts(req: Request): Promise<Response> {
+  if (req.method !== "POST") {
+    return jsonResponse({ success: false, error: "Método no permitido" }, 405);
+  }
+
+  let body: { ports?: unknown } = {};
+  try {
+    body = (await req.json()) as { ports?: unknown };
+  } catch {
+    return jsonResponse({ success: false, error: "JSON inválido" }, 400);
+  }
+
+  const portsInput = Array.isArray(body.ports) ? body.ports : [];
+  const ports = portsInput
+    .map((p) => (typeof p === "number" ? p : Number(p)))
+    .filter((p) => Number.isInteger(p) && p > 0 && p < 65536)
+    .slice(0, 100);
+
+  return jsonResponse({ success: true, data: suggestCvesForPorts(ports) });
+}
+
 async function handler(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 204,
       headers: {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET",
+        "Access-Control-Allow-Methods": "GET, POST",
       },
     });
-  }
-  if (req.method !== "GET") {
-    return jsonResponse({ success: false, error: "Método no permitido" }, 405);
   }
 
   // Vercel passes [id] in the URL pathname
   const url = new URL(req.url);
   const pathParts = url.pathname.split("/").filter(Boolean);
   const rawId = pathParts[pathParts.length - 1] ?? "";
+
+  // Sub-route folded in: /api/cve/by-ports
+  if (rawId.toLowerCase() === "by-ports") {
+    return handleByPorts(req);
+  }
+
+  if (req.method !== "GET") {
+    return jsonResponse({ success: false, error: "Método no permitido" }, 405);
+  }
+
   const cveId = decodeURIComponent(rawId).toUpperCase();
 
   if (!CVE_ID_RE.test(cveId)) {
