@@ -18,8 +18,15 @@ import {
   MIN_PASSWORD_SCORE,
 } from "@/components/auth/PasswordStrengthMeter";
 import { AuthShell, AuthStep } from "@/components/auth/AuthShell";
+import { useSeo } from "@/hooks/useSeo";
 
 export function SignUpPage() {
+  useSeo({
+    title: "Crear cuenta | S.S.S - Security Smart Services",
+    description: "Crea tu cuenta gratuita en S.S.S y empieza a auditar la seguridad de tu red doméstica o de pequeña empresa.",
+    path: "/signup",
+  });
+
   const navigate = useNavigate();
   const { isSignedIn } = useUser();
   const { signUp, isLoaded, setActive } = useSignUp();
