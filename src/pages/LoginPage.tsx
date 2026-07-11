@@ -12,8 +12,15 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { OAuthButtons } from "@/components/auth/OAuthButtons";
 import { AuthShell } from "@/components/auth/AuthShell";
+import { useSeo } from "@/hooks/useSeo";
 
 export function LoginPage() {
+  useSeo({
+    title: "Iniciar sesión | S.S.S - Security Smart Services",
+    description: "Inicia sesión en S.S.S para ver el estado de seguridad de tu red, tus escaneos y alertas.",
+    path: "/login",
+  });
+
   const navigate = useNavigate();
   const { isSignedIn } = useUser();
   const { signIn, isLoaded, setActive } = useSignIn();

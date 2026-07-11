@@ -38,6 +38,7 @@ import {
 } from "@/hooks/useDemoScan";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
+import { useSeo } from "@/hooks/useSeo";
 import { useQuery } from "@tanstack/react-query";
 import { getCvesForPorts, ingestScanFindings } from "@/lib/cveApi";
 import { BookOpen } from "lucide-react";
@@ -45,6 +46,13 @@ import { useUser, useAuth as useClerkAuth } from "@clerk/react";
 import { toast } from "sonner";
 
 export function DemoPage() {
+  useSeo({
+    title: "Demo gratuita | S.S.S - Security Smart Services",
+    description:
+      "Prueba gratis el escaneo de red de S.S.S: detecta los dispositivos conectados y los puertos expuestos de tu red, sin necesidad de crear una cuenta.",
+    path: "/demo",
+  });
+
   const { state, runScan, clearHistory } = useDemoScan();
   const { user } = useUser();
   const { getToken } = useClerkAuth();

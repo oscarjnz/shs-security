@@ -1,0 +1,26 @@
+User-agent: *
+Allow: /
+Allow: /demo
+Allow: /login
+Allow: /signup
+
+Disallow: /dashboard
+Disallow: /network
+Disallow: /devices
+Disallow: /threats
+Disallow: /vulnerabilities
+Disallow: /vulnerability/
+Disallow: /owasp
+Disallow: /kev
+Disallow: /logs
+Disallow: /ai-analysis
+Disallow: /reports
+Disallow: /scan
+Disallow: /pulse
+Disallow: /geo
+Disallow: /settings
+Disallow: /notifications
+Disallow: /reset-password
+Disallow: /sso-callback
+
+Sitemap: https://securitysmartservices.site/sitemap.xml

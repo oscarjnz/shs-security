@@ -13,8 +13,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Logo } from "@/components/Logo";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Reveal } from "@/components/ui/Reveal";
+import { useSeo } from "@/hooks/useSeo";
 
 export function LandingPage() {
+  useSeo({
+    title: "S.S.S - Security Smart Services | Auditoría de seguridad de red",
+    description:
+      "Descubre los dispositivos conectados a tu red, escanea puertos expuestos y detecta vulnerabilidades (CVE) con un agente local que nunca expone tu red a internet.",
+    path: "/",
+  });
+
   return (
     <div className="min-h-screen bg-cyber-dark">
       <PublicHeader />
