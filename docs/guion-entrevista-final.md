@@ -13,7 +13,7 @@ Estado: **en construccion**. Ver seccion 0 para el plan de trabajo.
 | Parte | Contenido | Estado |
 |---|---|---|
 | 1 | Presentacion personal + presentacion del producto (problema, cliente, modelo de negocio, aporte) | **Hecho** (2026-08-04) |
-| 2 | Recorrido funcional (que modulos mostrar, en que orden, guion de la demo en vivo) | Pendiente |
+| 2 | Recorrido funcional (que modulos mostrar, en que orden, guion de la demo en vivo) | **Hecho** (2026-08-04) |
 | 3 | Tecnologias utilizadas y por que (borrador ya posible desde CLAUDE.md) | Pendiente |
 | 4 | Arquitectura y conocimientos integrados de la carrera | Pendiente |
 | 5 | Reflexion final (100% personal, requiere la voz de Oscar) | Pendiente |
@@ -77,7 +77,27 @@ Enfocado en backend, despliegue, infraestructura cloud, autenticacion, scanner-a
 
 ## 3. Recorrido funcional (demo en vivo)
 
-Pendiente de construir en la Parte 2. Idea inicial de orden (a validar con Oscar): Dashboard -> Scan/ScanPage (el corazon del producto, nmap en vivo con NLP) -> Dispositivos conectados -> Amenazas/Vulnerabilidades -> Reportes -> Geolocalizacion de IP. Cada modulo con una frase de "esto responde a esta necesidad del cliente", no solo mostrar pantalla.
+**Presupuesto de tiempo:** el video completo son 10-15 min repartidos en 6 bloques (personal, producto, demo, tecnologias, arquitectura, reflexion). La demo vale 4 de los 20 puntos (menos que dominio y tecnologias), asi que no debe comerse el video: **apuntar a 3-4 minutos**, no mas. Mejor 5 paradas bien explicadas que 10 pantallas pasadas rapido.
+
+**Regla de oro para cada parada:** no es "mira, esta es la pantalla de X". Es "esto existe porque el cliente necesita Y, y aqui se ve como se resuelve". Una frase de necesidad antes de tocar la pantalla, no despues.
+
+### Orden recomendado (5 paradas)
+
+1. **Dashboard** (30-40 seg). Es el aterrizaje: KPIs en tiempo real, estado general de la red. Frase de entrada: *"cuando el usuario entra, lo primero que quiere saber es: ¿esta todo bien ahora mismo?, y eso es exactamente lo que responde el dashboard"*. No profundizar en cada grafica, solo pasar la vista.
+
+2. **Scan / ScanPage** (1-1.5 min, la parada mas larga porque es el diferenciador real del producto). Escribir un pedido en lenguaje natural (ej. "escanea los dispositivos de mi red" o un perfil predefinido), mostrar el resultado llegando en vivo. Aqui es donde se menciona, sin meterse todavia en detalle tecnico (eso es la Parte 4), que detras de esto hay un agente corriendo nmap de verdad en la maquina del usuario, no un dato inventado. Frase de entrada: *"esto es el corazon del producto: el usuario no tiene que saber usar nmap, se lo pide en español normal"*.
+
+3. **Dispositivos conectados** (30 seg). Mostrar la lista de dispositivos detectados, con MAC/fabricante/SO cuando se pueda. Frase de entrada: *"de ese escaneo sale esto: quien esta conectado a mi red ahora mismo, sin que yo tenga que ir a revisar el router a mano"*.
+
+4. **Amenazas y Vulnerabilidades** (40-50 seg, las dos paginas juntas, rapido). Mostrar severidad y algun CVE real si hay data cargada. Frase de entrada: *"aqui es donde el producto deja de ser solo informativo y empieza a avisar: si hay una amenaza detectada, o una vulnerabilidad conocida expuesta, aparece aqui con su nivel de severidad"*.
+
+5. **Reportes** (30-40 seg). Generar o mostrar un reporte ya generado, mencionar el envio por email. Frase de entrada: *"y al final, para una pequeña empresa esto tiene que salir de la pantalla: un reporte que se pueda mandar o guardar como evidencia"*.
+
+### Que dejar fuera del recorrido en vivo (por tiempo, no porque no exista)
+Geolocalizacion de IP, Pulse, Notificaciones, Usuarios/RBAC, Configuracion, ACi, pagina de Escaneres. Si sobra tiempo se puede mencionar de pasada ("tambien hay geolocalizacion de IP, monitoreo de disponibilidad tipo ping periodico, y gestion de permisos por rol, pero no me voy a meter en cada una para no alargarme") en vez de mostrarlas, eso demuestra dominio sin gastar minutos.
+
+### Nota logistica importante
+Verificar la Parte 7 (checklist tecnico) ANTES de grabar: que el scanner-agent este online o usar el modo demo (`/demo`) para que el escaneo en vivo no salga vacio o tardado por Render dormido.
 
 ---
 
