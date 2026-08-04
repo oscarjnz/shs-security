@@ -134,3 +134,32 @@ Pendiente Parte 7. Debe quedar resuelto ANTES del dia de grabacion:
 - Confirmar que Render no este hibernado justo al momento de grabar/evaluar
 - Confirmar que Supabase no este pausado
 - Al menos un scanner-agent online para que la demo de escaneo no salga vacia (o usar el modo demo cloud que ya existe en `/demo`)
+
+---
+
+## 9. Camino final: paso a paso hasta la entrega (individual, video en Teams)
+
+Esto es 100% individual: **un solo estudiante hablando, un solo video**. Nadie mas del equipo aparece en camara, en audio, ni de fondo. Aunque el proyecto es de 4 personas, esta entrega evalua solo a Oscar.
+
+1. **Terminar el guion completo** (Partes 3 a 6 que faltan: tecnologias, arquitectura/conocimientos de la carrera, reflexion final). Se sigue construyendo aqui mismo, por partes, en las proximas sesiones.
+2. **Ensayar en voz alta, cronometrado**, sin leer el documento. El objetivo no es memorizar palabra por palabra, es dominar las ideas para poder decirlas con naturalidad y ajustarse al tiempo (10-15 min). Repetir hasta que salga fluido sin mirar el guion.
+3. **Correr el checklist tecnico de la Parte 8** el mismo dia o la vispera de grabar: URL de produccion viva, usuario/contraseña de prueba dedicados (no personales), Render y Supabase despiertos, al menos un scanner-agent online o listo el modo `/demo`.
+4. **Preparar el espacio de grabacion**: buena luz, buen audio, sin ruido de fondo, sin nadie mas entrando al cuadro ni hablando. Camara y pantalla compartida listas.
+5. **Grabar en Microsoft Teams** (la rubrica pide especificamente el link de grabacion individual en Teams):
+   - Iniciar una reunion de Teams solo (por ejemplo "Reunion ahora"), activar la grabacion, compartir pantalla con la app y activar camara.
+   - Grabar de corrido si se puede; si hay que hacer tomas, dejarlo editado para que se vea como una sola pieza fluida.
+   - Verificar que la duracion final quede entre 10 y 15 minutos.
+   - Al terminar, confirmar que Teams genero el link de la grabacion y que el permiso de acceso es el que pide Blackboard (que se pueda ver sin pedir acceso adicional).
+6. **Revisar la grabacion una vez completa**: audio claro, se ve bien, no aparece nadie mas, no se esta leyendo un guion o diapositiva en pantalla.
+7. **Publicar en LinkedIn**, seccion Proyectos del perfil: nombre del proyecto, descripcion breve, problema que resuelve, tecnologias, rol de Oscar, capturas del sistema, enlace al demo. Agregar a la profesora como contacto y etiquetarla en la publicacion.
+8. **Confirmar que el documento tecnico del repositorio esta actualizado** (Parte 8 de este plan de trabajo, seccion 8).
+9. **Reunir los 6 entregables para Blackboard**:
+   - Link de la grabacion individual en Teams
+   - Link de la publicacion en LinkedIn
+   - Link del demo funcionando en produccion
+   - Usuario y contraseña de prueba del demo
+   - Link del repositorio del proyecto (GitHub)
+   - Documento tecnico actualizado
+10. **Subir todo a Blackboard antes de la fecha limite** (confirmar la hora exacta de corte, no solo el dia).
+
+**Nota de tiempo:** hoy es 4 de agosto, la entrega es el 11. Sugerido (flexible, se ajusta segun como avancemos el guion): guion completo y ensayado para el 8-9 de agosto, grabacion y LinkedIn el 9-10, y el 11 solo de colchon por si algo falla (Render dormido, Teams con problemas, etc.), no para hacerlo todo de ultimo momento.
