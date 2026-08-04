@@ -14,8 +14,8 @@ Estado: **en construccion**. Ver seccion 0 para el plan de trabajo.
 |---|---|---|
 | 1 | Presentacion personal + presentacion del producto (problema, cliente, modelo de negocio, aporte) | **Hecho** (2026-08-04) |
 | 2 | Recorrido funcional (que modulos mostrar, en que orden, guion de la demo en vivo) | **Hecho** (2026-08-04) |
-| 3 | Tecnologias utilizadas y por que (borrador ya posible desde CLAUDE.md) | Pendiente |
-| 4 | Arquitectura y conocimientos integrados de la carrera | Pendiente |
+| 3 | Tecnologias utilizadas y por que (borrador ya posible desde CLAUDE.md) | **Hecho** (2026-08-04) |
+| 4 | Arquitectura y conocimientos integrados de la carrera | **Hecho** (2026-08-04) |
 | 5 | Reflexion final (100% personal, requiere la voz de Oscar) | Pendiente |
 | 6 | Publicacion LinkedIn (texto + lista de capturas necesarias) | Pendiente |
 | 7 | Checklist tecnico de demo (URL, usuario/contraseña de prueba, verificar que Render/Supabase no esten dormidos el dia de grabacion) | Pendiente |
@@ -103,18 +103,64 @@ Verificar la Parte 7 (checklist tecnico) ANTES de grabar: que el scanner-agent e
 
 ## 4. Tecnologias utilizadas
 
-Borrador posible ya desde CLAUDE.md (seccion 2), falta darle forma de "justificacion para entrevista" en la Parte 3:
-- Frontend: React 18 + Vite + TypeScript strict + Tailwind + shadcn/ui, en Vercel
-- Backend: Express en Render
-- Relay WebSocket dedicado en Fly.io (por que un relay aparte y no meter el WS en el backend)
-- Supabase PostgreSQL (RLS + Realtime)
-- Clerk (por que se migro de Supabase Auth a Clerk)
-- Groq SDK / Llama 3.3 70B para el analisis con IA
-- Resend para email
+**Presupuesto de tiempo:** 2-3 min. No es leer una lista de tecnologias, es explicar **por que cada una y que resuelve**, que es lo que pide la rubrica (5 de los 20 puntos, el segundo criterio con mas peso).
+
+### Frontend: React 18 + Vite + TypeScript strict + Tailwind + shadcn/ui, en Vercel
+- **Por que:** React porque el dashboard es una app con muchisimo estado en tiempo real (KPIs, listas que cambian solas via Supabase Realtime), y el modelo de componentes de React se presta natural para eso.
+- **Vite en vez de Create React App:** arranque de dev server y hot reload casi instantaneo, importante cuando se itera rapido sobre 14 paginas distintas.
+- **TypeScript en modo strict:** en un proyecto de seguridad, un error de tipos no es cosmetico, puede significar que un dato sensible se trate mal. La leccion real de esto: los IDs de Clerk no son UUID, son TEXT, y TypeScript strict ayudo a no dejar pasar esa clase de descuido silenciosamente.
+- **Tailwind + shadcn/ui:** en vez de reinventar 45 componentes de UI (botones, dialogs, tablas), shadcn da primitivos accesibles y personalizables, y Tailwind mantiene consistencia visual sin escribir CSS a mano en cada pantalla.
+- **Vercel:** deploy automatico desde `main`, CDN global, cero configuracion de servidor para el frontend.
+
+### Backend: Express + Node.js, en Render
+- **Por que Express:** simple, maduro, ideal para exponer una API REST mas streaming SSE (los resultados del escaneo llegan en vivo al frontend por Server-Sent Events, no por polling).
+- **Por que Render:** tiene un free tier funcional para un proyecto academico, soporta cron jobs (el pulse de dispositivos corre cada 60 seg) y despliega directo desde el repo.
+- **El costo real de esa decision:** Render free hiberna a los 15 min de inactividad, y eso obligo a construir mitigaciones (keep-alive interno, cron externo) para que la demo no se quede "dormida" cuando alguien la prueba. Es un ejemplo real de disenar para las limitaciones de la infraestructura, no ignorarlas.
+
+### Relay WebSocket dedicado, en Fly.io
+- **Por que un servicio aparte y no meter el WebSocket dentro del backend de Express:** las conexiones WebSocket son de larga duracion y con estado (cada agente local mantiene una conexion abierta todo el tiempo), mientras que la API REST es de request/response corto. Mezclar eso en el mismo proceso significa que un problema en un lado puede tumbar el otro. Separarlos aisla el riesgo: si el relay tiene un problema, la API y el dashboard siguen funcionando.
+- **Por que Fly.io especificamente:** permite elegir la region (Miami, cerca de RD) para minimizar latencia de los agentes conectandose, y corre bien en una instancia pequeña (1 vCPU, 256 MB) para un proyecto sin presupuesto de infraestructura.
+
+### Supabase (PostgreSQL) con RLS y Realtime
+- **Por que PostgreSQL:** los datos del proyecto son fuertemente relacionales (dispositivos, amenazas, escaneos, usuarios, permisos), y necesitan integridad referencial real, no un documento suelto.
+- **Row Level Security:** la seguridad de "cada usuario solo ve sus datos" vive en la base de datos, no solo en el codigo del frontend. Esto es defensa en profundidad: aunque alguien manipule el cliente, la base de datos igual filtra.
+- **Realtime:** el dashboard se actualiza solo cuando hay un evento nuevo (una amenaza, un dispositivo), sin que el frontend tenga que estar preguntando "¿hay algo nuevo?" cada pocos segundos.
+
+### Clerk para autenticacion
+- **Por que:** construir autenticacion desde cero (manejo de contraseñas, sesiones, OAuth, recuperacion de cuenta) es una superficie de ataque enorme y facil de hacer mal. Clerk es un proveedor especializado que ya resolvio eso de forma segura, y da login social, verificacion, y manejo de sesiones listos para usar.
+- **Integracion:** el token de Clerk se pide fresco en cada peticion (no se cachea) y, mas importante, se integro nativamente con Supabase para que las politicas de RLS puedan leer la identidad real del usuario logueado.
+
+### Groq SDK con Llama 3.3 70B para el analisis con IA
+- **Por que Groq:** corre inferencia sobre hardware especializado (LPU) que responde muchisimo mas rapido que la inferencia tradicional en GPU, lo cual importa cuando el usuario esta chateando con el asistente o pidiendole que interprete un escaneo, la latencia se nota.
+- **Por que un modelo abierto como Llama 3.3:** costo accesible para un proyecto academico sin presupuesto, comparado con modelos cerrados mas caros.
+- **Uso real:** interpretar resultados de escaneo en lenguaje natural, y el chat de analisis de seguridad.
+
+### Resend para email transaccional
+- **Por que:** API moderna y simple para mandar los reportes por correo y las notificaciones, sin tener que lidiar con configurar un servidor SMTP propio.
+
+**Borrador hablado (hilo conector, no para leer palabra por palabra):**
+
+> La arquitectura tiene un frontend en React con Vite y TypeScript en modo estricto, con Tailwind y shadcn para no reinventar componentes de UI, desplegado en Vercel. El backend es Express corriendo en Render, que expone la API y tambien manda los resultados del escaneo en vivo por streaming. Aparte de eso hay un servicio dedicado solo para las conexiones WebSocket, corriendo en Fly.io, porque las conexiones de los agentes locales son de larga duracion y no quise mezclar eso con la API principal, para que si algo falla en un lado no tumbe el otro. Los datos viven en Supabase, que es PostgreSQL con seguridad a nivel de fila, o sea que la proteccion de que cada usuario vea solo lo suyo esta en la base de datos, no solo en el codigo del frontend. La autenticacion la maneja Clerk, porque construir eso desde cero es un riesgo de seguridad que no vale la pena correr. Y para el analisis con inteligencia artificial uso Groq con Llama 3.3, que es rapidisimo respondiendo, cosa que en un chat se nota mucho.
 
 ## 5. Arquitectura y conocimientos integrados
 
-Pendiente Parte 4. El repo ya tiene el argumento central bien armado: **por que el modelo hibrido** (CLAUDE.md seccion 2.1), util para conectar con "Redes" y "Arquitectura" de la rubrica. Falta mapear explicitamente cada materia (Ingenieria de Software, Analisis y Diseño de Sistemas, Bases de Datos, Redes, Seguridad, Calidad de Software, Gestion de Proyectos, Arquitectura, IA) a una decision concreta del proyecto.
+**Presupuesto de tiempo:** 2-3 min. No hace falta hablar de las 9 materias por separado con el mismo peso, mejor agrupar y elegir el argumento mas fuerte de cada una. La columna a la derecha es lo que decir en camara para cada materia, con un ejemplo real y verificable en el repo (no generico).
+
+| Materia | Decision concreta del proyecto |
+|---|---|
+| **Arquitectura** | El modelo hibrido nube+local: un servicio en la nube no puede alcanzar dispositivos detras de un router, asi que la unica forma de auditar una red privada es tener algo corriendo dentro de ella. Se resolvio con un agente local que solo abre conexiones salientes (WSS:443), sin exigir reglas de firewall ni exponer puertos. Es una decision de arquitectura obligada por una restriccion de red real, no un capricho tecnico. |
+| **Redes** | Todo el producto es sobre redes: rangos privados (`192.168.x.x`, `10.x.x.x`, `172.16-31.x.x`), escaneo de puertos con nmap, ping, traceroute, resolucion DNS. Y a nivel de transporte, entender por que WebSocket (conexion persistente bidireccional) es lo correcto para que el agente reciba comandos en tiempo real, en vez de HTTP tradicional con polling. |
+| **Seguridad** | Dos ejemplos fuertes y reales: (1) el hallazgo y cierre de la fuga de RLS con Clerk, ya cubierto en la Parte 1. (2) la sanitizacion del scanner: whitelist de comandos permitidos (nmap, ping, traceroute, arp, dig, nslookup, whois), prohibicion de caracteres de inyeccion de shell (`;`, `\|`, backtick, `$`), rate limiting, y el contenedor del agente corriendo como usuario no-root. Es aplicar el principio de menor privilegio en cada capa. |
+| **Bases de Datos** | Modelo relacional en PostgreSQL (Supabase) con mas de 18 migraciones versionadas, Row Level Security como capa de seguridad a nivel de fila, y Realtime para no depender de polling. Un caso de diseño real: cuando se migro de Supabase Auth a Clerk, los IDs de usuario tuvieron que pasar de UUID a TEXT en varias tablas, porque Clerk usa su propio formato de ID, eso fue una decision de modelado de datos con impacto en produccion. |
+| **Analisis y Diseño de Sistemas** | El sistema de permisos (RBAC): tres roles (admin, normal, guest) sobre nueve secciones del sistema, cada combinacion con tres niveles de acceso (ninguno, ver, completo). Traducir el requerimiento de negocio ("no todos deben ver ni hacer lo mismo") en un modelo de datos y una capa de validacion consistente en cada endpoint. |
+| **Ingenieria de Software** | Convenciones de codigo explicitas y sostenidas (TypeScript strict, patrones repetibles de `requireAuth` + `requirePermission` + `validateBody` en cada endpoint nuevo), control de versiones con Git, y una practica poco comun pero real: un archivo de memoria del proyecto (`CLAUDE.md`) que documenta decisiones, errores y por que se tomaron, para no repetir los mismos errores dos veces. |
+| **Calidad de Software** | Rondas de auditoria dedicadas (no solo programar features): una sesion completa de revision de bugs y performance en backend, frontend y el relay, identificando y corrigiendo cosas como fugas de memoria en rate-limiting, condiciones de carrera, y falta de limites de tamaño en payloads, antes de seguir sumando funcionalidades nuevas. |
+| **Gestion de Proyectos** | Equipo de 4 con roles definidos, entregas incrementales por fases (documentadas en `docs/plan-despliegue-semana6.md` y el roadmap del propio `CLAUDE.md`), y decisiones tomadas explicitamente y por escrito en vez de quedar solo en una conversacion de chat. |
+| **Inteligencia Artificial** | Integracion de un LLM (Llama 3.3 via Groq) para dos casos de uso reales, no decorativos: interpretar pedidos de escaneo en lenguaje natural y traducirlos a comandos validos, y un chat de analisis que interpreta los resultados de seguridad para alguien sin conocimiento tecnico. |
+
+**Borrador hablado (resumen, elegir 4-5 filas para decir en camara, no las 9):**
+
+> Este proyecto toca bastantes areas de la carrera, pero si tuviera que resaltar las mas fuertes: en arquitectura, la decision central fue el modelo hibrido nube-local, porque un servicio en la nube fisicamente no puede llegar a un dispositivo detras de un router, entonces hubo que resolver eso con un agente que corre dentro de la red del usuario y solo abre conexiones salientes. En seguridad, aparte de la fuga de RLS que ya mencione, el scanner tiene una capa de sanitizacion completa: lista blanca de comandos permitidos, bloqueo de caracteres de inyeccion, rate limiting, y el agente corriendo sin privilegios de administrador. En bases de datos, el modelo esta en PostgreSQL con seguridad a nivel de fila y mas de dieciocho migraciones versionadas. Y en inteligencia artificial, el LLM no es un adorno, se usa para que el usuario pueda pedir un escaneo en español normal y para interpretar los resultados de seguridad sin tener que entender de redes.
 
 ## 6. Reflexion final
 
