@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Reveal } from "@/components/ui/Reveal";
 import { PublicHeader } from "@/components/PublicHeader";
 import { SecurityChecksGrid } from "@/components/security/SecurityChecksGrid";
+import { GeoLocationPage } from "@/pages/GeoLocationPage";
 import { useSeo } from "@/hooks/useSeo";
 
 export function DemoPage() {
@@ -54,6 +55,15 @@ export function DemoPage() {
         {/* Los chequeos reales */}
         <Reveal delay={60}>
           <SecurityChecksGrid />
+        </Reveal>
+
+        {/* Localizador de IP, en su propia seccion */}
+        <Reveal delay={90}>
+          <Card className="surface-glass">
+            <CardContent className="p-5">
+              <GeoLocationPage />
+            </CardContent>
+          </Card>
         </Reveal>
 
         {/* CTA hacia la cuenta gratis, que sí escanea la red real */}
