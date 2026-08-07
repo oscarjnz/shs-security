@@ -59,7 +59,7 @@ export function LandingPage() {
           {/* Descripcion */}
           <Reveal immediate delay={240}>
             <p className="mx-auto mt-6 max-w-[512px] text-sm leading-relaxed text-foreground/70 sm:text-base">
-              S.S.S inventaría los dispositivos conectados a tu red, identifica los puertos
+              S.S.S detecta los dispositivos conectados a tu red, identifica los puertos
               y servicios expuestos y te notifica ante cambios o amenazas. Todo el análisis se
               ejecuta mediante un agente local, sin exponer tu red a internet.
             </p>
