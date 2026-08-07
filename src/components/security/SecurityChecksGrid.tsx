@@ -50,7 +50,7 @@ export function SecurityChecksGrid() {
         </p>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <SecurityCheckCard
             result={network.data ? { ...network, title: cityLine(network.data) } : network}
             icon={<Globe className="h-4 w-4" />}
