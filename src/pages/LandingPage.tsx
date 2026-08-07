@@ -73,7 +73,7 @@ export function LandingPage() {
               className="pressable gap-2 rounded-full bg-cyber-green px-7 font-semibold text-cyber-dark brand-glow-sm hover:bg-cyber-green/90"
             >
               <Link to="/demo">
-                Iniciar análisis
+                Probar sin cuenta
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
@@ -89,7 +89,8 @@ export function LandingPage() {
 
           <Reveal immediate delay={380}>
             <p className="mt-4 text-xs text-muted-foreground">
-              Sin registro: 5 análisis de demostración por hora. Con cuenta: análisis ilimitados, historial y reportes.
+              Sin registro: chequeo rápido de tu conexión actual. Con cuenta: escaneo completo de
+              tu Wi-Fi, historial y reportes.
             </p>
           </Reveal>
         </div>
@@ -159,8 +160,8 @@ export function LandingPage() {
               size="lg"
               className="pressable gap-2 rounded-full bg-cyber-green px-7 font-semibold text-cyber-dark brand-glow-sm hover:bg-cyber-green/90"
             >
-              <Link to="/demo">
-                Iniciar análisis
+              <Link to="/signup">
+                Crear cuenta gratis
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>

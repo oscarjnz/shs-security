@@ -43,9 +43,7 @@ import {
 import {
   NMAP_PROFILES,
   checkRateLimit,
-  isPrivateTarget,
   resolveScan,
-  streamScan,
   validateFlags,
   buildSummary,
   parseNmapOutput,
@@ -54,7 +52,6 @@ import {
 } from "./lib/scanner.js";
 import { upsertDevicesFromScan, createThreatsFromScan, loadKnownDevices } from "./lib/auto-actions.js";
 import { startPulse, getLastPulseStats } from "./lib/pulse.js";
-import { listLocalPrivateSubnets } from "./lib/local-net.js";
 import { TEMPLATES, type EmailTemplate } from "./lib/email-templates.js";
 import { startKeepAliveCron, pingSupabase, getLastPingResult } from "./lib/keep-alive.js";
 import { createPairingCode, redeemPairingCode, revokeAgent } from "./lib/agents.js";
@@ -201,146 +198,11 @@ const requirePerm = (section: string, level: "view" | "full") =>
 
 /* ─── health ─── */
 
-/* ──────────────────────────────────────────────
-   DEMO endpoints (PUBLIC - no auth, no DB writes)
-   Restricted scan for the landing page, so a visitor can try the
-   scanner against their own LAN without creating an account.
-   ────────────────────────────────────────────── */
-
-const DEMO_ALLOWED_PROFILES = new Set(["discovery", "quick_top100"]);
-const DEMO_RATE_LIMIT_PER_IP_PER_HOUR = 5;
-const DEMO_RATE_WINDOW_MS = 60 * 60_000;
-const demoRateMap = new Map<string, number[]>();
-
-// El endpoint /api/demo/scan es público y sin auth: un bot con IPs rotativas
-// haría crecer demoRateMap sin límite. Barremos las llaves expiradas cada 10 min.
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, ts] of demoRateMap) {
-    const fresh = ts.filter((t) => now - t < DEMO_RATE_WINDOW_MS);
-    if (fresh.length === 0) demoRateMap.delete(ip);
-    else if (fresh.length !== ts.length) demoRateMap.set(ip, fresh);
-  }
-}, 10 * 60_000).unref();
-
 function clientIp(req: express.Request): string {
   const fwd = req.headers["x-forwarded-for"];
   const xfwd = (Array.isArray(fwd) ? fwd[0] : fwd ?? "").split(",")[0]?.trim();
   return xfwd || req.socket.remoteAddress || "unknown";
 }
-
-app.get("/api/demo/profiles", (_req, res) => {
-  const profiles = [...DEMO_ALLOWED_PROFILES]
-    .map((id) => NMAP_PROFILES[id as keyof typeof NMAP_PROFILES])
-    .filter(Boolean);
-  ok(res, profiles);
-});
-
-// Subredes privadas detectadas en ESTA máquina (donde corre el backend).
-// La usa la demo LAN para escanear la subred real del visitante en vez de
-// asumir 192.168.1.0/24. Público y sin secretos: solo expone CIDRs RFC1918
-// de las interfaces locales. Solo es útil cuando el backend corre en localhost
-// (modo "lan" de la demo); en producción devuelve la subred del contenedor,
-// que la demo cloud no consulta.
-app.get("/api/demo/local-subnets", (_req, res) => {
-  const subnets = listLocalPrivateSubnets().map((s) => ({
-    cidr: s.cidr,
-    suggestedCidr: s.suggestedCidr,
-    ip: s.ip,
-    interfaceName: s.interfaceName,
-  }));
-  ok(res, subnets);
-});
-
-app.post("/api/demo/scan", express.json(), async (req, res) => {
-  const ip = clientIp(req);
-
-  // Rate-limit by IP (independent from authenticated rate-limit buckets)
-  const now = Date.now();
-  const recent = (demoRateMap.get(ip) ?? []).filter((t) => now - t < DEMO_RATE_WINDOW_MS);
-  if (recent.length >= DEMO_RATE_LIMIT_PER_IP_PER_HOUR) {
-    fail(res, 429, `Has agotado los ${DEMO_RATE_LIMIT_PER_IP_PER_HOUR} escaneos de prueba esta hora. Crea una cuenta para escanear sin límite.`);
-    return;
-  }
-  recent.push(now);
-  demoRateMap.set(ip, recent);
-
-  // Validate body
-  const body = req.body as { target?: unknown; profileId?: unknown };
-  let target = String(body.target ?? "").trim();
-  const profileId = String(body.profileId ?? "");
-
-  if (!DEMO_ALLOWED_PROFILES.has(profileId)) {
-    fail(res, 400, "Perfil no permitido en demo. Usa 'discovery' o 'quick_top100'.");
-    return;
-  }
-
-  // Si el cliente no manda target, lo resuelve la maquina que SI conoce la red:
-  // este backend, con las subredes privadas de sus interfaces. Cero hardcode.
-  if (!target) {
-    const local = listLocalPrivateSubnets();
-    if (local.length > 0) target = local[0]!.suggestedCidr;
-  }
-
-  const targetError = (() => {
-    if (!target) return "Falta el target.";
-    if (!isPrivateTarget(target)) {
-      return "Sólo se permiten redes privadas en la versión demo (192.168/16, 10/8, 172.16-31/12). Crea una cuenta para más opciones.";
-    }
-    return null;
-  })();
-  if (targetError) {
-    fail(res, 400, targetError);
-    return;
-  }
-
-  const resolved = resolveScan(target, { profileId: profileId as "discovery" | "quick_top100" });
-  if ("error" in resolved) {
-    fail(res, 400, resolved.error);
-    return;
-  }
-
-  // SSE response, same shape as /api/scan/run but with no DB side-effects
-  req.setTimeout(0);
-  res.setTimeout(0);
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
-  res.setHeader("X-Accel-Buffering", "no");
-  res.flushHeaders();
-
-  const send = (e: SSEEvent) => {
-    res.write(`event: ${e.event}\ndata: ${JSON.stringify(e.data)}\n\n`);
-  };
-
-  const keepAlive = setInterval(() => res.write(": keepalive\n\n"), 15_000);
-
-  const abortController = new AbortController();
-  req.on("close", () => {
-    if (!abortController.signal.aborted) abortController.abort();
-  });
-
-  send({ event: "progress", data: { message: `Demo: iniciando ${profileId} en ${target}…` } });
-
-  try {
-    const result = await streamScan(resolved, send, abortController.signal);
-    const openPorts = result.devices.reduce(
-      (n, d) => n + (d.ports?.filter((p) => p.state === "open").length ?? 0),
-      0,
-    );
-    send({
-      event: "summary",
-      data: { devices: result.devices.length, ports: openPorts, threats: 0, durationMs: result.durationMs },
-    });
-    send({ event: "done", data: { rawOutput: result.rawOutput.slice(0, 10000), devices: result.devices } });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Error ejecutando escaneo";
-    send({ event: "error", data: { message: msg } });
-  } finally {
-    clearInterval(keepAlive);
-    res.end();
-  }
-});
 
 app.get("/api/health", async (_req, res) => {
   const dbPing = await pingSupabase(supabaseAdmin);

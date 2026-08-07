@@ -23,7 +23,7 @@ export function PublicHeader() {
             to="/demo"
             className="hidden text-xs font-medium text-muted-foreground hover:text-foreground sm:inline"
           >
-            Probar demo
+            Chequeo rápido
           </Link>
 
           {isSignedIn ? (
