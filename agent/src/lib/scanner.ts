@@ -140,13 +140,12 @@ export const NMAP_PROFILES: Record<ScanProfileId, ScanProfile> = {
   discovery: {
     id: "discovery",
     name: "Descubrimiento de hosts",
-    description: "Detecta qué dispositivos están vivos combinando ICMP, ARP y sondas TCP/UDP a puertos comunes. Funciona en redes con firewall.",
+    description: "Detecta qué dispositivos están vivos combinando ICMP, ARP y sondas TCP a puertos comunes. Funciona en redes con firewall.",
     flags: [
       "-sn", "-v", "-n",
       "-PE", "-PP", "-PM",
       "-PS21,22,23,25,53,80,135,139,443,445,3389,8080",
       "-PA80,443",
-      "-PU53,161,5353",
     ],
     etaSeconds: 30,
     requiresRoot: false,
