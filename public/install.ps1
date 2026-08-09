@@ -152,15 +152,18 @@ function Get-Binary {
     }
   }
 
-  # Verificar que el binario se ejecuta
+  # Verificar que el binario se ejecuta, y de paso obtener la version REAL
+  # que se va a instalar (obligatorio mostrarsela al usuario: si pidio
+  # "latest" no sabe cual numero de version le toco hasta este momento).
   try {
-    $null = & $tmp version 2>&1
+    $installedVersion = (& $tmp version 2>&1 | Select-Object -First 1).ToString().Trim()
     if ($LASTEXITCODE -ne 0) { throw "exit code $LASTEXITCODE" }
   } catch {
     Write-Err "El binario descargado no se ejecuta. Puede estar corrupto."
     Remove-Item $tmp -ErrorAction SilentlyContinue
     exit 1
   }
+  Write-Success "Version a instalar: v$installedVersion"
 
   # Crear carpeta y mover binario
   if (-not (Test-Path $InstallDir)) {
@@ -211,7 +214,7 @@ function Get-Binary {
   }
 
   Move-Item $tmp $finalPath -Force
-  Write-Success "Instalado en $finalPath"
+  Write-Success "Instalado en $finalPath (v$installedVersion)"
   return $finalPath
 }
 

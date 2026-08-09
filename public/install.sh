@@ -255,8 +255,11 @@ download_binary() {
     exit 1
   fi
 
+  installed_version=$(printf '%s' "$verify_output" | head -1)
+  success "Version a instalar: v${installed_version}"
+
   $SUDO mv "$TMP_DIR/$BIN_NAME" "$INSTALL_DIR/$BIN_NAME"
-  success "Instalado en $INSTALL_DIR/$BIN_NAME (version $(printf '%s' "$verify_output" | head -1))"
+  success "Instalado en $INSTALL_DIR/$BIN_NAME (v${installed_version})"
 }
 
 # ─── Servicio del sistema (systemd / launchd) ────────────────────
