@@ -14,7 +14,7 @@ Dashboard de seguridad de red en tiempo real con escaneo de red por lenguaje nat
 
 ---
 
-## Demo en Vivo
+## Sistema en producción
 
 - **URL:** https://www.securitysmartservices.site
 - **Acceso:** vía OAuth (Google, GitHub o Microsoft) o registro propio gratuito desde la página de login. No se requiere una credencial fija
