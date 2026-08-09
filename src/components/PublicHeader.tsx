@@ -20,6 +20,12 @@ export function PublicHeader() {
 
         <nav className="flex items-center gap-2">
           <Link
+            to="/#precios"
+            className="hidden text-xs font-medium text-muted-foreground hover:text-foreground sm:inline"
+          >
+            Precios
+          </Link>
+          <Link
             to="/demo"
             className="hidden text-xs font-medium text-muted-foreground hover:text-foreground sm:inline"
           >

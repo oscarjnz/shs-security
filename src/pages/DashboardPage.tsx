@@ -1,18 +1,18 @@
-import { Loader2 } from "lucide-react";
+import { Activity, Loader2 } from "lucide-react";
 
 import { useDashboardKPIs } from "@/hooks/useDashboardKPIs";
-import { useThreats, useNetworkMetrics } from "@/hooks/useRealtimeQuery";
+import { useThreats } from "@/hooks/useRealtimeQuery";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { TopMetricCards } from "@/components/dashboard/TopMetricCards";
-import { TrafficCharts } from "@/components/dashboard/TrafficCharts";
-import { NetworkStatus } from "@/components/dashboard/NetworkStatus";
 import { ActiveNetworkMonitoring } from "@/components/dashboard/ActiveNetworkMonitoring";
 import { WeeklyReport } from "@/components/dashboard/WeeklyReport";
 import { AISecurityAssistant } from "@/components/dashboard/AISecurityAssistant";
 import { CurrentNetworkCard } from "@/components/dashboard/CurrentNetworkCard";
 import { SecurityChecksGrid } from "@/components/security/SecurityChecksGrid";
 import { Reveal } from "@/components/ui/Reveal";
+import { UnderDevelopmentNotice } from "@/components/ui/UnderDevelopmentNotice";
 
 function DashboardSkeleton() {
   return (
@@ -41,9 +41,8 @@ function DashboardSkeleton() {
 export function DashboardPage() {
   const kpis = useDashboardKPIs();
   const threats = useThreats();
-  const metrics = useNetworkMetrics();
 
-  const isLoading = kpis.isLoading || threats.isLoading || metrics.isLoading;
+  const isLoading = kpis.isLoading || threats.isLoading;
 
   if (isLoading) {
     return (
@@ -67,8 +66,6 @@ export function DashboardPage() {
   };
 
   const threatList = threats.data ?? [];
-  const metricList = metrics.data ?? [];
-  const latestMetric = metricList.length > 0 ? metricList[metricList.length - 1] : null;
 
   return (
     <div className="space-y-6">
@@ -93,14 +90,19 @@ export function DashboardPage() {
         reportsThisMonth={kpiData.reportsThisMonth}
       />
 
-      {/* Traffic Charts */}
+      {/* Traffic y estado de red: en desarrollo, ver seccion "Red" del nav */}
       <Reveal>
-        <TrafficCharts metrics={metricList} />
-      </Reveal>
-
-      {/* Network Status */}
-      <Reveal>
-        <NetworkStatus metrics={latestMetric ? [latestMetric] : []} />
+        <Card className="surface-glass">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold text-foreground">
+              <Activity className="h-5 w-5 text-cyber-green" />
+              Tráfico y estado de la red
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <UnderDevelopmentNotice description="Estamos construyendo la medición de velocidad, latencia y pérdida de paquetes de tu red. Estará disponible próximamente." />
+          </CardContent>
+        </Card>
       </Reveal>
 
       {/* Threats + Weekly Report side by side */}

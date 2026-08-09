@@ -13,6 +13,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Logo } from "@/components/Logo";
 import { PublicHeader } from "@/components/PublicHeader";
 import { Reveal } from "@/components/ui/Reveal";
+import { PricingSection } from "@/components/landing/PricingSection";
+import { FaqSection } from "@/components/landing/FaqSection";
 import { useSeo } from "@/hooks/useSeo";
 
 export function LandingPage() {
@@ -202,6 +204,12 @@ export function LandingPage() {
           </Card>
         </Reveal>
       </section>
+
+      {/* Precios */}
+      <PricingSection />
+
+      {/* Preguntas frecuentes */}
+      <FaqSection />
 
       {/* Footer */}
       <footer className="border-t border-border/60 py-8">
