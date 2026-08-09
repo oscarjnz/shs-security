@@ -1,6 +1,24 @@
-# S.H.S - Security Home Services
+# Security Smart Services (S.S.S.)
 
-Dashboard de seguridad de red doméstica en tiempo real con escaneo de red por lenguaje natural, análisis de IA y notificaciones automatizadas.
+Dashboard de seguridad de red en tiempo real con escaneo de red por lenguaje natural, análisis de IA y notificaciones automatizadas.
+
+## Sobre el proyecto
+
+**Problema:** las pequeñas y medianas empresas no cuentan con personal de TI dedicado, por lo que no tienen visibilidad de lo que ocurre en su propia red: qué dispositivos están conectados, qué puertos quedan expuestos y qué vulnerabilidades (CVEs) están activas.
+
+**Cliente:** pequeñas empresas sin equipo de TI/seguridad especializado que necesitan monitoreo de seguridad accesible, sin curva técnica alta.
+
+**Modelo de negocio:** SaaS por suscripción, con planes según el nivel de análisis y canales de alerta requeridos.
+
+**Cómo lo resuelve:** un agente local ejecuta el escaneo (Nmap, ping, traceroute, etc.) dentro de la propia red del cliente, sin exponerla a internet, y sincroniza los resultados con un dashboard centralizado que detecta dispositivos, identifica vulnerabilidades, genera alertas automáticas y permite consultar los eventos en lenguaje natural mediante IA.
+
+---
+
+## Demo en Vivo
+
+- **URL:** https://www.securitysmartservices.site
+- **Acceso:** vía OAuth (Google, GitHub o Microsoft) o registro propio gratuito desde la página de login. No se requiere una credencial fija
+- **Documento técnico:** ver sección [Documentación Técnica](#documentación-técnica).
 
 ---
 
@@ -116,6 +134,25 @@ npm run dev
 cd agent
 npm run dev
 ```
+
+---
+
+## Agente Local (Cliente)
+
+Para que el escaneo de la red del cliente no dependa de un servidor externo ni la exponga a internet, S.S.S. distribuye un agente ligero (`shs-scanner`) que el cliente instala en su propia red y empareja con su cuenta del dashboard:
+
+```bash
+# macOS: requiere nmap
+brew install nmap
+
+# Instalación y pairing del agente
+curl -fsSL https://www.securitysmartservices.site/install.sh | sudo sh
+shs-scanner pair <CÓDIGO-DE-PAIRING>
+```
+
+El agente queda corriendo en segundo plano (arranca automáticamente al encender el equipo) y sincroniza los resultados del escaneo local con el dashboard vía Supabase.
+
+> **Nota:** confirmar con el equipo el detalle exacto del script (`install.sh`) y del mecanismo de persistencia (launchd/systemd) antes de dejarlo documentado como definitivo — esta sección resume el flujo tal como fue comunicado, no el código fuente del instalador.
 
 ---
 
@@ -255,6 +292,7 @@ Supabase pausa proyectos en el free tier después de ~7 días de inactividad. El
 2. **Endpoint `/api/health`**: Cada llamada a este endpoint también ejecuta un ping real a la DB y reporta latencia y estado. Esto permite configurar un **cron externo** (UptimeRobot, cron-job.org, Render cron) que haga GET cada 3-4 horas como respaldo.
 
 El endpoint retorna:
+
 ```json
 {
   "status": "ok",
@@ -286,7 +324,6 @@ El endpoint retorna:
 ```bash
 # Build
 npm run build
-
 # El directorio dist/ se despliega en Vercel
 # Variables de entorno: configurar en Vercel dashboard
 ```
@@ -323,3 +360,20 @@ pm2 start dist/index.js --name shs-agent
 - Interfaz amigable para todas las edades
 - Tema oscuro (cybersecurity)
 - Keep-alive automático para Supabase free tier
+
+---
+
+## Documentación Técnica
+
+El documento técnico del proyecto (arquitectura, decisiones de diseño y los patrones de diseño de Refactoring Guru aplicados) se mantiene actualizado dentro de este repositorio: [`documento-tecnico-sss.pdf`](./documento-tecnico-sss.pdf).
+
+---
+
+## Equipo
+
+| Nombre | Rol |
+|--------|-----|
+| Luca Sita Rincón | Security Analyst & AI Integration Specialist |
+| Pedribel Pión Rijo | Project Manager, Scrum Master & QA Tester |
+| Elmer Gonzalez Otaño | Frontend Developer & UI/UX Designer |
+| Oscar Jiménez Peguero | Backend Developer & Database Administrator (DBA) |
