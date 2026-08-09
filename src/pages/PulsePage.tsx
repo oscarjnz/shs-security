@@ -7,6 +7,7 @@ import {
   TrendingUp,
   Server,
   Info,
+  ChevronDown,
 } from "lucide-react";
 import {
   LineChart,
@@ -41,6 +42,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Reveal } from "@/components/ui/Reveal";
 import { cn } from "@/lib/utils";
 
@@ -162,6 +168,7 @@ export function PulsePage() {
   return (
     <div className="space-y-6">
       <Header />
+      <PulseLegend />
 
       {/* KPIs */}
       <Reveal className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -350,6 +357,44 @@ function Header() {
         </p>
       </div>
     </Reveal>
+  );
+}
+
+function PulseLegend() {
+  return (
+    <Collapsible className="rounded-lg border border-border/60 bg-muted/20 px-4 py-2.5">
+      <CollapsibleTrigger className="group flex w-full items-center justify-between gap-2 text-left text-xs font-medium text-muted-foreground hover:text-foreground">
+        <span className="flex items-center gap-1.5">
+          <Info className="h-3.5 w-3.5" />
+          Cómo leer esta página
+        </span>
+        <ChevronDown className="h-3.5 w-3.5 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="mt-3 grid grid-cols-1 gap-2 text-xs leading-relaxed text-muted-foreground sm:grid-cols-2">
+        <p className="flex items-start gap-1.5">
+          <Wifi className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+          El dispositivo respondió al último ping (dentro de ~60 segundos).
+        </p>
+        <p className="flex items-start gap-1.5">
+          <WifiOff className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+          No respondió al último ping: puede estar apagado, dormido o fuera de rango.
+        </p>
+        <p>
+          <span className="font-medium text-foreground">Uptime 24h</span> es el porcentaje de
+          mediciones de las últimas 24 horas en las que el dispositivo respondió. "Sin datos"
+          significa que todavía no lleva suficiente tiempo registrado.
+        </p>
+        <p>
+          <span className="font-medium text-foreground">Latencia en amarillo</span> indica más de
+          80 ms de respuesta; en rojo, más de 80 ms sostenido o sin respuesta.
+        </p>
+        <p className="sm:col-span-2">
+          Cada dispositivo se pinguea automáticamente cada ~60 segundos mientras el agente que lo
+          descubrió esté conectado. Este panel se puede reabrir cuando quieras, no hace falta
+          recordar nada de memoria.
+        </p>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
