@@ -1,0 +1,8 @@
+[submodule "relay"]
+	path = relay
+	url = https://github.com/oscarjnz/sss-relay.git
+	branch = main
+[submodule "scanner-agent"]
+	path = scanner-agent
+	url = https://github.com/oscarjnz/shs-scanner-agent.git
+	branch = main

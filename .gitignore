@@ -41,3 +41,10 @@ PROMPT_CLAUDECODE.md
 
 # Cerebro/memoria de trabajo interno (expone interacciones, decisiones y datos sensibles) - NUNCA en GitHub
 CLAUDE.md
+
+# Skills de terceros instaladas por el tooling local - no son parte del producto
+.agents/
+skills-lock.json
+
+# Grafo de conocimiento generado localmente
+graphify-out/
