@@ -349,6 +349,10 @@ install_launchd_service() {
     <key>Crashed</key><true/>
     <key>SuccessfulExit</key><false/>
   </dict>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key><string>/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
   <key>StandardOutPath</key><string>${user_home}/Library/Logs/shs-scanner.log</string>
   <key>StandardErrorPath</key><string>${user_home}/Library/Logs/shs-scanner.error.log</string>
 </dict>
