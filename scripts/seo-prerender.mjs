@@ -128,6 +128,23 @@ for (const route of PRERENDER_ROUTES) {
   console.log(`  prerender  ${route.path.padEnd(38)} -> ${target.replace(DIST, "dist")}`);
 }
 
+// Fallback del SPA. El rewrite comodin de vercel.json apunta AQUI y no a
+// index.html: si apuntara a la portada, toda URL inventada devolveria el
+// contenido completo de la portada con estado 200 (un soft 404 que Bing y
+// compania indexarian como duplicado). Este archivo va vacio y con noindex; la
+// ruta protegida o la 404 que corresponda la pinta React al montar.
+const fallback = template
+  .replace(
+    /<title>[\s\S]*?<\/title>/i,
+    "<title>S.S.S - Security Smart Services</title>",
+  )
+  .replace(
+    /(<meta name="robots" content=")[^"]*(")/i,
+    "$1noindex, follow$2",
+  );
+await writeFile(join(DIST, "app.html"), fallback, "utf8");
+console.log("  prerender  (fallback del SPA)".padEnd(51) + "-> dist/app.html");
+
 // Un fallo silencioso aqui significaria desplegar sin SEO y no enterarse, asi
 // que se trata como error de build.
 if (written === 0) {

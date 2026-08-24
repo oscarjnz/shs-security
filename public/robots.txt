@@ -25,5 +25,6 @@ Disallow: /settings
 Disallow: /notifications
 Disallow: /reset-password
 Disallow: /sso-callback
+Disallow: /app.html
 
 Sitemap: https://securitysmartservices.site/sitemap.xml
