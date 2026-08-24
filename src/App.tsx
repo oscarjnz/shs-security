@@ -12,6 +12,8 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import { LandingPage } from "@/pages/LandingPage";
 import { DemoPage } from "@/pages/DemoPage";
+import { GuidesIndexPage } from "@/pages/GuidesIndexPage";
+import { GuideArticlePage } from "@/pages/GuideArticlePage";
 import { LoginPage } from "@/pages/LoginPage";
 import { SignUpPage } from "@/pages/SignUpPage";
 import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
@@ -59,6 +61,8 @@ const App = () => (
               {/* Public routes (no auth required) */}
               <Route path="/" element={<LandingPage />} />
               <Route path="/demo" element={<DemoPage />} />
+              <Route path="/guias" element={<GuidesIndexPage />} />
+              <Route path="/guias/:slug" element={<GuideArticlePage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignUpPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />

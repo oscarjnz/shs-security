@@ -7,6 +7,7 @@ import {
   Wifi,
   ArrowRight,
   Github,
+  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,13 +17,56 @@ import { Reveal } from "@/components/ui/Reveal";
 import { PricingSection } from "@/components/landing/PricingSection";
 import { FaqSection } from "@/components/landing/FaqSection";
 import { useSeo } from "@/hooks/useSeo";
+import { FAQS } from "@/content/faq";
+import { PLANS } from "@/content/plans";
+import { GUIDES } from "@/content/guides";
+import { HERO, FEATURES, STEPS, SECURITY } from "@/content/landing";
+
+const FEATURE_ICONS = [
+  <ScanSearch className="h-6 w-6 text-cyber-green" />,
+  <ShieldAlert className="h-6 w-6 text-cyber-green" />,
+  <Bot className="h-6 w-6 text-cyber-green" />,
+];
 
 export function LandingPage() {
   useSeo({
-    title: "S.S.S - Security Smart Services | Auditoría de seguridad de red",
+    title: "Auditoría de seguridad para tu red | S.S.S",
     description:
       "Descubre los dispositivos conectados a tu red, escanea puertos expuestos y detecta vulnerabilidades (CVE) con un agente local que nunca expone tu red a internet.",
     path: "/",
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        name: "S.S.S - Security Smart Services",
+        alternateName: "S.H.S - Security Home Services",
+        url: "https://securitysmartservices.site/",
+        description:
+          "Plataforma de auditoría de seguridad de red doméstica y de pequeña empresa: inventario de dispositivos, escaneo de puertos y detección de vulnerabilidades mediante un agente local.",
+        applicationCategory: "SecurityApplication",
+        operatingSystem: "Windows, macOS, Linux",
+        inLanguage: "es",
+        publisher: { "@id": "https://securitysmartservices.site/#organizacion" },
+        // Los precios los toma de PLANS para que el esquema no pueda quedar
+        // desfasado de lo que muestran las tarjetas de la propia página.
+        offers: {
+          "@type": "AggregateOffer",
+          priceCurrency: "USD",
+          lowPrice: Math.min(...PLANS.map((p) => p.price)),
+          highPrice: Math.max(...PLANS.map((p) => p.price)),
+          offerCount: PLANS.length,
+        },
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: FAQS.map((item) => ({
+          "@type": "Question",
+          name: item.q,
+          acceptedAnswer: { "@type": "Answer", text: item.a },
+        })),
+      },
+    ],
   });
 
   return (
@@ -45,25 +89,21 @@ export function LandingPage() {
           {/* Eyebrow */}
           <Reveal immediate>
             <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-cyber-green">
-              Plataforma de auditoría de seguridad de red
+              {HERO.eyebrow}
             </p>
           </Reveal>
 
           {/* Titular */}
           <Reveal immediate delay={120} className="mt-10">
             <h1 className="text-[1.9rem] font-extrabold uppercase leading-[1.3] tracking-[0.05em] text-foreground sm:text-4xl lg:text-5xl">
-              Auditoría de seguridad
-              <br />
-              para tu red.
+              {HERO.h1}
             </h1>
           </Reveal>
 
           {/* Descripcion */}
           <Reveal immediate delay={240}>
             <p className="mx-auto mt-6 max-w-[512px] text-sm leading-relaxed text-foreground/70 sm:text-base">
-              S.S.S detecta los dispositivos conectados a tu red, identifica los puertos
-              y servicios expuestos y te notifica ante cambios o amenazas. Todo el análisis se
-              ejecuta mediante un agente local, sin exponer tu red a internet.
+              {HERO.lead}
             </p>
           </Reveal>
 
@@ -91,8 +131,7 @@ export function LandingPage() {
 
           <Reveal immediate delay={380}>
             <p className="mt-4 text-xs text-muted-foreground">
-              Sin registro: chequeo rápido de tu conexión actual. Con cuenta: escaneo completo de
-              tu Wi-Fi, historial y reportes.
+              {HERO.note}
             </p>
           </Reveal>
         </div>
@@ -108,24 +147,15 @@ export function LandingPage() {
             </p>
           </Reveal>
           <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
-            <Feature
-              delay={0}
-              icon={<ScanSearch className="h-6 w-6 text-cyber-green" />}
-              title="Inventario de dispositivos"
-              desc="Identifica cada equipo conectado a tu red (teléfono, televisor, cámara, consola o dispositivo desconocido) junto con su IP, fabricante y sistema operativo."
-            />
-            <Feature
-              delay={80}
-              icon={<ShieldAlert className="h-6 w-6 text-cyber-green" />}
-              title="Puertos y servicios expuestos"
-              desc="Detecta servicios accesibles desde tu red, como Telnet, RDP, SMB o bases de datos, antes de que se conviertan en un vector de riesgo."
-            />
-            <Feature
-              delay={160}
-              icon={<Bot className="h-6 w-6 text-cyber-green" />}
-              title="Asistente de análisis (ACi)"
-              desc="Interpreta los resultados de cada análisis, explica el significado de los puertos detectados y sugiere los pasos a seguir."
-            />
+            {FEATURES.map((f, i) => (
+              <Feature
+                key={f.title}
+                delay={i * 80}
+                icon={FEATURE_ICONS[i]}
+                title={f.title}
+                desc={f.desc}
+              />
+            ))}
           </div>
         </div>
       </section>
@@ -137,24 +167,9 @@ export function LandingPage() {
             <h2 className="text-center text-2xl font-bold text-foreground">Cómo funciona</h2>
           </Reveal>
           <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3">
-            <Step
-              n={1}
-              delay={0}
-              title="Instala el agente"
-              desc="Se instala una sola vez y ejecuta los análisis dentro de tu red. Sin él, ni la plataforma ni terceros pueden acceder a tu red local."
-            />
-            <Step
-              n={2}
-              delay={80}
-              title="Ejecuta un análisis"
-              desc="Desde cualquier navegador. El agente descubre los dispositivos y servicios activos en cuestión de segundos."
-            />
-            <Step
-              n={3}
-              delay={160}
-              title="Recibe notificaciones"
-              desc="La plataforma te avisa por correo cuando aparece un dispositivo nuevo o un puerto expuesto en tu red."
-            />
+            {STEPS.map((step, i) => (
+              <Step key={step.title} n={i + 1} delay={i * 80} title={step.title} desc={step.desc} />
+            ))}
           </div>
           <Reveal className="mt-10 flex justify-center">
             <Button
@@ -174,34 +189,21 @@ export function LandingPage() {
       {/* Privacy */}
       <section className="border-t border-border/60 py-14">
         <Reveal as="div" className="mx-auto grid max-w-5xl gap-4 px-4 md:grid-cols-2">
-          <Card className="surface-glass hoverable-card">
-            <CardContent className="space-y-3 p-6">
-              <div className="flex items-center gap-2">
-                <Lock className="h-5 w-5 text-cyber-green" />
-                <h3 className="text-lg font-bold text-foreground">Aislamiento de datos por cuenta</h3>
-              </div>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                Cada cuenta dispone de su propio espacio con políticas RLS estrictas en
-                Supabase. Ningún otro usuario, ni el equipo de S.S.S, puede acceder a tus
-                resultados. El agente se ejecuta en tu equipo y el tráfico real nunca abandona
-                tu red.
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="surface-glass hoverable-card">
-            <CardContent className="space-y-3 p-6">
-              <div className="flex items-center gap-2">
-                <Wifi className="h-5 w-5 text-cyber-green" />
-                <h3 className="text-lg font-bold text-foreground">Alcance limitado a redes privadas</h3>
-              </div>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                Por diseño, solo se permite el análisis de rangos privados (192.168/16, 10/8,
-                172.16-31/12). Analizar redes públicas sin autorización es ilegal en numerosos
-                países e infringe los términos de servicio de tu proveedor; la plataforma no lo
-                permite.
-              </p>
-            </CardContent>
-          </Card>
+          {SECURITY.map((item, i) => (
+            <Card key={item.title} className="surface-glass hoverable-card">
+              <CardContent className="space-y-3 p-6">
+                <div className="flex items-center gap-2">
+                  {i === 0 ? (
+                    <Lock className="h-5 w-5 text-cyber-green" />
+                  ) : (
+                    <Wifi className="h-5 w-5 text-cyber-green" />
+                  )}
+                  <h3 className="text-lg font-bold text-foreground">{item.title}</h3>
+                </div>
+                <p className="text-sm leading-relaxed text-muted-foreground">{item.desc}</p>
+              </CardContent>
+            </Card>
+          ))}
         </Reveal>
       </section>
 
@@ -210,6 +212,41 @@ export function LandingPage() {
 
       {/* Preguntas frecuentes */}
       <FaqSection />
+
+      {/* Guias: enlaces internos hacia el contenido que compite por busquedas
+          genericas, que la landing por si sola nunca alcanzaria. */}
+      <section className="border-t border-border/60 py-16">
+        <div className="mx-auto max-w-5xl px-4">
+          <Reveal>
+            <h2 className="text-center text-2xl font-bold text-foreground">Guías</h2>
+            <p className="mx-auto mt-2 max-w-md text-center text-sm text-muted-foreground">
+              Explicaciones prácticas sobre tu red, para leer sin instalar nada.
+            </p>
+          </Reveal>
+
+          <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
+            {GUIDES.map((guide, i) => (
+              <Reveal key={guide.slug} delay={i * 80} className="flex">
+                <Link to={`/guias/${guide.slug}`} className="flex w-full">
+                  <Card className="surface-glass hoverable-card group flex w-full flex-col">
+                    <CardContent className="flex flex-1 flex-col gap-3 p-6">
+                      <BookOpen className="h-5 w-5 text-cyber-green" />
+                      <h3 className="text-base font-bold text-foreground">{guide.h1}</h3>
+                      <p className="flex-1 text-sm leading-relaxed text-muted-foreground">
+                        {guide.summary}
+                      </p>
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-cyber-green">
+                        Leer la guía
+                        <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                      </span>
+                    </CardContent>
+                  </Card>
+                </Link>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Footer */}
       <footer className="border-t border-border/60 py-8">
@@ -226,10 +263,13 @@ export function LandingPage() {
               className="flex items-center gap-1 hover:text-foreground"
             >
               <Github className="h-3.5 w-3.5" />
-              Codigo en GitHub
+              Código en GitHub
             </a>
+            <Link to="/guias" className="hover:text-foreground">
+              Guías
+            </Link>
             <Link to="/login" className="hover:text-foreground">
-              Iniciar sesion
+              Iniciar sesión
             </Link>
           </div>
         </div>

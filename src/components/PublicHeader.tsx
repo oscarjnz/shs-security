@@ -26,6 +26,12 @@ export function PublicHeader() {
             Precios
           </Link>
           <Link
+            to="/guias"
+            className="hidden text-xs font-medium text-muted-foreground hover:text-foreground sm:inline"
+          >
+            Guías
+          </Link>
+          <Link
             to="/demo"
             className="hidden text-xs font-medium text-muted-foreground hover:text-foreground sm:inline"
           >

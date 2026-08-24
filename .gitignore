@@ -48,3 +48,6 @@ skills-lock.json
 
 # Grafo de conocimiento generado localmente
 graphify-out/
+
+# Bundle intermedio del prerender de SEO (lo regenera npm run build)
+.prerender/

@@ -4,42 +4,73 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="S.S.S - Security Smart Services: audita la seguridad de tu red doméstica o de pequeña empresa. Descubre los dispositivos conectados, escanea puertos y detecta vulnerabilidades con un agente local, sin exponer tu red a internet." />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
     <meta name="theme-color" content="#00ff88" />
     <link rel="canonical" href="https://securitysmartservices.site/" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
+
+    <!-- Fuentes: solo las dos familias que el CSS aplica de verdad (Inter para el
+         cuerpo, Geist para h1-h4). Se cargan sin bloquear el primer render: el
+         navegador pinta con la fuente de sistema y cambia al llegar la hoja. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@500;600;700;800&display=swap"
+      media="print"
+      onload="this.media='all'; this.onload=null;"
     />
-    <title>S.S.S - Security Smart Services</title>
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist:wght@500;600;700;800&display=swap"
+      />
+    </noscript>
+
+    <title>Auditoría de seguridad para tu red | S.S.S</title>
 
     <meta property="og:site_name" content="S.S.S - Security Smart Services" />
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content="es_ES" />
     <meta property="og:url" content="https://securitysmartservices.site/" />
-    <meta property="og:title" content="S.S.S - Security Smart Services" />
+    <meta property="og:title" content="Auditoría de seguridad para tu red | S.S.S" />
     <meta property="og:description" content="Audita la seguridad de tu red doméstica o de pequeña empresa: dispositivos conectados, puertos expuestos y vulnerabilidades, con un agente local que nunca expone tu red a internet." />
+    <meta property="og:image" content="https://securitysmartservices.site/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="S.S.S - Security Smart Services: auditoría de seguridad de red" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="S.S.S - Security Smart Services" />
+    <meta name="twitter:title" content="Auditoría de seguridad para tu red | S.S.S" />
     <meta name="twitter:description" content="Audita la seguridad de tu red doméstica o de pequeña empresa: dispositivos conectados, puertos expuestos y vulnerabilidades, con un agente local que nunca expone tu red a internet." />
+    <meta name="twitter:image" content="https://securitysmartservices.site/og-image.png" />
+    <meta name="twitter:image:alt" content="S.S.S - Security Smart Services: auditoría de seguridad de red" />
 
+    <!-- Identidad del sitio. Es valida en cualquier ruta, por eso vive aqui y no
+         en una pagina concreta. El esquema del producto (SoftwareApplication) y
+         el de las preguntas frecuentes los pone cada pagina con useSeo. -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
-        "name": "S.S.S - Security Smart Services",
-        "alternateName": "S.H.S - Security Home Services",
-        "url": "https://securitysmartservices.site/",
-        "description": "Plataforma de auditoría de seguridad de red doméstica y de pequeña empresa: inventario de dispositivos, escaneo de puertos y detección de vulnerabilidades mediante un agente local.",
-        "applicationCategory": "SecurityApplication",
-        "operatingSystem": "Windows, macOS, Linux",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        }
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://securitysmartservices.site/#organizacion",
+            "name": "S.S.S - Security Smart Services",
+            "url": "https://securitysmartservices.site/",
+            "logo": "https://securitysmartservices.site/logo.svg",
+            "description": "Plataforma de auditoría de seguridad para redes domésticas y de pequeñas empresas.",
+            "sameAs": ["https://github.com/oscarjnz/shs-security"]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://securitysmartservices.site/#sitio",
+            "name": "S.S.S - Security Smart Services",
+            "url": "https://securitysmartservices.site/",
+            "inLanguage": "es",
+            "publisher": { "@id": "https://securitysmartservices.site/#organizacion" }
+          }
+        ]
       }
     </script>
   </head>

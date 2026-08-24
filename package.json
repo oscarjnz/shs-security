@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && npm run prerender",
+    "prerender": "vite build --ssr src/prerender/routes.ts --outDir .prerender --logLevel warn && node scripts/seo-prerender.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

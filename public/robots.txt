@@ -1,9 +1,12 @@
 User-agent: *
 Allow: /
 Allow: /demo
+Allow: /guias
 Allow: /login
 Allow: /signup
 
+# Todo lo que hay detras del login: son paneles con datos de cada cuenta,
+# no tienen nada que aportar en un buscador y no deben aparecer nunca.
 Disallow: /dashboard
 Disallow: /network
 Disallow: /devices

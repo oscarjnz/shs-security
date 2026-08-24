@@ -108,7 +108,11 @@
 
 @layer utilities {
   /* Acento tipografico editorial: una palabra en serif italica dentro de titulos sans.
-     Instrument Serif corre visualmente mas pequena que Inter, por eso el leve bump de tamano. */
+     Instrument Serif corre visualmente mas pequena que Inter, por eso el leve bump de tamano.
+     OJO: hoy ninguna pagina usa esta utilidad, asi que Instrument Serif se saco de la
+     carga de fuentes de index.html (se descargaba sin aplicarse a nada). Si se vuelve a
+     usar .font-accent, hay que re-agregar "Instrument+Serif:ital@0;1" a esa URL o el
+     texto caera en Georgia. */
   .font-accent {
     font-family: "Instrument Serif", "Georgia", ui-serif, serif;
     font-style: italic;
