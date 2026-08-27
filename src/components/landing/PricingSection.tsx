@@ -66,7 +66,7 @@ export function PricingSection() {
                         "bg-cyber-green font-semibold text-cyber-dark hover:bg-cyber-green/90",
                     )}
                   >
-                    <Link to="/signup">Crear cuenta</Link>
+                    <Link to="/signup">Seleccionar plan</Link>
                   </Button>
                 </CardContent>
               </Card>

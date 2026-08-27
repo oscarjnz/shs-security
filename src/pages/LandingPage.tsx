@@ -115,7 +115,7 @@ export function LandingPage() {
               className="pressable gap-2 rounded-full bg-cyber-green px-7 font-semibold text-cyber-dark brand-glow-sm hover:bg-cyber-green/90"
             >
               <Link to="/demo">
-                Probar sin cuenta
+                Probar el chequeo rápido
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
@@ -236,7 +236,7 @@ export function LandingPage() {
                         {guide.summary}
                       </p>
                       <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-cyber-green">
-                        Leer la guía
+                        Leer
                         <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                       </span>
                     </CardContent>
@@ -263,7 +263,7 @@ export function LandingPage() {
               className="flex items-center gap-1 hover:text-foreground"
             >
               <Github className="h-3.5 w-3.5" />
-              Código en GitHub
+              GitHub
             </a>
             <Link to="/guias" className="hover:text-foreground">
               Guías
