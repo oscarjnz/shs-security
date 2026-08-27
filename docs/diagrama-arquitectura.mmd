@@ -1,0 +1,40 @@
+%% Diagrama de arquitectura de despliegue - S.S.S Security Smart Services
+%% Plan de Despliegue de Infraestructura - Semana 6, Actividad 5
+%% UNIBE - TI3631-01-2026-3 Proyecto Integrador II
+
+flowchart TB
+    subgraph Usuario["Entorno del usuario (local)"]
+        U[Navegador del usuario]
+        AG[Scanner-agent local<br/>Node 18+ y nmap<br/>Windows / macOS / Linux]
+        RED[(Red domestica<br/>router y dispositivos)]
+    end
+
+    subgraph Nube["Infraestructura en la nube"]
+        FE[Frontend React + Vite<br/>Vercel<br/>securitysmartservices.site]
+        API[APIs serverless<br/>Vercel api/<br/>KEV, CVE, OWASP]
+        BE[Backend agent Express<br/>Render<br/>sss-agent.onrender.com]
+        RELAY[Relay WebSocket<br/>Fly.io region Miami<br/>shs-relay.fly.dev]
+        DB[(Supabase PostgreSQL<br/>RLS + Realtime)]
+    end
+
+    subgraph Externos["Servicios externos"]
+        CLERK[Clerk Auth<br/>JWT]
+        GROQ[Groq<br/>Llama 3.3 70B]
+        RESEND[Resend<br/>email transaccional]
+        KEV[CISA KEV feed]
+    end
+
+    U -->|HTTPS / TLS| FE
+    FE -->|Auth JWT| CLERK
+    FE -->|REST / SSE| BE
+    FE -->|Realtime suscripcion| DB
+    FE -->|fetch| API
+    BE -->|service role| DB
+    BE -->|analisis IA| GROQ
+    BE -->|alertas| RESEND
+    BE -->|despacho de jobs internos| RELAY
+    RELAY <-->|WSS 443 saliente| AG
+    RELAY -->|scan_jobs| DB
+    AG -->|nmap, ping, traceroute| RED
+    API -->|sync diario 06:00 UTC| KEV
+    API -->|persistencia| DB
